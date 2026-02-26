@@ -1,6 +1,12 @@
+import React from 'react';
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
-  return <h1>EduHub</h1>
+  return (
+    <div>
+      <ForgotPassword />
+    </div>
+  );
 }
 
 export default App;
