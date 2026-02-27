@@ -1,39 +1,44 @@
 import React, { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
-import "../assets/Login.css";
 
-function Login() {
+function Register() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    remember: false,
+    confirmPassword: "",
   });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
 
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
 
       const token = await userCredential.user.getIdToken();
+
       const response = await fetch(
-        "http://localhost:8000/api/users/login",
+        "http://localhost:8000/api/users/register",
         {
-          method: "GET",
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -46,27 +51,27 @@ function Login() {
         throw new Error(data.message);
       }
 
-      console.log("MongoDB User:", data);
+      console.log("MongoDB User Created:", data);
+
+      alert("Registration successful!");
 
     } catch (error) {
-      console.error("Login error:", error.message);
+      console.error("Registration error:", error.message);
       alert(error.message);
     }
   };
 
   return (
     <div className="container">
-      <div className="left"></div>
-
       <div className="wrapper">
         <form onSubmit={handleSubmit}>
-          <h2>Welcome Back!</h2>
-          <h3>Login to your account</h3>
+          <h2>Create Account</h2>
+          <h3>Register to EduHub</h3>
 
           <div className="input-box">
             <input
+              type="email"
               name="email"
-              type="text"
               placeholder="Email"
               required
               value={formData.email}
@@ -76,8 +81,8 @@ function Login() {
 
           <div className="input-box">
             <input
-              name="password"
               type="password"
+              name="password"
               placeholder="Password"
               required
               value={formData.password}
@@ -85,26 +90,24 @@ function Login() {
             />
           </div>
 
-          <div className="remember-forgot">
-            <label>
-              <input
-                type="checkbox"
-                name="remember"
-                checked={formData.remember}
-                onChange={handleChange}
-              />
-              Remember me
-            </label>
-            <a href="/forgot-password">Forget password?</a>
+          <div className="input-box">
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
           </div>
 
           <button type="submit" className="btn">
-            Login
+            Register
           </button>
 
           <div className="register-link">
             <p>
-              Don't have an account? <a href="/register">Register</a>
+              Already have an account? <a href="/login">Login</a>
             </p>
           </div>
         </form>
@@ -113,4 +116,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;

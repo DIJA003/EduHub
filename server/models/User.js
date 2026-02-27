@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
     enum: ["admin", "mentor", "student"],
     default: "student",
   },
-  firebaseUid: { type: String, required: true },
-});
+  firebaseUid: { type: String, required: true, unique: true },
+}, {timestamps: true});
 
 module.exports = mongoose.model("User", UserSchema);
