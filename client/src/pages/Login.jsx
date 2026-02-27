@@ -63,7 +63,7 @@ function Login() {
               />
               Remember me
             </label>
-            <a href="#">Forget password?</a>
+            <a href="/forgotpassword">Forget password?</a>
           </div>
 
           <button type="submit" className="btn">
