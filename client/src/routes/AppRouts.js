@@ -7,7 +7,7 @@ function AppRoutes() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/forgetpassword" element={<ForgotPassword />}/>
+        <Route path="/forgotpassword" element={<ForgotPassword />}/>
       </Routes>
     </Router>
   );
