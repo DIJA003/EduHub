@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const { verifyToken } = require("../middleware/authMiddleware");
+//const { verifyToken } = require("../middleware/authMiddleware");
 
-router.post("/register", verifyToken, async (req, res) => {
+router.post("/users/register", async (req, res) => {
   try {
     const { uid, email } = req.user;
 
@@ -22,7 +22,7 @@ router.post("/register", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/login", verifyToken, async (req, res) => {
+router.get("/users/login", async (req, res) => {
   try {
     const { uid } = req.user;
 
@@ -30,7 +30,6 @@ router.get("/login", verifyToken, async (req, res) => {
 
     if (!user)
       return res.status(404).json({ message: "User not found in DB" });
-
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
