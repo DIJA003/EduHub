@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-//const { verifyToken } = require("../middleware/authMiddleware");
+const { verifyToken } = require("../middleware/authMiddleware");
 
-router.post("/users/register", async (req, res) => {
+router.post("/users/register", verifyToken, async (req, res) => {
   try {
     const { uid, email } = req.user;
 
-    let user = await User.findOne({ firebaseUID: uid });
+    let user = await User.findOne({ firebaseUid: uid });
 
     if (!user) {
       user = await User.create({
-        firebaseUID: uid,
+        firebaseUid: uid,
         email,
       });
     }
@@ -22,11 +22,11 @@ router.post("/users/register", async (req, res) => {
   }
 });
 
-router.get("/users/login", async (req, res) => {
+router.get("/users/login", verifyToken, async (req, res) => {
   try {
     const { uid } = req.user;
 
-    const user = await User.findOne({ firebaseUID: uid });
+    const user = await User.findOne({ firebaseUid: uid });
 
     if (!user)
       return res.status(404).json({ message: "User not found in DB" });

@@ -4,31 +4,43 @@ import { auth } from "../services/firebase";
 import "../assets/ForgotPassword.css";
 
 const ForgotPassword = () => {
-    const [email, setEmail] = useState("");
-    const [status, setStatus] = useState({ type: "", message: "" });
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState({ type: "", message: "" });
 
-    const handleReset = async (e) => {
-        e.preventDefault();
-        setStatus({ type: "loading", message: "Sending reset link..." });
+  const handleReset = async (e) => {
+    e.preventDefault();
+    setStatus({ type: "loading", message: "Checking email..." });
 
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setStatus({
-                type: "success",
-                message: "Check your inbox! A reset link has been sent."
-            });
-        } catch (error) {
-            let errorMsg = "An error occurred. Please try again.";
-            if (error.code === "auth/user-not-found") {
-                errorMsg = "This email is not registered.";
-            } else {
-                errorMsg = "Error: " + error.message;
-            }
-            setStatus({ type: "error", message: errorMsg });
-        }
-    };
+    try {
+      const checkRes = await fetch("http://localhost:8000/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    return (
+      const checkData = await checkRes.json();
+
+      if (!checkRes.ok) {
+        setStatus({ type: "error", message: checkData.message });
+        return;
+      }
+      await sendPasswordResetEmail(auth, email);
+
+      setStatus({
+        type: "success",
+        message: "Reset link sent! Check your inbox (and spam folder).",
+      });
+      setEmail("");
+    } catch (error) {
+      console.error("Reset error:", error);
+      setStatus({
+        type: "error",
+        message: "Something went wrong. Please try again.",
+      });
+    }
+  };
+
+  return (
         <div className="forgot-container">
             <h2>Reset Password</h2>
             <p>Please enter your email to receive a password reset link.</p>

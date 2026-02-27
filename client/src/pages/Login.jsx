@@ -1,60 +1,69 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { useNavigate } from "react-router-dom";
 import "../assets/Login.css";
 
 function Login() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    remember: false,
-  });
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
+  const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+      email: "",
+      password: "",
+      remember: false,
     });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
-      const token = await userCredential.user.getIdToken();
-      const response = await fetch(
-        "http://localhost:8000/api/users/login",
-        {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+  
+    const handleChange = (e) => {
+      const { name, value, type, checked } = e.target;
+      setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
+      setError("");
+    };
+  
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setError("");
+      setLoading(true);
+  
+      try {
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+  
+        const token = await userCredential.user.getIdToken();
+  
+        const response = await fetch("http://localhost:8000/api/users/login", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
           },
+        });
+  
+        const data = await response.json();
+  
+        if (!response.ok) {
+          throw new Error(data.message || "Login failed on server.");
         }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message);
+        navigate("/home");
+      } catch (err) {
+        console.error("Login error:", err.message);
+  
+        const firebaseErrors = {
+          "auth/invalid-credential": "Invalid email or password.",
+          "auth/user-not-found": "No account found with this email.",
+          "auth/wrong-password": "Incorrect password.",
+          "auth/invalid-email": "Please enter a valid email.",
+          "auth/too-many-requests": "Too many attempts. Try again later.",
+        };
+        setError(firebaseErrors[err.code] || err.message);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      console.log("MongoDB User:", data);
-
-    } catch (error) {
-      console.error("Login error:", error.message);
-      alert(error.message);
-    }
-  };
-
-  return (
+return (
     <div className="container">
       <div className="left"></div>
 
@@ -111,6 +120,7 @@ function Login() {
       </div>
     </div>
   );
+
 }
 
 export default Login;
