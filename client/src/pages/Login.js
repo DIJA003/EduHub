@@ -1,46 +1,43 @@
-
-import React, {useState} from "react";
+import React, { useState } from "react";
 import "../assets/Login.css";
 
-function Login(){
-    const [formData, setFormData] = useState({
-        email: "",
-        password:"",
-        remember: false
-    });
-    const handleChange = (e) => {
-        const {name, value, type, checked} = e.target;
-        setFormData({
-            ...formData,
-            [name] : type === "checked" ? checked : value,
-        });
-    };
-    
-    //to be written
-    const handleSubmit = (e) => {
-    }
+function Login() {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    remember: false,
+  });
 
-    return (
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(formData);
+  };
+
+  return (
     <div className="container">
       <div className="left"></div>
 
       <div className="wrapper">
         <form onSubmit={handleSubmit}>
-          <div className="h2">
-            <h2>Welcome Back!</h2>
-          </div>
-
-          <div className="h3">
-            <h3>Login to your account</h3>
-          </div>
+          <h2>Welcome Back!</h2>
+          <h3>Login to your account</h3>
 
           <div className="input-box">
             <input
-              name="username"
+              name="email"
               type="text"
-              placeholder="Username"
+              placeholder="Email"
               required
-              value={formData.username}
+              value={formData.email}
               onChange={handleChange}
             />
           </div>
@@ -66,7 +63,6 @@ function Login(){
               />
               Remember me
             </label>
-
             <a href="#">Forget password?</a>
           </div>
 
