@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { useNavigate } from "react-router-dom";
+import "../assets/Login.css";
 
 function Register() {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ function Register() {
     password: "",
     confirmPassword: "",
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
@@ -33,7 +33,6 @@ function Register() {
       return;
     }
 
-    setLoading(true);
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -67,68 +66,63 @@ function Register() {
         "auth/weak-password": "Password is too weak.",
       };
       setError(firebaseErrors[err.code] || err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>EduHub</h2>
-          <h3>Create your account</h3>
-        </div>
+    <div className="container">
+      <div className="left"></div>
 
+      <div className="wrapper">
         <form onSubmit={handleSubmit}>
-          {error && <div className="auth-error">{error}</div>}
+          <h2>Create Account</h2>
+          <h3>Register to get started</h3>
 
-          <div className="input-group">
-            <label>Email</label>
+          {error && <p style={{ color: "red" }}>{error}</p>}
+
+          <div className="input-box">
             <input
-              type="email"
               name="email"
-              placeholder="you@university.edu"
+              type="email"
+              placeholder="Email"
               required
               value={formData.email}
               onChange={handleChange}
             />
           </div>
 
-          <div className="input-group">
-            <label>Password</label>
+          <div className="input-box">
             <input
-              type="password"
               name="password"
-              placeholder="Min. 6 characters"
+              type="password"
+              placeholder="Password"
               required
               value={formData.password}
               onChange={handleChange}
             />
           </div>
 
-          <div className="input-group">
-            <label>Confirm Password</label>
+          <div className="input-box">
             <input
-              type="password"
               name="confirmPassword"
-              placeholder="Repeat your password"
+              type="password"
+              placeholder="Confirm Password"
               required
               value={formData.confirmPassword}
               onChange={handleChange}
             />
           </div>
 
-          <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? "Creating account..." : "Register"}
+          <button type="submit" className="btn">
+            Register
           </button>
-        </form>
 
-        <div className="auth-footer">
-          <p>
-            Already have an account? <a href="/login">Login</a>
-          </p>
-        </div>
+          <div className="register-link">
+            <p>
+              Already have an account? <a href="/login">Login</a>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   );
