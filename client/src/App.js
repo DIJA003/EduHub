@@ -1,6 +1,7 @@
+import AppRoutes from "./routes/AppRouts";
 
 function App() {
-  return <h1>EduHub</h1>
+  return <AppRoutes/>;
 }
 
 export default App;

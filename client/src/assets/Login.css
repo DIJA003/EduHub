@@ -1,0 +1,97 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+display:flex;
+height:100vh;
+}
+
+.left{
+width:50%;
+background-image:url("C:/Users/fady/Downloads/ChatGPT Image 26 فبراير 2026، 04_13_28 م.png");
+background-size:cover;
+background-position:left center;
+background-repeat: no-repeat;
+}
+
+.wrapper{
+width:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#f5f7fa;
+}
+
+form{
+width:420px;
+background:white;
+padding:40px;
+border-radius:12px;
+box-shadow:0 0 20px rgba(0,0,0,0.1);
+}
+
+h2{
+font-size:32px;
+margin-bottom:5px;
+}
+
+h3{
+font-weight:normal;
+font-size:16px;
+color:gray;
+margin-bottom:25px;
+}
+
+.input-box{
+margin-bottom:20px;
+}
+
+.input-box input{
+width:100%;
+padding:14px;
+border-radius:8px;
+border:1px solid #ccc;
+font-size:16px;
+}
+
+.remember-forgot{
+display:flex;
+justify-content:space-between;
+margin-bottom:20px;
+font-size:14px;
+}
+
+.remember-forgot a{
+color:#2F6FD6;
+text-decoration:none;
+}
+
+.btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:25px;
+background:#2F6FD6;
+color:white;
+font-size:16px;
+cursor:pointer;
+transition:0.3s;
+}
+
+.btn:hover{
+background:#1E5BB8;
+}
+
+.register-link{
+text-align:center;
+margin-top:20px;
+}
+
+.register-link a{
+color:#2F6FD6;
+text-decoration:none;
+}
