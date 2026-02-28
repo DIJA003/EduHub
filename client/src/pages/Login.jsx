@@ -11,7 +11,6 @@ function Login() {
       password: "",
       remember: false,
     });
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
   
     const handleChange = (e) => {
@@ -23,7 +22,6 @@ function Login() {
     const handleSubmit = async (e) => {
       e.preventDefault();
       setError("");
-      setLoading(true);
   
       try {
         const userCredential = await signInWithEmailAndPassword(
@@ -58,8 +56,7 @@ function Login() {
           "auth/too-many-requests": "Too many attempts. Try again later.",
         };
         setError(firebaseErrors[err.code] || err.message);
-      } finally {
-        setLoading(false);
+        console.log(error);
       }
     };
 
