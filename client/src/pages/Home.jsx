@@ -1,0 +1,100 @@
+import React, { useEffect, useState } from "react";
+import { auth } from "../services/firebase";
+import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import "../assets/Home.css";
+
+function Home() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [dbUser, setDbUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (!firebaseUser) {
+        navigate("/login");
+        return;
+      }
+
+      setUser(firebaseUser);
+
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await fetch("http://localhost:8000/api/users/login", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDbUser(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate("/login");
+  };
+
+  if (!user) {
+    return (
+      <div className="home-container">
+        <div className="home-loading">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="home-container">
+      <nav className="home-nav">
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </nav>
+
+      <main className="home-main">
+        <div className="welcome">
+          <h1>Welcome to EduHub</h1>
+          <div className="user-info">
+            <div className="info-row">
+              <span className="info-label">Email: </span>
+              <span className="info-value">{user.email}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Firebase UID: </span>
+              <span className="info-value uid">{user.uid}</span>
+            </div>
+            {dbUser && (
+              <>
+                <div className="info-row">
+                  <span className="info-label">MongoDB ID: </span>
+                  <span className="info-value uid">{dbUser._id}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Role: </span>
+                  <span className="info-badge">{dbUser.role}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Member since: </span>
+                  <span className="info-value">
+                    {new Date(dbUser.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default Home;
