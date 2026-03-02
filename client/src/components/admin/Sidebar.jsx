@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 function Sidebar(){
     return (
-        <aside className="admin-sidbar">
+        <aside className="admin-sidebar">
             <h2>EduHub Admin</h2>
             <nav>
                 <Link to="/admin">Dashboard</Link>

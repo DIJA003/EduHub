@@ -4,7 +4,7 @@ function DashboardHome(){
     return (
         <div>
             <h1>Dashboard OverView</h1>
-            <div className="stats-gird">
+            <div className="stats-grid">
                 <StatsCard title="total student" value ="to get fetched"/>
                 <StatsCard title="total mentors" value ="to get fetched"/>
                 <StatsCard title="appeding approval" value ="to get fetched"/>
