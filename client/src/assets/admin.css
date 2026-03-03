@@ -1,36 +1,18 @@
-.admin-container {
-  display: flex;
-  height: 100vh;
-}
 
-.admin-sidebar {
-  width: 220px;
-  background: #111621;
-  color: white;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
+@import './adminCss/variables.css';
 
-.admin-sidebar a {
-  color: white;
-  text-decoration: none;
-  padding: 8px;
-  border-radius: 6px;
-}
+@import './adminCss/layout.css';
 
-.admin-sidebar a:hover {
-  background: #2463eb;
-}
+@import './adminCss/sidebar.css';
+@import './adminCss/navbar.css';
 
-.admin-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+@import './adminCss/btns.css';
+@import './adminCss/badge.css';
 
-.admin-content {
-  padding: 20px;
-  overflow-y: auto;
-}
+@import './adminCss/stats.css';
+@import './adminCss/table.css';
+@import './adminCss/user.css';
+@import './adminCss/emptystat.css';
+
+@import './adminCss/modal.css';
+@import './adminCss/forms.css';

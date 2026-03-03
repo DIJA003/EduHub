@@ -1,0 +1,27 @@
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-avatar.green  { background: #166534; color: var(--success); }
+.user-avatar.amber  { background: #78350f; color: var(--warning); }
+.user-avatar.purple { background: #4c1d95; color: #a78bfa; }
+
+.user-cell-name  { font-size: 13.5px; font-weight: 500; }
+.user-cell-email { font-size: 12px;   color: var(--text-muted); }
