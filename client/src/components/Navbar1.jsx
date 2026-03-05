@@ -15,7 +15,7 @@ export function Navbar() {
           <span className="text-2xl font-black tracking-tight text-blue-600">
             EduHub
           </span>
-        </Link>
+        </Link> 
 
         <div className="hidden items-center gap-8 md:flex">
           {onHome ? (
