@@ -2,23 +2,31 @@
 .table-wrap {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .table-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: var(--space-3) var(--space-5);
   border-bottom: 1px solid var(--border);
-  gap: 12px;
+  gap: var(--space-3);
+  min-height: 52px;
 }
 
 .table-toolbar-title {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.table-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .table-search {
@@ -27,18 +35,24 @@
   color: var(--text-primary);
   padding: 6px 12px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-family: var(--font-main);
   outline: none;
-  width: 200px;
-  transition: border-color var(--transition);
+  width: 220px;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
-.table-search:focus       { border-color: var(--accent); }
+
+.table-search:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
 .table-search::placeholder { color: var(--text-muted); }
 
 .admin-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 .admin-table thead tr {
@@ -46,30 +60,107 @@
 }
 
 .admin-table th {
-  padding: 11px 16px;
+  padding: 11px var(--space-5);
   text-align: left;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
+.admin-table th:last-child { text-align: right; }
+
 .admin-table td {
-  padding: 13px 16px;
-  font-size: 13.5px;
+  padding: 13px var(--space-5);
+  font-size: var(--text-base);
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
 }
 
-.admin-table tbody tr:last-child td { border-bottom: none; }
-.admin-table tbody tr:hover          { background: var(--bg-hover); }
+.admin-table td:last-child { text-align: right; }
 
-.admin-table .actions-cell {
+.admin-table tbody tr {
+  transition: background var(--transition);
+}
+
+.admin-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.actions-cell {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+  gap: var(--space-3);
+}
+
+.table-count {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pagination-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-main);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.pagination-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.pagination-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.table-overflow {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
