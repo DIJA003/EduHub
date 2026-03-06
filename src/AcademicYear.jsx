@@ -12,10 +12,12 @@ export default function AcademicYear() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      
       <Header onAction={handleAction} />
 
-    
+      
       <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
+        
         <section className="mb-8 grid gap-6 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[2fr,1.5fr] md:p-6 lg:p-8">
           <div className="flex flex-col justify-between">
             <div>
@@ -43,7 +45,7 @@ export default function AcademicYear() {
             </div>
           </div>
           <div className="flex items-center justify-center">
-            
+          
             <img
               src="https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=800"
               alt="Students collaborating"
