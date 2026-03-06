@@ -26,7 +26,7 @@ export default function Header({ onAction }) {
             className="hover:text-edublue"
             onClick={() => onAction("Mentors")}
           >
-            Mentors
+            home
           </button>
           <button
             className="hover:text-edublue"
