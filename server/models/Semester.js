@@ -31,13 +31,7 @@ const semesterSchema = new mongoose.Schema({
       },
       message: 'Only admins can create semesters'
     }
-  },
-  startDate: Date,
-  endDate: Date,
-  isActive: {
-    type: Boolean,
-    default: true
-  }
+  },  
 }, {
     timestamps: true
 
@@ -52,5 +46,3 @@ semesterSchema.index({ academicYearId: 1, name: 1 }, { unique: true });
 
 // Index for efficient querying
 // semesterSchema.index({ academicYearId: 1, createdBy: 1 });
-// semesterSchema.index({ createdBy: 1, createdAt: -1 });
-// semesterSchema.index({ isActive: 1 });
