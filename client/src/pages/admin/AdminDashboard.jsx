@@ -10,17 +10,17 @@ import "../../assets/admin.css";
 
 function AdminDashboard() {
   return (
-    <div className="admin-container">
+    <div className="flex h-screen overflow-hidden bg-base text-text-primary font-sans">
       <Sidebar />
-      <div className="admin-main">
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <Navbar />
-        <div className="admin-content">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-7 px-8">
           <Routes>
-            <Route path="/"           element={<DashboardHome />} />
-            <Route path="academics"   element={<AcademicManagement />} />
-            <Route path="courses"     element={<CourseManagement />} />
-            <Route path="materials"   element={<MaterialsManagement />} />
-            <Route path="users"       element={<UsersManagement />} />
+            <Route path="/"         element={<DashboardHome />}      />
+            <Route path="academics" element={<AcademicManagement />} />
+            <Route path="courses"   element={<CourseManagement />}   />
+            <Route path="materials" element={<MaterialsManagement />}/>
+            <Route path="users"     element={<UsersManagement />}    />
           </Routes>
         </div>
       </div>
