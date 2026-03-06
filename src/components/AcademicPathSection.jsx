@@ -34,6 +34,16 @@ export default function AcademicPathSection() {
           status="Locked"
         />
       </div>
+      <div className="mt-4">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:border-slate-400"
+          aria-label="Add academic year"
+        >
+          <span className="text-lg leading-none" aria-hidden>+</span>
+          Add academic year
+        </button>
+      </div>
     </section>
   );
 }
