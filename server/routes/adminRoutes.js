@@ -5,9 +5,9 @@ const { verifyToken } = require('../middleware/authMiddleware');
 
 const college   = require('../controllers/CollegeController');
 const course    = require('../controllers/CourseController');
-const material  = require('../controllers/materialController');
+const material  = require('../controllers/MaterialController.js');
 const adminUser = require('../controllers/adminController');
-const dashboard = require('../controllers/dashboardController');
+const dashboard = require('../controllers/DashboardController');
 
 router.get('/dashboard/stats',    verifyToken, dashboard.getStats);
 router.get('/dashboard/activity', verifyToken, dashboard.getActivity);
