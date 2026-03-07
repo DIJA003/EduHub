@@ -1,39 +1,15 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const MaterialSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  description: {
-    type: String,
-    trim: true,
-  },
-  fileUrl: {
-    type: String, // The download link from Firebase Storage, Cloudinary, etc.
-    required: true,
-  },
-  fileType: {
-    type: String,
-    enum: ["pdf", "video", "document", "other"],
-    default: "other",
-  },
-  course: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Course", // Relates to the Course model
-    required: true,
-  },
-  uploadedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User", // Relates to the User who uploaded it
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["pending", "approved", "rejected"],
-    default: "approved", 
-  }
+const materialSchema = new mongoose.Schema({
+  title:    { type: String, required: true, trim: true },
+  course:   { type: String, trim: true },      
+  type:     { type: String, enum: ['PDF', 'Slides', 'Video', 'ZIP', 'Other'], default: 'PDF' },
+  size:     { type: String, default: '' },
+  uploader: { type: String, trim: true },
+  status:   { type: String, enum: ['Draft', 'Active', 'Archived'], default: 'Draft' },
+  fileUrl:  { type: String, default: '' },
+  courseRef:    { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+  uploadedByRef:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Material", MaterialSchema);
+module.exports = mongoose.model('Material', materialSchema);

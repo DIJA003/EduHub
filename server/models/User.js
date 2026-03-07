@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      default: "User",
     },
     email: {
       type: String,
@@ -24,8 +25,18 @@ const UserSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    college: {
+      type: String,
+      trim: true,
+      default: "—",
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Pending", "Suspended"],
+      default: "Active",
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("User", UserSchema);
