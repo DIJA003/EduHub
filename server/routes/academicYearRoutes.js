@@ -6,7 +6,7 @@ const {
   getAllAcademicYears,
   getAcademicYearById,
   createAcademicYear
-} = require('../controllers/academicYearController.js');
+} = require('../controllers/AcademicYearController');
 
 const router = express.Router();
 
