@@ -3,8 +3,8 @@ const router  = express.Router();
 
 const { verifyToken } = require('../middleware/authMiddleware');
 
-const college   = require('../controllers/collegeController');
-const course    = require('../controllers/courseController');
+const college   = require('../controllers/CollegeController');
+const course    = require('../controllers/CourseController');
 const material  = require('../controllers/materialController');
 const adminUser = require('../controllers/adminController');
 const dashboard = require('../controllers/dashboardController');
