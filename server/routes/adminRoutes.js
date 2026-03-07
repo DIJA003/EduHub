@@ -6,7 +6,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const college   = require('../controllers/collegeController');
 const course    = require('../controllers/courseController');
 const material  = require('../controllers/materialController');
-const adminUser = require('../controllers/adminUserController');
+const adminUser = require('../controllers/adminController');
 const dashboard = require('../controllers/dashboardController');
 
 router.get('/dashboard/stats',    verifyToken, dashboard.getStats);
