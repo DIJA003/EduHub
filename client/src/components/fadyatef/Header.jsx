@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Header({ onAction }) {
+function Header({ onAction }) {
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
@@ -46,3 +46,4 @@ export default function Header({ onAction }) {
     </header>
   );
 }
+export default Header;

@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { Icon } from './Icon1.jsx'
+import { Icon } from './Icon.jsx'
 
 export function Navbar() {
   const location = useLocation()
