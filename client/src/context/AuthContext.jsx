@@ -5,7 +5,6 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [authState, setAuthState] = useState({
-    loading: true,
     user: null,
     dbUser: null,
   });
@@ -13,7 +12,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (!firebaseUser) {
-        setAuthState({ loading: false, user: null, dbUser: null });
+        setAuthState({ user: null, dbUser: null });
         return;
       }
 
@@ -23,9 +22,9 @@ export function AuthProvider({ children }) {
           headers: { Authorization: `Bearer ${token}` },
         });
         const dbUser = res.ok ? await res.json() : null;
-        setAuthState({ loading: false, user: firebaseUser, dbUser });
+        setAuthState({ user: firebaseUser, dbUser });
       } catch {
-        setAuthState({ loading: false, user: firebaseUser, dbUser: null });
+        setAuthState({ user: firebaseUser, dbUser: null });
       }
     });
 
