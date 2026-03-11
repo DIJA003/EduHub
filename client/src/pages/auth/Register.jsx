@@ -37,16 +37,21 @@ export default function Register() {
       const userCredential = await createUserWithEmailAndPassword(
         auth, form.email, form.password,
       );
-
-      const token = await userCredential.user.getIdToken();
-      const response = await fetch('http://localhost:8000/api/users/register', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Registration failed on server.');
-
       await sendEmailVerification(userCredential.user);
+
+      try {
+        const token = await userCredential.user.getIdToken();
+        const response = await fetch('http://localhost:8000/api/users/register', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          console.error('Backend registration failed:', data.message);
+        }
+      } catch (backendErr) {
+        console.error('Backend registration error:', backendErr.message);
+      }
       navigate('/verify-email');
 
     } catch (err) {
@@ -101,6 +106,16 @@ export default function Register() {
               )}
 
               <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+                <div>
+                  <label className="sr-only" htmlFor="email">Email</label>
+                  <input
+                    id="name" name="name" type="name"
+                    placeholder="User name"
+                    value={form.name} onChange={handleChange} required
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
+                    autoComplete="name"
+                  />
+                </div>
                 <div>
                   <label className="sr-only" htmlFor="email">Email</label>
                   <input

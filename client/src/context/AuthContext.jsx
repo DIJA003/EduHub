@@ -1,54 +1,55 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [authState, setAuthState] = useState({
-    user: null,
-    dbUser: null,
-  });
+  const [user,    setUser]    = useState(undefined);
+  const [dbUser,  setDbUser]  = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
-        setAuthState({ user: null, dbUser: null });
-        return;
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      setDbUser(null);
+
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch('http://localhost:8000/api/users/login', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setDbUser(data);
+          }
+        } catch (err) {
+          console.error('AuthContext: failed to fetch dbUser', err);
+        }
       }
 
-      try {
-        const token = await firebaseUser.getIdToken();
-        const res = await fetch('http://localhost:8000/api/users/login', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const dbUser = res.ok ? await res.json() : null;
-        setAuthState({ user: firebaseUser, dbUser });
-      } catch {
-        setAuthState({ user: firebaseUser, dbUser: null });
-      }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const refetch = async () => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return;
-    try {
-      const token = await firebaseUser.getIdToken(true);
-      const res = await fetch('http://localhost:8000/api/users/login', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dbUser = res.ok ? await res.json() : null;
-      setAuthState((prev) => ({ ...prev, dbUser }));
-    } catch {}
-  };
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="text-slate-400 text-sm">Loading…</span>
+      </div>
+    );
+  }
 
   return (
-    <AuthContext.Provider value={{ ...authState, refetch }}>
+    <AuthContext.Provider value={{ user, dbUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

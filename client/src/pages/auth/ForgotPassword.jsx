@@ -15,23 +15,33 @@ export default function ForgotPassword() {
     setErrMsg('');
 
     try {
-      const checkRes = await fetch('http://localhost:8000/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const checkData = await checkRes.json();
-      if (!checkRes.ok) {
-        setStatus('error');
-        setErrMsg(checkData.message || 'Email not found in our system.');
-        return;
+      try {
+        const checkRes = await fetch('http://localhost:8000/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        });
+        if (checkRes.ok === false) {
+          const checkData = await checkRes.json();
+          if (checkRes.status === 404) {
+            setStatus('error');
+            setErrMsg(checkData.message || 'Email not found in our system.');
+            return;
+          }
+        }
+      } catch (backendErr) {
+        console.error('Backend email check failed:', backendErr.message);
       }
-
       await sendPasswordResetEmail(auth, email.trim());
       setStatus('success');
+
     } catch (err) {
       setStatus('error');
-      setErrMsg('Something went wrong. Please try again.');
+      const firebaseErrors = {
+        'auth/user-not-found':  'No account found with this email.',
+        'auth/invalid-email':   'Please enter a valid email address.',
+      };
+      setErrMsg(firebaseErrors[err.code] || 'Something went wrong. Please try again.');
     }
   };
 
@@ -61,9 +71,8 @@ export default function ForgotPassword() {
                 Check your inbox
               </h1>
               <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                We sent a password reset link to{' '}
-                <span className="font-semibold text-slate-700 dark:text-slate-200">{email}</span>.
-                The link expires in 1 hour.
+                If <span className="font-semibold text-slate-700 dark:text-slate-200">{email}</span> is
+                registered, a password reset link has been sent. The link expires in 1 hour.
               </p>
               <p className="mt-2 text-xs text-slate-400">
                 Didn't get it? Check your spam folder.

@@ -32,24 +32,25 @@ export function Login() {
         formData.email,
         formData.password
       );
-
-      const token = await userCredential.user.getIdToken();
-
-      const response = await fetch('http://localhost:8000/api/users/login', {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Login failed on server.');
-
-      // Route by role
-      if (data.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/home');
+      try {
+        const token = await userCredential.user.getIdToken();
+        const response = await fetch('http://localhost:8000/api/users/login', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role === 'admin') {
+            navigate('/admin');
+            return;
+          }
+        }
+      } catch (backendErr) {
+        console.error('Backend login fetch failed:', backendErr.message);
       }
+
+      navigate('/home');
+
     } catch (err) {
       const firebaseErrors = {
         'auth/invalid-credential':  'Invalid email or password.',
@@ -68,13 +69,11 @@ export function Login() {
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-1 lg:grid-cols-2">
 
-        {/* Left image panel */}
         <div className="relative hidden lg:block">
           <img alt="Campus life" className="h-full w-full object-cover" src={loginImage} />
           <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/35 via-slate-900/10 to-transparent" />
         </div>
 
-        {/* Right form panel */}
         <div className="flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
           <div className="w-full max-w-md">
             <div className="mb-6 flex items-center justify-between">
