@@ -45,11 +45,9 @@ export function Login() {
       if (!response.ok) throw new Error(data.message || 'Login failed on server.');
 
       // Route by role
-      if (data.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/home');
-      }
+      if (data.role === 'admin')  navigate('/admin');
+      else if (data.role === 'mentor') navigate('/mentor');
+      else navigate('/home');
     } catch (err) {
       const firebaseErrors = {
         'auth/invalid-credential':  'Invalid email or password.',
