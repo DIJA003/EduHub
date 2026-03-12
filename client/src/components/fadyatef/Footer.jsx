@@ -1,4 +1,5 @@
 import React from "react";
+import logo from "../../assets/images/logo.png";
 
 export default function Footer({ onAction }) {
   return (
@@ -7,7 +8,7 @@ export default function Footer({ onAction }) {
         <div className="max-w-sm space-y-3">
           <div className="flex items-center gap-2">
             <img
-              src="/logo.png"
+              src={logo}
               alt="EduHub logo"
               className="h-8 w-8 object-contain"
             />

@@ -1,4 +1,6 @@
 import React from "react";
+import logo from "../../assets/images/logo.png";
+import profileImage from "../../assets/images/profile.jpg";
 
 function Header({ onAction }) {
   return (
@@ -6,7 +8,7 @@ function Header({ onAction }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-center gap-2">
           <img
-            src="/logo.png"
+            src={logo}
             alt="EduHub logo"
             className="h-9 w-9 object-contain"
           />
@@ -36,7 +38,7 @@ function Header({ onAction }) {
           </button>
           <div className="flex items-center gap-3">
             <img
-              src="/profile.png"
+              src={profileImage}
               alt="Profile"
               className="h-9 w-9 rounded-full object-cover"
             />

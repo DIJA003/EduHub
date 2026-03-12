@@ -1,6 +1,13 @@
 import React from "react";
 
-export default function YearCard({ year, title, description, status, highlighted }) {
+export default function YearCard({
+  year,
+  title,
+  description,
+  status,
+  highlighted,
+  onClick,
+}) {
   const statusColor =
     status === "Completed"
       ? "text-emerald-600"
@@ -24,6 +31,8 @@ export default function YearCard({ year, title, description, status, highlighted
           ? "border-edublue/60 bg-sky-50"
           : "border-slate-200 hover:border-edublue/40"
       }`}
+      type="button"
+      onClick={onClick}
     >
       <div className="flex items-center gap-3 mb-3">
         <div

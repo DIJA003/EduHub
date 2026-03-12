@@ -1,5 +1,6 @@
 import React from "react";
 import CourseCard from "./CourseCard";
+import algorithmsImage from "../../assets/images/algorithms-course.jpg";
 
 export default function RecommendedSection({ onAction }) {
   return (
@@ -19,7 +20,7 @@ export default function RecommendedSection({ onAction }) {
           title="Algorithms"
           type="Core • Algorithms CS305"
           duration="14 Weeks"
-          imageUrl="/algorithms-course.jpg"
+          imageUrl={algorithmsImage}
           onClick={() => onAction("Algorithms CS305")}
         />
         <CourseCard

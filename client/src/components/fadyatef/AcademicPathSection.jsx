@@ -1,7 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import YearCard from "./YearCard";
 
 export default function AcademicPathSection() {
+  const navigate = useNavigate();
+
+  const handleYearClick = (year) => {
+    navigate(`/academic-year/${year}`);
+  };
+
   return (
     <section>
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -13,6 +20,7 @@ export default function AcademicPathSection() {
           title="Year One"
           description="Foundational Concepts: Principles of computing, mathematics, and logic."
           status="Completed"
+          onClick={() => handleYearClick("1")}
         />
         <YearCard
           year="2"
@@ -20,18 +28,21 @@ export default function AcademicPathSection() {
           description="Intermediate Specializations: Data structures, algorithms, and systems."
           status="In Progress"
           highlighted
+          onClick={() => handleYearClick("2")}
         />
         <YearCard
           year="3"
           title="Year Three"
           description="Advanced Applications: Software engineering, cloud architecture, and AI."
           status="Locked"
+          onClick={() => handleYearClick("3")}
         />
         <YearCard
           year="4"
           title="Year Four"
           description="Final Research & Thesis: Industry placements and capstone projects."
           status="Locked"
+          onClick={() => handleYearClick("4")}
         />
       </div>
       <div className="mt-4">
