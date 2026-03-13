@@ -6,6 +6,7 @@ import Home from "../pages/Home";
 import AcademicYear from "../pages/AcademicYear";
 import YearDetail from "../pages/YearDetail";
 import DataScienceCourses from "../pages/DataScienceCourses";
+import StudentDashboard from "../pages/StudentDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 
 function AppRoutes() {
@@ -20,6 +21,7 @@ function AppRoutes() {
         <Route path="/academic-year" element={<AcademicYear />} />
         <Route path="/academic-year/:yearId" element={<YearDetail />} />
         <Route path="/courses/data-science" element={<DataScienceCourses />} />
+        <Route path="/std-dashboard" element={<StudentDashboard />} />
         <Route path="/admin/*" element={<AdminDashboard />} />
       </Routes>
     </Router>

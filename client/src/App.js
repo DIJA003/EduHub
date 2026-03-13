@@ -1,10 +1,13 @@
 import AppRoutes from "./routes/AppRouts";
 import { CourseProvider } from "./context/CourseContext";
+import { MaterialProvider } from "./context/MaterialContext";
 
 function App() {
   return (
     <CourseProvider>
-      <AppRoutes />
+      <MaterialProvider>
+        <AppRoutes />
+      </MaterialProvider>
     </CourseProvider>
   );
 }
