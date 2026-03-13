@@ -36,8 +36,8 @@ export default function YearCard({
     >
       <div className="flex items-center gap-3 mb-3">
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition
-          ${highlighted ? "bg-edublue text-white" : "bg-slate-100 text-slate-700"}`}
+          className={`flex h-9 w-9 items-center justify-center rounded-full text-base font-semibold transition
+          ${highlighted ? "bg-white text-edublue" : "bg-slate-100 text-slate-700"}`}
         >
           {year}
         </div>
