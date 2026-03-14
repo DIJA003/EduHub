@@ -38,3 +38,9 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+
+const materialRoutes = require('./routes/materialRoutes');
+
+app.use('/api/materials', materialRoutes);
+
+app.use('/uploads', express.static('uploads'));
