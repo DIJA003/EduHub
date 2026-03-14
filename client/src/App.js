@@ -1,4 +1,5 @@
-import AppRoutes from "./routes/AppRouts";
+import { AuthProvider } from './context/AuthContext';
+import AppRoutes from './routes/AppRouts';
 import { CourseProvider } from "./context/CourseContext";
 import { MaterialProvider } from "./context/MaterialContext";
 

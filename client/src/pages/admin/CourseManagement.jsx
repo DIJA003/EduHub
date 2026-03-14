@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from '../../components/admin/Modal';
 import {
   Badge, FormGroup, FormInput, FormSelect,
@@ -11,6 +12,8 @@ const EMPTY = { code: '', title: '', college: '', instructor: '', students: '', 
 const statusVariant = (s) => s === 'Published' ? 'success' : s === 'Draft' ? 'warning' : 'default';
 
 function CourseManagement() {
+  const navigate = useNavigate();
+
   const [courses,  setCourses]  = useState([]);
   const [colleges, setColleges] = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -25,8 +28,7 @@ function CourseManagement() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       const [cRes, colRes] = await Promise.all([
         coursesApi.getAll(),
         collegesApi.getAll(),
@@ -145,10 +147,30 @@ function CourseManagement() {
                   <TD><span className="font-medium">{c.title}</span></TD>
                   <TD secondary small>{c.college}</TD>
                   <TD secondary small>{c.instructor}</TD>
-                  <TD>{c.students}</TD>
+                  <TD>
+                    <button
+                      onClick={() => navigate(`/admin/courses/${c._id}/students`)}
+                      className="flex items-center gap-1 font-mono text-[13px] transition-colors hover:underline"
+                      style={{ color: 'var(--accent-light)' }}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">group</span>
+                      {c.students ?? 0}
+                    </button>
+                  </TD>
                   <TD><Badge variant={statusVariant(c.status)}>{c.status}</Badge></TD>
                   <TD>
                     <div className="flex items-center gap-2 justify-end">
+                      <button
+                        onClick={() => navigate(`/admin/courses/${c._id}/students`)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-sm text-[12.5px] font-semibold border cursor-pointer transition-all duration-150"
+                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-glow)'; e.currentTarget.style.color = 'var(--accent-light)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                        title="Manage Students"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">group</span>
+                        Students
+                      </button>
                       <BtnSecondary className={tw.btnSm} onClick={() => openEdit(c)}>Edit</BtnSecondary>
                       <BtnDanger    className={tw.btnSm} onClick={() => handleDelete(c._id)}>Delete</BtnDanger>
                     </div>

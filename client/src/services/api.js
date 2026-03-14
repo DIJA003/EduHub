@@ -11,7 +11,7 @@ async function request(method, path, body) {
       const token = await user.getIdToken();
       headers['Authorization'] = `Bearer ${token}`;
     } catch (err) {
-      console.log(err);
+      console.error('Token error:', err);
     }
   }
 
@@ -49,6 +49,13 @@ export const coursesApi = {
   create:  (data)     => api.post('/admin/courses', data),
   update:  (id, data) => api.put(`/admin/courses/${id}`, data),
   remove:  (id)       => api.delete(`/admin/courses/${id}`),
+};
+
+export const enrollmentApi = {
+  getStudents:   (courseId)            => api.get(`/admin/courses/${courseId}/students`),
+  addStudent:    (courseId, data)      => api.post(`/admin/courses/${courseId}/students`, data),
+  removeStudent: (courseId, studentId) => api.delete(`/admin/courses/${courseId}/students/${studentId}`),
+  getStudentCourses: (studentId)       => api.get(`/admin/students/${studentId}/courses`),
 };
 
 export const materialsApi = {
