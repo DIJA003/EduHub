@@ -1,9 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Login          from "../pages/Login";
+import Login from "../pages/Login";
 import ForgotPassword from "../pages/ForgotPassword";
-import Register       from "../pages/Register";
-import Home           from "../pages/Home";
-import AcademicYear   from "../pages/AcademicYear";
+import Register from "../pages/Register";
+import Home from "../pages/Home";
+import AcademicYear from "../pages/AcademicYear";
+import YearDetail from "../pages/YearDetail";
+import DataScienceCourses from "../pages/DataScienceCourses";
+import StudentDashboard from "../pages/StudentDashboard";
 import AdminDashboard  from "../pages/admin/AdminDashboard";
 import MentorDashboard from "../pages/mentor/MentorDashboard";
 import { AuthProvider, useAuth } from "../context/AuthContext";

@@ -1,18 +1,20 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import StatPill from "./StatPill";
 
 export default function RightSidebar({ onAction }) {
+  const navigate = useNavigate();
   return (
     <aside className="space-y-6">
       {/* Degree progress */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-900">
           Degree Progress
         </h2>
         <div className="flex flex-wrap items-center gap-6">
           <div className="relative flex h-24 w-24 items-center justify-center">
             <div className="h-24 w-24 rounded-full border-[6px] border-slate-200" />
-            <div className="absolute h-24 w-24 rounded-full border-[6px] border-edublue border-t-transparent border-l-transparent rotate-45" />
+            <div className="absolute h-24 w-24 rounded-full border-[6px] border-blue-500 border-t-transparent border-l-transparent rotate-45" />
             <span className="absolute text-xl font-semibold text-slate-900">
               65%
             </span>
@@ -26,31 +28,34 @@ export default function RightSidebar({ onAction }) {
 
       {/* Quick links */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-900">
           Quick Links
         </h2>
         <div className="space-y-2 text-sm">
-          {[
-            "Download Curriculum",
-            "View Full Schedule",
-            "Find Study Group",
-            "Contact Advisor",
-          ].map((item) => (
-            <button
-              key={item}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition hover:bg-slate-50"
-              onClick={() => onAction(item)}
-            >
-              <span>{item}</span>
-            </button>
-          ))}
+          <button
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-slate-900 transition hover:bg-slate-50"
+            onClick={() => navigate("/std-dashboard")}
+          >
+            <span className="font-medium">STD dashboard</span>
+          </button>
+          {["View Full Schedule", "Find Study Group", "Contact Advisor"].map(
+            (item) => (
+              <button
+                key={item}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-slate-900 transition hover:bg-slate-50"
+                onClick={() => onAction(item)}
+              >
+                <span>{item}</span>
+              </button>
+            )
+          )}
         </div>
       </section>
 
       {/* Help card */}
-      <section className="rounded-2xl bg-edublue p-5 text-white shadow-md">
-        <h3 className="text-sm font-semibold">Need Help?</h3>
-        <p className="mt-2 text-sm text-blue-100">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-md">
+        <h3 className="text-sm font-semibold text-slate-900">Need Help?</h3>
+        <p className="mt-2 text-sm text-slate-600">
           Book a 1-on-1 session with a senior mentor to discuss your path.
         </p>
         <button
