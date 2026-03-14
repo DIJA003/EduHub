@@ -35,6 +35,10 @@ const UserSchema = new mongoose.Schema(
       enum: ["Active", "Pending", "Suspended"],
       default: "Active",
     },
+    savedCourses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course"
+    }],
   },
   { timestamps: true }
 );
