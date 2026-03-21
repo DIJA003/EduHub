@@ -1,8 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../services/firebase';
-import loginImage from '../../assets/images/login.jpg';
+import { auth } from '../services/firebase';
+import loginImage from '../assets/images/login.jpg';
 
 export function Login() {
   const navigate = useNavigate();

@@ -1,9 +1,29 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useCourses } from "../../context/CourseContext";
 import StatPill from "./StatPill";
+
+const CREDITS_PER_YEAR = 42;
+const TOTAL_YEARS = 4;
+const TOTAL_CREDITS = CREDITS_PER_YEAR * TOTAL_YEARS; // 168
 
 export default function RightSidebar({ onAction }) {
   const navigate = useNavigate();
+  const { years } = useCourses();
+
+  // Sum earned credits across all years
+  const earnedCredits = Object.values(years).reduce(
+    (sum, year) => sum + (year.meta?.earnedCredits ?? 0),
+    0
+  );
+
+  const progressPercent = Math.round((earnedCredits / TOTAL_CREDITS) * 100);
+
+  // SVG circle progress
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progressPercent / 100) * circumference;
+
   return (
     <aside className="space-y-6">
       {/* Degree progress */}
@@ -12,16 +32,46 @@ export default function RightSidebar({ onAction }) {
           Degree Progress
         </h2>
         <div className="flex flex-wrap items-center gap-6">
+          {/* Circle progress */}
           <div className="relative flex h-24 w-24 items-center justify-center">
-            <div className="h-24 w-24 rounded-full border-[6px] border-slate-200" />
-            <div className="absolute h-24 w-24 rounded-full border-[6px] border-blue-500 border-t-transparent border-l-transparent rotate-45" />
+            <svg width="96" height="96" className="-rotate-90">
+              {/* Background circle */}
+              <circle
+                cx="48"
+                cy="48"
+                r={radius}
+                fill="none"
+                stroke="#e2e8f0"
+                strokeWidth="8"
+              />
+              {/* Progress circle */}
+              <circle
+                cx="48"
+                cy="48"
+                r={radius}
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                style={{ transition: "stroke-dashoffset 0.5s ease" }}
+              />
+            </svg>
             <span className="absolute text-xl font-semibold text-slate-900">
-              65%
+              {progressPercent}%
             </span>
           </div>
+
           <div className="space-y-3">
-            <StatPill label="Total Credits" value="120 / 180" />
-            <StatPill label="GPA" value="3.8 / 4.0" />
+            <StatPill
+              label="Total Credits"
+              value={`${earnedCredits} / ${TOTAL_CREDITS}`}
+            />
+            <StatPill
+              label="Credits to pass year"
+              value={`${CREDITS_PER_YEAR} hrs`}
+            />
           </div>
         </div>
       </section>

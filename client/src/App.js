@@ -5,11 +5,13 @@ import { MaterialProvider } from "./context/MaterialContext";
 
 function App() {
   return (
-    <CourseProvider>
-      <MaterialProvider>
-        <AppRoutes />
-      </MaterialProvider>
-    </CourseProvider>
+    <AuthProvider>
+      <CourseProvider>
+        <MaterialProvider>
+          <AppRoutes />
+        </MaterialProvider>
+      </CourseProvider>
+    </AuthProvider>
   );
 }
 

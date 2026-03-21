@@ -10,8 +10,15 @@ import { useAuth } from '../context/AuthContext';
  */
 
 function ProtectedRoute({ children, allowedRoles = [], requireVerified = false }) {
-  const { user, dbUser } = useAuth();
+  const auth = useAuth();
   const location = useLocation();
+
+  // If AuthProvider is missing, fail safe by sending to login
+  if (!auth) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  const { user, dbUser } = auth;
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;

@@ -12,7 +12,23 @@ const STORAGE_KEY = "eduhub-course-state-v1";
 
 const initialState = {
   years: {
-    // We start with sample data for Year Two
+    "1": {
+      meta: {
+        title: "Year One: Freshman Year",
+        description: "Foundational Concepts: Principles of computing, mathematics, and logic.",
+        status: "Completed",
+        earnedCredits: 42,
+        totalCredits: 42,
+      },
+      enrolled: [
+        { id: "cs101", name: "Introduction to Programming", code: "CS101", credits: 4, progress: 100, nextItem: "Completed" },
+        { id: "ma101", name: "Calculus I", code: "MA101", credits: 4, progress: 100, nextItem: "Completed" },
+        { id: "cs102", name: "Computer Fundamentals", code: "CS102", credits: 4, progress: 100, nextItem: "Completed" },
+        { id: "ma102", name: "Linear Algebra", code: "MA102", credits: 4, progress: 100, nextItem: "Completed" },
+        { id: "cs103", name: "Logic & Discrete Math", code: "CS103", credits: 4, progress: 100, nextItem: "Completed" },
+      ],
+      available: [],
+    },
     "2": {
       meta: {
         title: "Year Two: Sophomore Year",
@@ -20,7 +36,7 @@ const initialState = {
           "Core engineering principles and advanced programming foundations.",
         status: "In Progress",
         earnedCredits: 12,
-        totalCredits: 21,
+        totalCredits: 42,
       },
       enrolled: [
         {
@@ -83,6 +99,28 @@ const initialState = {
         },
       ],
     },
+    "3": {
+      meta: {
+        title: "Year Three: Junior Year",
+        description: "Advanced Applications: Software engineering, cloud architecture, and AI.",
+        status: "Locked",
+        earnedCredits: 0,
+        totalCredits: 42,
+      },
+      enrolled: [],
+      available: [],
+    },
+    "4": {
+      meta: {
+        title: "Year Four: Senior Year",
+        description: "Final Research & Thesis: Industry placements and capstone projects.",
+        status: "Locked",
+        earnedCredits: 0,
+        totalCredits: 42,
+      },
+      enrolled: [],
+      available: [],
+    },
   },
 };
 
@@ -125,10 +163,7 @@ export function CourseProvider({ children }) {
       const creditDelta = course.credits || 3;
       const updatedMeta = {
         ...year.meta,
-        earnedCredits: Math.min(
-          year.meta.earnedCredits + creditDelta,
-          year.meta.totalCredits
-        ),
+        earnedCredits: year.meta.earnedCredits + creditDelta,
       };
 
       return {
@@ -215,4 +250,3 @@ export function useCourses() {
   }
   return ctx;
 }
-

@@ -73,7 +73,7 @@ export default function StudentDashboard() {
   const enrolledCourses = yearTwo?.enrolled || [];
   const availableCourses = yearTwo?.available || [];
   const earnedCredits = yearTwo?.meta?.earnedCredits ?? 0;
-  const totalCredits = yearTwo?.meta?.totalCredits ?? 21;
+  const totalCredits = yearTwo?.meta?.totalCredits ?? 42;
 
   const [undoTarget, setUndoTarget] = useState(null);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
@@ -232,7 +232,7 @@ export default function StudentDashboard() {
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
-        message="You cannot enroll in more courses because your credits have reached the 21-credit limit for this year."
+        message="You cannot enroll in more courses because your credits have reached the 42-credit limit for this year."
         confirmLabel="OK"
         showCancel={false}
         onConfirm={() => setLimitDialogOpen(false)}
@@ -281,7 +281,7 @@ export default function StudentDashboard() {
                     label: "Credits Earned",
                     value:
                       yearTwo?.meta?.earnedCredits ?? 0,
-                    sub: `of ${yearTwo?.meta?.totalCredits ?? 21}`,
+                    sub: `of ${yearTwo?.meta?.totalCredits ?? 42}`,
                     color: "text-blue-400",
                   },
                 ].map((stat) => (
