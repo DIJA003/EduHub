@@ -5,6 +5,7 @@ const authRoutes     = require('./routes/auth');
 const userRoutes     = require('./routes/userRoutes');
 const semesterRoutes = require('./routes/semesterRoutes');
 const adminRoutes    = require('./routes/adminRoutes');
+const mentorRoutes = require('./routes/MentorRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/auth',          authRoutes);
 app.use('/api/users',         userRoutes);
 app.use('/api/admin/semesters', semesterRoutes);
 app.use('/api/admin',         adminRoutes); 
+app.use('/api/mentor', mentorRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found. Please check your URL.' });
