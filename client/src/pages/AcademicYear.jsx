@@ -121,10 +121,10 @@ export default function AcademicYear() {
           <div className="space-y-6">
             <AcademicPathSection />
             <section id="courses">
-              <RecommendedSection onAction={handleAction} />
+              <RecommendedSection />
             </section>
           </div>
-          <RightSidebar onAction={handleAction} />
+          <RightSidebar />
         </div>
 
         <Footer onAction={handleAction} />
