@@ -40,8 +40,4 @@ academicYearSchema.index({ yearNumber: 1 }, { unique: true });
 // Index for efficient querying
 academicYearSchema.index({ createdBy: 1, createdAt: -1 });
 
-
-// Ensure unique year numbers (redundant with unique:true, but kept for clarity)
-academicYearSchema.index({ yearNumber: 1 }, { unique: true });
-
 module.exports = mongoose.model("AcademicYear", academicYearSchema);
