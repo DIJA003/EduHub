@@ -5,6 +5,7 @@ const authRoutes     = require('./routes/auth');
 const userRoutes     = require('./routes/userRoutes');
 const semesterRoutes = require('./routes/semesterRoutes');
 const adminRoutes    = require('./routes/adminRoutes');
+const materialRoutes = require('./routes/materialRoutes');
 
 const app = express();
 
@@ -16,17 +17,20 @@ app.use(cors({
   ],
   credentials: true,
 }));
-  
+
 app.use(express.json());
+
+app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'EduHub API is running successfully!' });
 });
 
-app.use('/api/auth',          authRoutes);
-app.use('/api/users',         userRoutes);
-app.use('/api/admin/semesters', semesterRoutes);
-app.use('/api/admin',         adminRoutes); 
+app.use('/api/auth',             authRoutes);
+app.use('/api/users',            userRoutes);
+app.use('/api/admin/semesters',  semesterRoutes);
+app.use('/api/admin',            adminRoutes);
+app.use('/api/materials',        materialRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found. Please check your URL.' });
@@ -38,9 +42,3 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
-
-const materialRoutes = require('./routes/materialRoutes');
-
-app.use('/api/materials', materialRoutes);
-
-app.use('/uploads', express.static('uploads'));

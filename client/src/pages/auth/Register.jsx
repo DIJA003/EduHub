@@ -6,6 +6,7 @@ import { auth } from '../../services/firebase';
 export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
+    name:            '',
     email:           '',
     password:        '',
     confirmPassword: '',
@@ -23,6 +24,10 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
+    if (!form.name.trim()) {
+      setError('Please enter your name.');
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -42,8 +47,12 @@ export default function Register() {
       try {
         const token = await userCredential.user.getIdToken();
         const response = await fetch('http://localhost:8000/api/users/register', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+          method:  'POST',
+          headers: {
+            Authorization:  `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: form.name.trim() }),
         });
         const data = await response.json();
         if (!response.ok) {
@@ -52,6 +61,7 @@ export default function Register() {
       } catch (backendErr) {
         console.error('Backend registration error:', backendErr.message);
       }
+
       navigate('/verify-email');
 
     } catch (err) {
@@ -107,10 +117,10 @@ export default function Register() {
 
               <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
                 <div>
-                  <label className="sr-only" htmlFor="email">Email</label>
+                  <label className="sr-only" htmlFor="name">Full Name</label>
                   <input
-                    id="name" name="name" type="name"
-                    placeholder="User name"
+                    id="name" name="name" type="text"
+                    placeholder="Full name"
                     value={form.name} onChange={handleChange} required
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
                     autoComplete="name"

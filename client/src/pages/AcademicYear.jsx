@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../services/firebase";
+import { useAuth } from "../context/AuthContext";
 import Header from "../components/fadyatef/Header";
 import AcademicPathSection from "../components/fadyatef/AcademicPathSection";
 import RecommendedSection from "../components/fadyatef/RecommendedSection";
@@ -9,58 +9,19 @@ import Footer from "../components/fadyatef/Footer";
 
 export default function AcademicYear() {
   const navigate = useNavigate();
-  const [dbUser, setDbUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
-        navigate("/login");
-        return;
-      }
-
-      try {
-        const token = await firebaseUser.getIdToken();
-        const res = await fetch("http://localhost:8000/api/users/login", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDbUser(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user data:", err);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
+  const { dbUser } = useAuth();
 
   const handleAction = (label) => {
     alert(`You clicked: ${label}`);
   };
 
-  // Extract first name for friendly greeting
-  const firstName = dbUser?.name
-    ? dbUser.name.split(" ")[0]
-    : "there";
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-slate-500 text-sm">Loading…</div>
-      </div>
-    );
-  }
+  const firstName = dbUser?.name ? dbUser.name.split(" ")[0] : "there";
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Header onAction={handleAction} />
 
       <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
-        {/* Hero banner */}
         <section className="mb-8 grid gap-6 rounded-3xl bg-white p-5 shadow-sm md:grid-cols-[2fr,1.5fr] md:p-6 lg:p-8">
           <div className="flex flex-col justify-between">
             <div>
@@ -68,7 +29,6 @@ export default function AcademicYear() {
                 Welcome back, {firstName}!
               </p>
 
-              {/* User info strip */}
               {dbUser && (
                 <div className="mt-2 mb-3 flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
@@ -116,7 +76,6 @@ export default function AcademicYear() {
           </div>
         </section>
 
-        {/* Main content grid */}
         <div className="grid gap-8 lg:grid-cols-[2.2fr,1.3fr]">
           <div className="space-y-6">
             <AcademicPathSection />

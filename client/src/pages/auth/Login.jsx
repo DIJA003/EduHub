@@ -32,18 +32,17 @@ export function Login() {
         formData.email,
         formData.password
       );
+
       try {
         const token = await userCredential.user.getIdToken();
         const response = await fetch('http://localhost:8000/api/users/login', {
-          method: 'GET',
+          method:  'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
-          if (data.role === 'admin') {
-            navigate('/admin');
-            return;
-          }
+          if (data.role === 'admin')  { navigate('/admin');  return; }
+          if (data.role === 'mentor') { navigate('/mentor'); return; }
         }
       } catch (backendErr) {
         console.error('Backend login fetch failed:', backendErr.message);
@@ -96,28 +95,19 @@ export function Login() {
                 <div>
                   <label className="sr-only" htmlFor="email">Email</label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id="email" name="email" type="email"
                     placeholder="Email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
+                    value={formData.email} onChange={handleChange} required
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
                     autoComplete="email"
                   />
                 </div>
-
                 <div>
                   <label className="sr-only" htmlFor="password">Password</label>
                   <input
-                    id="password"
-                    name="password"
-                    type="password"
+                    id="password" name="password" type="password"
                     placeholder="Password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
+                    value={formData.password} onChange={handleChange} required
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
                     autoComplete="current-password"
                   />
@@ -126,10 +116,8 @@ export function Login() {
                 <div className="flex items-center justify-between pt-2">
                   <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                     <input
-                      type="checkbox"
-                      name="remember"
-                      checked={formData.remember}
-                      onChange={handleChange}
+                      type="checkbox" name="remember"
+                      checked={formData.remember} onChange={handleChange}
                       className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600 dark:border-slate-700"
                     />
                     Remember me
@@ -140,8 +128,7 @@ export function Login() {
                 </div>
 
                 <button
-                  type="submit"
-                  disabled={loading}
+                  type="submit" disabled={loading}
                   className="mt-4 w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Logging in…' : 'Login'}
