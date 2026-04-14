@@ -402,7 +402,7 @@ export function Home() {
               </p>
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Icon name="location_on" className="text-sm" />
-                <span>Global Headquarters: New York</span>
+                <span>Headquarters: Faculty of Sceince Cairo University</span>
               </div>
             </div>
           </div>
