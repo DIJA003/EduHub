@@ -3,20 +3,32 @@ const router = express.Router();
 
 const materialController = require("../controllers/MaterialController");
 const uploadMaterial = require("../middleware/upload");
+const { verifyToken, roleOnly } = require("../middleware/authMiddleware");
 
-// GET ALL MATERIALS
+// All material routes require authentication
+router.use(verifyToken);
+
+// GET — students, mentors, and admins can view materials
 router.get("/", materialController.getAll);
-
-// GET MATERIAL BY ID
 router.get("/:id", materialController.getById);
 
-// CREATE MATERIAL (UPLOAD FILE)
-router.post("/", uploadMaterial.single("file"), materialController.create);
+// CREATE — mentor/admin only
+router.post(
+  "/",
+  roleOnly("mentor", "admin"),
+  uploadMaterial.single("file"),
+  materialController.create,
+);
 
-// UPDATE MATERIAL
-router.put("/:id", uploadMaterial.single("file"), materialController.update);
+// UPDATE — mentor/admin only
+router.put(
+  "/:id",
+  roleOnly("mentor", "admin"),
+  uploadMaterial.single("file"),
+  materialController.update,
+);
 
-// DELETE MATERIAL
-router.delete("/:id", materialController.remove);
+// DELETE — mentor/admin only
+router.delete("/:id", roleOnly("mentor", "admin"), materialController.remove);
 
 module.exports = router;

@@ -4,16 +4,15 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useCallback,
 } from "react";
+import { studentApi } from "../services/api";
 
 const CourseContext = createContext(null);
 
-const STORAGE_KEY = "eduhub-course-state-v1";
-
-const initialState = {
+const INITIAL_STATE = {
   years: {
-    // We start with sample data for Year Two
-    "2": {
+    2: {
       meta: {
         title: "Year Two: Sophomore Year",
         description:
@@ -87,47 +86,19 @@ const initialState = {
 };
 
 export function CourseProvider({ children }) {
-  const [state, setState] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === "object" && parsed.years) {
-          return parsed;
-        }
-      }
-    } catch (err) {
-      console.warn("Failed to read stored course state:", err);
-    }
-    return initialState;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (err) {
-      console.warn("Failed to persist course state:", err);
-    }
-  }, [state]);
-
-  const enrollCourse = (yearId, course) => {
+  const [state, setState] = useState(INITIAL_STATE);
+  const enrollCourse = useCallback((yearId, course) => {
     setState((prev) => {
       const year = prev.years[yearId];
       if (!year) return prev;
-
-      // Avoid duplicate enrollments
-      if (year.enrolled.some((c) => c.id === course.id)) {
-        return prev;
-      }
-
-      const remainingAvailable = year.available.filter((c) => c.id !== course.id);
+      if (year.enrolled.some((c) => c.id === course.id)) return prev;
 
       const creditDelta = course.credits || 3;
       const updatedMeta = {
         ...year.meta,
         earnedCredits: Math.min(
           year.meta.earnedCredits + creditDelta,
-          year.meta.totalCredits
+          year.meta.totalCredits,
         ),
       };
 
@@ -149,70 +120,62 @@ export function CourseProvider({ children }) {
                 nextItem: "Getting Started",
               },
             ],
-            available: remainingAvailable,
+            available: year.available.filter((c) => c.id !== course.id),
           },
         },
       };
     });
-  };
+  }, []);
 
-  const undoEnrollment = (yearId, courseId) => {
+  const undoEnrollment = useCallback((yearId, courseId) => {
     setState((prev) => {
       const year = prev.years[yearId];
       if (!year) return prev;
-
       const course = year.enrolled.find((c) => c.id === courseId);
       if (!course) return prev;
 
-      const remainingEnrolled = year.enrolled.filter((c) => c.id !== courseId);
       const creditDelta = course.credits || 3;
-      const updatedMeta = {
-        ...year.meta,
-        earnedCredits: Math.max(year.meta.earnedCredits - creditDelta, 0),
-      };
-
-      const backToAvailable = {
-        id: course.id,
-        name: course.name,
-        type: "Elective",
-        length: course.length || "Self-paced",
-        schedule: course.schedule || "Flexible",
-        instructor: course.instructor || "TBA",
-        credits: course.credits || 3,
-      };
-
       return {
         ...prev,
         years: {
           ...prev.years,
           [yearId]: {
             ...year,
-            meta: updatedMeta,
-            enrolled: remainingEnrolled,
-            available: [...year.available, backToAvailable],
+            meta: {
+              ...year.meta,
+              earnedCredits: Math.max(year.meta.earnedCredits - creditDelta, 0),
+            },
+            enrolled: year.enrolled.filter((c) => c.id !== courseId),
+            available: [
+              ...year.available,
+              {
+                id: course.id,
+                name: course.name,
+                type: "Elective",
+                length: "Self-paced",
+                schedule: "Flexible",
+                instructor: "TBA",
+                credits: course.credits || 3,
+              },
+            ],
           },
         },
       };
     });
-  };
+  }, []);
 
   const value = useMemo(
-    () => ({
-      years: state.years,
-      enrollCourse,
-      undoEnrollment,
-    }),
-    [state.years]
+    () => ({ years: state.years, enrollCourse, undoEnrollment }),
+    [state.years, enrollCourse, undoEnrollment],
   );
 
-  return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>;
+  return (
+    <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
+  );
 }
 
 export function useCourses() {
   const ctx = useContext(CourseContext);
-  if (!ctx) {
-    throw new Error("useCourses must be used within a CourseProvider");
-  }
+  if (!ctx) throw new Error("useCourses must be used within a CourseProvider");
   return ctx;
 }
-

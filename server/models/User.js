@@ -35,12 +35,18 @@ const UserSchema = new mongoose.Schema(
       enum: ["Active", "Pending", "Suspended"],
       default: "Active",
     },
-    savedCourses: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Course"
-    }],
+    savedCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+UserSchema.index({ firebaseUid: 1 });
+UserSchema.index({ role: 1, status: 1 });
+UserSchema.index({ email: 1 });
 
 module.exports = mongoose.model("User", UserSchema);

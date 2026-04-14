@@ -1,6 +1,10 @@
 const admin = require("../config/firebase_admin");
 const User = require("../models/User");
 
+/**
+ * Standard token verification — requires user to exist in DB.
+ * Use for all protected routes EXCEPT /register.
+ */
 exports.verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -15,12 +19,9 @@ exports.verifyToken = async (req, res, next) => {
     );
 
     if (!dbUser) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "User not registered in system. Please complete registration.",
-        });
+      return res.status(403).json({
+        message: "User not registered in system. Please complete registration.",
+      });
     }
 
     if (dbUser.status === "Suspended") {
@@ -36,7 +37,28 @@ exports.verifyToken = async (req, res, next) => {
       id: dbUser._id.toString(),
       name: dbUser.name,
     };
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
 
+exports.verifyRegistration = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split("Bearer ")[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.user = {
+      uid: decoded.uid,
+      email: decoded.email,
+      role: "student",
+      id: null,
+      name: null,
+    };
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });

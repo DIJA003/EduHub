@@ -4,65 +4,120 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useCallback,
 } from "react";
+import { materialsApi } from "../services/api";
+import { useAuth } from "./AuthContext";
 
 const MaterialContext = createContext(null);
-const STORAGE_KEY = "eduhub-materials-v1";
-
-function loadMaterials() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (err) {
-    console.warn("Failed to load materials:", err);
-  }
-  return [];
-}
 
 export function MaterialProvider({ children }) {
-  const [materials, setMaterials] = useState(loadMaterials);
+  const { user } = useAuth();
+  const [materials, setMaterials] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const shapeFromApi = (m) => ({
+    id: m._id,
+    courseId: m.courseRef || m.course || "",
+    courseName: m.course || "",
+    fileName: m.title,
+    type: (m.type || "file").toLowerCase(),
+    uploadDate: m.createdAt || m.uploaded || new Date().toISOString(),
+    status: m.status,
+    size: m.size,
+    uploader: m.uploader,
+  });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(materials));
-    } catch (err) {
-      console.warn("Failed to save materials:", err);
+    if (!user) {
+      setMaterials([]);
+      return;
     }
-  }, [materials]);
 
-  const addMaterial = (material) => {
-    const newMaterial = {
-      id: crypto.randomUUID?.() || Date.now().toString(),
-      courseId: material.courseId,
-      courseName: material.courseName,
-      fileName: material.fileName,
-      type: material.type,
-      uploadDate: new Date().toISOString(),
+    const fetchMaterials = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await materialsApi.getAll();
+        setMaterials((res.data || []).map(shapeFromApi));
+      } catch (err) {
+        console.error("Failed to load materials:", err.message);
+        setError(err.message);
+        setMaterials([]);
+      } finally {
+        setLoading(false);
+      }
     };
-    setMaterials((prev) => [newMaterial, ...prev]);
-  };
 
-  const removeMaterial = (id) => {
-    setMaterials((prev) => prev.filter((m) => m.id !== id));
-  };
+    fetchMaterials();
+  }, [user]);
+
+  const addMaterial = useCallback(async (material) => {
+    const optimistic = {
+      id: `tmp-${Date.now()}`,
+      courseId: material.courseId || "",
+      courseName: material.courseName || "",
+      fileName: material.fileName,
+      type: material.type || "file",
+      uploadDate: new Date().toISOString(),
+      status: "Draft",
+    };
+    setMaterials((prev) => [optimistic, ...prev]);
+
+    try {
+      const payload = {
+        title: material.fileName,
+        course: material.courseName,
+        type:
+          material.type === "pdf"
+            ? "PDF"
+            : material.type === "video"
+              ? "Video"
+              : "Other",
+        status: "Draft",
+        uploader: material.uploader || "",
+      };
+      const res = await materialsApi.create(payload);
+      setMaterials((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? shapeFromApi(res.data) : m)),
+      );
+    } catch (err) {
+      setMaterials((prev) => prev.filter((m) => m.id !== optimistic.id));
+      console.error("Failed to save material:", err.message);
+    }
+  }, []);
+
+  const removeMaterial = useCallback(
+    async (id) => {
+      const backup = materials.find((m) => m.id === id);
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+
+      try {
+        await materialsApi.remove(id);
+      } catch (err) {
+        if (backup) setMaterials((prev) => [backup, ...prev]);
+        console.error("Failed to remove material:", err.message);
+      }
+    },
+    [materials],
+  );
 
   const value = useMemo(
-    () => ({ materials, addMaterial, removeMaterial }),
-    [materials]
+    () => ({ materials, loading, error, addMaterial, removeMaterial }),
+    [materials, loading, error, addMaterial, removeMaterial],
   );
 
   return (
-    <MaterialContext.Provider value={value}>{children}</MaterialContext.Provider>
+    <MaterialContext.Provider value={value}>
+      {children}
+    </MaterialContext.Provider>
   );
 }
 
 export function useMaterials() {
   const ctx = useContext(MaterialContext);
-  if (!ctx) {
+  if (!ctx)
     throw new Error("useMaterials must be used within MaterialProvider");
-  }
   return ctx;
 }
