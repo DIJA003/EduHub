@@ -98,7 +98,7 @@ function CourseManagement() {
       }
       closeModal();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setSaving(false);
     }
@@ -106,13 +106,13 @@ function CourseManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Delete this college?",
-      "Delete College",
+      "This action cannot be undone. Delete this course?",
+      "Delete Course",
     );
     if (!ok) return;
     try {
-      await collegesApi.remove(id);
-      setColleges((p) => p.filter((c) => c._id !== id));
+      await coursesApi.remove(id);
+      setCourses((p) => p.filter((c) => c._id !== id));
     } catch (err) {
       setError(err.message);
     }
@@ -256,34 +256,6 @@ function CourseManagement() {
                   </TD>
                   <TD>
                     <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() =>
-                          navigate(`/admin/courses/${c._id}/students`)
-                        }
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-sm text-[12.5px] font-semibold border cursor-pointer transition-all duration-150"
-                        style={{
-                          background: "var(--bg-card)",
-                          borderColor: "var(--border)",
-                          color: "var(--text-secondary)",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background =
-                            "var(--accent-glow)";
-                          e.currentTarget.style.color = "var(--accent-light)";
-                          e.currentTarget.style.borderColor = "var(--accent)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "var(--bg-card)";
-                          e.currentTarget.style.color = "var(--text-secondary)";
-                          e.currentTarget.style.borderColor = "var(--border)";
-                        }}
-                        title="Manage Students"
-                      >
-                        <span className="material-symbols-outlined text-[13px]">
-                          group
-                        </span>
-                        Students
-                      </button>
                       <BtnSecondary
                         className={tw.btnSm}
                         onClick={() => openEdit(c)}

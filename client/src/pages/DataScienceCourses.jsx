@@ -57,10 +57,10 @@ export default function DataScienceCourses() {
 
   const yearTwo = years["2"];
   const enrolledIds = new Set(
-    (yearTwo?.enrolled || []).map((course) => course.id)
+    (yearTwo?.enrolled || []).map((course) => course.id),
   );
   const visibleCourses = openCourses.filter(
-    (course) => !enrolledIds.has(course.id)
+    (course) => !enrolledIds.has(course.id),
   );
 
   const handleEnroll = (course) => {
@@ -83,9 +83,14 @@ export default function DataScienceCourses() {
     navigate("/academic-year/2");
   };
 
+  const handleAction = (label) => {
+    if (label === "Mentors" || label === "Home") navigate("/home");
+    else if (label === "Courses") navigate("/academic-year");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      <Header onAction={handleAction} />
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
@@ -178,4 +183,3 @@ export default function DataScienceCourses() {
     </div>
   );
 }
-

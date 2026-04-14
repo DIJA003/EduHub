@@ -12,7 +12,13 @@ export default function AcademicYear() {
   const { dbUser } = useAuth();
 
   const handleAction = (label) => {
-    alert(`You clicked: ${label}`);
+    if (label === "Resume Last Lesson") {
+      navigate("/academic-year/2");
+    } else if (label === "Home") {
+      navigate("/home#how-it-works");
+    } else if (label === "STD dashboard") {
+      navigate("/std-dashboard");
+    }
   };
 
   const firstName = dbUser?.name ? dbUser.name.split(" ")[0] : "there";
@@ -35,9 +41,13 @@ export default function AcademicYear() {
                     {dbUser.name?.[0]?.toUpperCase() || "U"}
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-slate-900">{dbUser.name}</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {dbUser.name}
+                    </span>
                     {dbUser.college && dbUser.college !== "—" && (
-                      <span className="ml-2 text-xs text-slate-400">• {dbUser.college}</span>
+                      <span className="ml-2 text-xs text-slate-400">
+                        • {dbUser.college}
+                      </span>
                     )}
                     <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold capitalize text-blue-600">
                       {dbUser.role}
@@ -47,7 +57,8 @@ export default function AcademicYear() {
               )}
 
               <h1 className="mt-1 text-xl font-semibold text-slate-900 md:text-2xl lg:text-3xl">
-                Select your current year to view your academic path and upcoming milestones.
+                Select your current year to view your academic path and upcoming
+                milestones.
               </h1>
             </div>
 

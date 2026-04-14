@@ -6,7 +6,7 @@ import loginImage from "../../assets/images/login.jpg";
 
 export function Login() {
   const navigate = useNavigate();
-
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -42,9 +42,13 @@ export function Login() {
 
       try {
         const token = await userCredential.user.getIdToken();
-        const response = await fetch("http://localhost:8000/api/users/login", {
+
+        const response = await fetch(`${API_URL}/users/login`, {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         });
         if (response.ok) {
           const data = await response.json();

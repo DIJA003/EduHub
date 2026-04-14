@@ -14,7 +14,7 @@ export default function YearDetail() {
   const year = years[yearId];
 
   const [selectedCourseId, setSelectedCourseId] = useState(
-    year?.enrolled?.[0]?.id ?? null
+    year?.enrolled?.[0]?.id ?? null,
   );
 
   if (!year) {
@@ -44,9 +44,14 @@ export default function YearDetail() {
   const isCompleted =
     status === "Completed" || enrolled.every((c) => c.progress >= 100);
 
+  const handleAction = (label) => {
+    if (label === "Home" || label === "Mentors") navigate("/home");
+    else if (label === "Courses") navigate("/academic-year");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <Header />
+      <Header onAction={handleAction} />
       <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
@@ -87,7 +92,7 @@ export default function YearDetail() {
             {enrolled.map((course) => {
               const isSelected = selectedCourseId === course.id;
               const courseMaterials = materials.filter(
-                (m) => m.courseId === course.id
+                (m) => m.courseId === course.id,
               );
               return (
                 <button
@@ -143,10 +148,8 @@ export default function YearDetail() {
             <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-900">
                 Materials for{" "}
-                {
-                  enrolled.find((c) => c.id === selectedCourseId)?.name ??
-                  "Course"
-                }
+                {enrolled.find((c) => c.id === selectedCourseId)?.name ??
+                  "Course"}
               </h3>
               <div className="mt-3 space-y-2">
                 {materials.filter((m) => m.courseId === selectedCourseId)
@@ -199,8 +202,7 @@ export default function YearDetail() {
         </button>
       </main>
 
-      <Footer />
+      <Footer onAction={handleAction} />
     </div>
   );
 }
-

@@ -27,3 +27,6 @@ dist-ssr
 .env.local
 .env.production
 server/config/serviceAccountKey.json
+
+
+

@@ -105,15 +105,14 @@ function MaterialsManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Delete this college?",
-      "Delete College",
+      "This action cannot be undone. Delete this material?",
+      "Delete Material",
     );
     if (!ok) return;
     try {
       await materialsApi.remove(id);
-      setMaterials((p) => p.filter((c) => c._id !== id));
+      setMaterials((p) => p.filter((m) => m._id !== id));
     } catch (err) {
-      // show inline error, not alert
       setError(err.message);
     }
   };

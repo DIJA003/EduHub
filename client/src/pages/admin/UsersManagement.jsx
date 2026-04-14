@@ -97,13 +97,13 @@ function UsersManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Delete this college?",
-      "Delete College",
+      "This action cannot be undone. Remove this user?",
+      "Remove User",
     );
     if (!ok) return;
     try {
       await adminUsersApi.remove(id);
-      setUsers((p) => p.filter((c) => c._id !== id));
+      setUsers((p) => p.filter((u) => u._id !== id));
     } catch (err) {
       setError(err.message);
     }

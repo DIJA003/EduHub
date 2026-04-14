@@ -51,17 +51,16 @@ export default function Register() {
 
       try {
         const token = await userCredential.user.getIdToken();
-        const response = await fetch(
-          "http://localhost:8000/api/users/register",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ name: form.name.trim() }),
+        const API_URL =
+          process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+        const response = await fetch(`${API_URL}/users/register`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({ name: form.name.trim() }),
+        });
         const data = await response.json();
         if (!response.ok) {
           console.error("Backend registration failed:", data.message);

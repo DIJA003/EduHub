@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 
 export function useConfirm() {
   const [state, setState] = useState({
@@ -15,23 +16,25 @@ export function useConfirm() {
   }, []);
 
   const handleConfirm = useCallback(() => {
-    state.resolve?.(true);
-    setState((s) => ({ ...s, open: false }));
-  }, [state]);
+    setState((s) => {
+      s.resolve?.(true);
+      return { ...s, open: false };
+    });
+  }, []);
 
   const handleCancel = useCallback(() => {
-    state.resolve?.(false);
-    setState((s) => ({ ...s, open: false }));
-  }, [state]);
-
-  const ConfirmDialog = require("../components/common/ConfirmDialog").default;
+    setState((s) => {
+      s.resolve?.(false);
+      return { ...s, open: false };
+    });
+  }, []);
 
   const confirmDialog = (
     <ConfirmDialog
       open={state.open}
       title={state.title}
       message={state.message}
-      confirmLabel="Delete"
+      confirmLabel="Confirm"
       onConfirm={handleConfirm}
       onCancel={handleCancel}
     />

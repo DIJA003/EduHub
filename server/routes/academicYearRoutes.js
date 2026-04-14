@@ -1,22 +1,16 @@
-// routes/academicYearRoutes.js
-
-const express = require('express');
-
+const express = require("express");
 const {
   getAllAcademicYears,
   getAcademicYearById,
-  createAcademicYear
-} = require('../controllers/AcademicYearController');
+  createAcademicYear,
+} = require("../controllers/AcademicYearController");
+const { verifyToken, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// GET all academic years
-router.get('/', getAllAcademicYears);
+router.get("/", verifyToken, getAllAcademicYears);
+router.get("/:id", verifyToken, getAcademicYearById);
 
-// GET single academic year
-router.get('/:id', getAcademicYearById);
-
-// POST create academic year
-router.post('/', createAcademicYear);
+router.post("/", verifyToken, adminOnly, createAcademicYear);
 
 module.exports = router;
