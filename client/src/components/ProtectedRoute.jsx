@@ -1,17 +1,15 @@
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-/**
- * Usage examples:
- *   <ProtectedRoute>                                   → any logged-in user
- *   <ProtectedRoute requireVerified>                   → logged-in + email verified
- *   <ProtectedRoute allowedRoles={['admin']}>          → admin only
- *   <ProtectedRoute allowedRoles={['student','mentor']} requireVerified>
- */
-
-function ProtectedRoute({ children, allowedRoles = [], requireVerified = false }) {
-  const { user, dbUser } = useAuth();
+function ProtectedRoute({
+  children,
+  allowedRoles = [],
+  requireVerified = false,
+}) {
+  const { user, dbUser, loading } = useAuth();
   const location = useLocation();
+
+  if (loading || user === undefined) return null;
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -22,12 +20,12 @@ function ProtectedRoute({ children, allowedRoles = [], requireVerified = false }
   }
 
   if (allowedRoles.length > 0) {
-    const role = dbUser?.role;
-    if (!role) {
-      return null;
-    }
+    if (!dbUser) return null;
+
+    const role = dbUser.role;
     if (!allowedRoles.includes(role)) {
-      if (role === 'admin') return <Navigate to="/admin" replace />;
+      if (role === "admin") return <Navigate to="/admin" replace />;
+      if (role === "mentor") return <Navigate to="/mentor" replace />;
       return <Navigate to="/home" replace />;
     }
   }

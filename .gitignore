@@ -23,5 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-server\config\serviceAccountKey.json
+.env
+.env.local
+.env.production
 server/config/serviceAccountKey.json

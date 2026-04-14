@@ -1,43 +1,25 @@
 const mongoose = require("mongoose");
 
-const academicYearSchema = new mongoose.Schema({
-  yearNumber: {
-    type: Number,
-    required: true,
-    min: 1,
-    max: 4,
-    enum: [1, 2, 3, 4],
-    unique: true, 
-    // validate: {
-    //   validator: function(value) {
-    //     return value >= 1 && value <= 4;
-    //   },
-    //   message: 'Year number must be between 1 and 4'
-    // }
+const academicYearSchema = new mongoose.Schema(
+  {
+    year: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 4,
+      enum: [1, 2, 3, 4],
+    },
+    name: { type: String, trim: true },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
-  createdBy: { //reference to User
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    // Validate that creator is an admin or mentor
-    validate: {
-      validator: async function(userId) {
-        const user = await mongoose.model('User').findById(userId);
-        return user && (user.role === 'admin');
-      },
-      message: 'Only admins can create academic years'
-    }
-  }
-}, {
-  timestamps: true
-});
-    
-  
-  
-// Ensure unique year numbers
-academicYearSchema.index({ yearNumber: 1 }, { unique: true });
+  { timestamps: true },
+);
 
-// Index for efficient querying
+academicYearSchema.index({ year: 1 }, { unique: true });
 academicYearSchema.index({ createdBy: 1, createdAt: -1 });
 
 module.exports = mongoose.model("AcademicYear", academicYearSchema);

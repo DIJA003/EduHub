@@ -39,6 +39,7 @@ export function Login() {
         formData.email,
         formData.password,
       );
+
       try {
         const token = await userCredential.user.getIdToken();
         const response = await fetch("http://localhost:8000/api/users/login", {
@@ -49,6 +50,10 @@ export function Login() {
           const data = await response.json();
           if (data.role === "admin") {
             navigate("/admin");
+            return;
+          }
+          if (data.role === "mentor") {
+            navigate("/mentor");
             return;
           }
         }
