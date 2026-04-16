@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/admin/courses", icon: "menu_book", label: "Courses" },
   { to: "/admin/materials", icon: "description", label: "Materials" },
   { to: "/admin/users", icon: "group", label: "Users" },
+  { to: "/admin/history", icon: "history", label: "History Logs" }, // ← NEW
 ];
 
 function Sidebar() {

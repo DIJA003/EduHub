@@ -3,10 +3,13 @@ const Material = require("../models/Material");
 const Course = require("../models/Course");
 const User = require("../models/User");
 const Enrollment = require("../models/Enrollment");
+const { logAction } = require("../utils/Logger");
 
 exports.getAll = async (req, res) => {
   try {
-    const materials = await Material.find().sort({ createdAt: -1 });
+    const showDeleted = req.query.showDeleted === "true";
+    const filter = showDeleted ? {} : { isDeleted: { $ne: true } };
+    const materials = await Material.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: materials });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -28,15 +31,23 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    // For mentor uploads -> auto-approval
     const materialData = {
       ...req.body,
       uploaded: new Date().toISOString().split("T")[0],
-      status: "Active", // Auto-approve for mentors
-      uploadedByRef: req.user.id, // Track who uploaded
+      status: "Active",
+      uploadedByRef: req.user.id,
     };
-
     const material = await Material.create(materialData);
+
+    await logAction({
+      action: "CREATE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: { course: material.course, type: material.type },
+    });
+
     res.status(201).json({ success: true, data: material });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -53,21 +64,77 @@ exports.update = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Material not found" });
+
+    await logAction({
+      action: "UPDATE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: req.body,
+    });
+
     res.json({ success: true, data: material });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 };
 
-//for both student and mentor material deletion (mentor can delete any material in their courses, student can delete only their own materials)
 exports.remove = async (req, res) => {
   try {
-    const material = await Material.findByIdAndDelete(req.params.id);
+    const material = await Material.findByIdAndUpdate(
+      req.params.id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.user?.id || null,
+      },
+      { new: true },
+    );
     if (!material)
       return res
         .status(404)
         .json({ success: false, message: "Material not found" });
+
+    await logAction({
+      action: "DELETE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+    });
+
     res.json({ success: true, message: "Material deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.restore = async (req, res) => {
+  try {
+    const material = await Material.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false, deletedAt: null, deletedBy: null },
+      { new: true },
+    );
+    if (!material)
+      return res
+        .status(404)
+        .json({ success: false, message: "Material not found" });
+
+    await logAction({
+      action: "RESTORE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+    });
+
+    res.json({
+      success: true,
+      message: "Material restored successfully",
+      data: material,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -75,7 +142,6 @@ exports.remove = async (req, res) => {
 
 exports.approveMaterial = async (req, res) => {
   try {
-    // First, check if the material exists and is from a student
     const material = await Material.findById(req.params.id);
     if (!material) {
       return res
@@ -103,14 +169,20 @@ exports.approveMaterial = async (req, res) => {
       });
     }
 
-    // Update the material
     const updated = await Material.findByIdAndUpdate(
       req.params.id,
-      {
-        status: "Active", // Change from 'Draft' to 'Active'
-      },
+      { status: "Active" },
       { new: true, runValidators: true },
     );
+
+    await logAction({
+      action: "UPDATE",
+      entity: "Material",
+      entityId: updated._id,
+      entityName: updated.title,
+      performedBy: req.user,
+      details: { status: "Active", action: "approved" },
+    });
 
     res.json({ success: true, data: updated });
   } catch (err) {
@@ -118,17 +190,14 @@ exports.approveMaterial = async (req, res) => {
   }
 };
 
-//Mentor uploads material (auto-approved)
-
 exports.uploadMaterial = async (req, res) => {
   try {
     const { courseRef, title, type, size, fileUrl } = req.body;
 
     if (!courseRef || !mongoose.Types.ObjectId.isValid(courseRef)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid or missing courseRef",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or missing courseRef" });
     }
 
     let course;
@@ -150,17 +219,27 @@ exports.uploadMaterial = async (req, res) => {
             : "You can only upload to courses you teach",
       });
     }
+
     const material = await Material.create({
       title: title || "Untitled",
       course: course?.title || "",
       type: type || "Other",
       size: size || "",
       uploader: req.user.name || req.user.email || "Mentor",
-      status: "Active", // Auto-approved for mentors
+      status: "Active",
       fileUrl: fileUrl || "",
-      courseRef: courseRef,
+      courseRef,
       uploadedByRef: req.user.id,
       uploaded: new Date().toISOString().split("T")[0],
+    });
+
+    await logAction({
+      action: "CREATE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: { course: material.course, type: material.type },
     });
 
     res.status(201).json({ success: true, data: material });
@@ -168,8 +247,6 @@ exports.uploadMaterial = async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
-
-//Reject student material (permanent delete)
 
 exports.rejectMaterial = async (req, res) => {
   try {
@@ -179,19 +256,6 @@ exports.rejectMaterial = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Material not found" });
     }
-
-    // Check if mentor teaches this course
-    // const course = await Course.findOne({
-    //   _id: material.courseRef,
-    //   instructorRef: req.user.id
-    // });
-
-    // if (!course && req.user.role !== 'admin') {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'You can only reject materials in your courses'
-    //   });
-    // }
 
     let course;
     if (req.user.role === "admin") {
@@ -213,7 +277,6 @@ exports.rejectMaterial = async (req, res) => {
       });
     }
 
-    // Permanent delete
     await Material.findByIdAndDelete(req.params.id);
 
     res.json({
@@ -253,30 +316,30 @@ exports.deleteMaterial = async (req, res) => {
             : "You can only manage materials in your courses",
       });
     }
-    await Material.findByIdAndDelete(req.params.id);
+
+    await Material.findByIdAndUpdate(req.params.id, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      deletedBy: req.user?.id || null,
+    });
+
+    await logAction({
+      action: "DELETE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+    });
+
     res.json({ success: true, message: "Material deleted permanently" });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
 };
 
-//Assign student to course (using Enrollment model)
 exports.assignStudentToCourse = async (req, res) => {
   try {
     const { courseId, studentId } = req.params;
-
-    // Check if course exists and mentor teaches it
-    // const course = await Course.findOne({
-    //   _id: courseId,
-    //   instructorRef: req.user.id
-    // });
-
-    // if (!course && req.user.role !== 'admin') {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'You can only assign students to your courses'
-    //   });
-    // }
 
     let course;
     if (req.user.role === "admin") {
@@ -298,16 +361,11 @@ exports.assignStudentToCourse = async (req, res) => {
       });
     }
 
-    const student = await User.findOne({
-      _id: studentId,
-      role: "student",
-    });
-
+    const student = await User.findOne({ _id: studentId, role: "student" });
     if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Student not found" });
     }
 
     const enrollment = await Enrollment.create({
@@ -335,7 +393,6 @@ exports.assignStudentToCourse = async (req, res) => {
   }
 };
 
-//Get pending materials (student uploads needing review)
 exports.getPendingMaterials = async (req, res) => {
   try {
     const myCourses = await Course.find({ instructorRef: req.user.id }).select(
@@ -346,6 +403,7 @@ exports.getPendingMaterials = async (req, res) => {
     const pendingMaterials = await Material.find({
       courseRef: { $in: courseIds },
       status: "Draft",
+      isDeleted: { $ne: true },
       uploadedByRef: { $ne: req.user.id },
     })
       .populate("uploadedByRef", "name email")
@@ -360,16 +418,14 @@ exports.getPendingMaterials = async (req, res) => {
 
 exports.getMyCourseMaterials = async (req, res) => {
   try {
-    // Get all courses this mentor teaches
-    const myCourses = await Course.find({
-      instructorRef: req.user.id,
-    }).select("_id");
-
+    const myCourses = await Course.find({ instructorRef: req.user.id }).select(
+      "_id",
+    );
     const courseIds = myCourses.map((c) => c._id);
 
-    // Find all materials in these courses
     const materials = await Material.find({
       courseRef: { $in: courseIds },
+      isDeleted: { $ne: true },
     })
       .populate("uploadedByRef", "name role")
       .populate("courseRef", "title code")

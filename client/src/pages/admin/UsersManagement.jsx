@@ -24,7 +24,9 @@ const EMPTY = {
   college: "",
   status: "Active",
 };
+
 const ROLE_VARIANT = { Student: "blue", Mentor: "success", Admin: "warning" };
+
 const AVATAR_STYLES = [
   { bg: "var(--accent-glow)", color: "var(--accent-light)" },
   { bg: "var(--success-bg)", color: "var(--success)" },
@@ -34,11 +36,13 @@ const AVATAR_STYLES = [
 
 function UsersManagement() {
   const { confirmDialog, confirm } = useConfirm();
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
@@ -46,13 +50,13 @@ function UsersManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [showDeleted]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await adminUsersApi.getAll();
+      const res = await adminUsersApi.getAll(showDeleted);
       setUsers(res.data || []);
     } catch (err) {
       setError(err.message);
@@ -97,13 +101,38 @@ function UsersManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Remove this user?",
+      "This will mark the user as removed. You can restore them later.",
       "Remove User",
     );
     if (!ok) return;
     try {
       await adminUsersApi.remove(id);
-      setUsers((p) => p.filter((u) => u._id !== id));
+      setUsers((p) =>
+        showDeleted
+          ? p.map((u) =>
+              u._id === id
+                ? { ...u, isDeleted: true, deletedAt: new Date() }
+                : u,
+            )
+          : p.filter((u) => u._id !== id),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      const res = await adminUsersApi.restore(id);
+      if (showDeleted) {
+        setUsers((p) =>
+          p.map((u) =>
+            u._id === id ? { ...u, isDeleted: false, deletedAt: null } : u,
+          ),
+        );
+      } else {
+        setUsers((p) => [...p, res.data]);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -111,6 +140,7 @@ function UsersManagement() {
 
   const statusVariant = (s) =>
     s === "Active" ? "success" : s === "Pending" ? "warning" : "default";
+
   const TH = ({ children }) => (
     <th
       className={tw.th}
@@ -127,7 +157,7 @@ function UsersManagement() {
         title="Users Management"
         subtitle="Manage students, mentors and administrators."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {["All", "Student", "Mentor", "Admin"].map((r) => (
               <button
                 key={r}
@@ -186,12 +216,44 @@ function UsersManagement() {
               style={{ color: "var(--text-primary)" }}
             >
               Users ({filtered.length})
+              {showDeleted && (
+                <span
+                  className="ml-2 text-[11px] font-normal"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  — including removed
+                </span>
+              )}
             </span>
-            <TableSearch
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search users..."
-            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDeleted((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3 py-[6px] rounded-sm text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
+                style={
+                  showDeleted
+                    ? {
+                        background: "var(--danger-bg)",
+                        borderColor: "var(--danger)",
+                        color: "var(--danger)",
+                      }
+                    : {
+                        background: "var(--bg-card)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-secondary)",
+                      }
+                }
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {showDeleted ? "visibility_off" : "visibility"}
+                </span>
+                {showDeleted ? "Hide Removed" : "Show Removed"}
+              </button>
+              <TableSearch
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search users..."
+              />
+            </div>
           </>
         }
       >
@@ -226,17 +288,27 @@ function UsersManagement() {
             <tbody>
               {filtered.map((u, i) => {
                 const av = AVATAR_STYLES[i % AVATAR_STYLES.length];
+                const deleted = u.isDeleted;
                 return (
                   <tr
                     key={u._id}
                     className={tw.trHover}
+                    style={{
+                      opacity: deleted ? 0.6 : 1,
+                      background: deleted ? "var(--danger-bg)" : "transparent",
+                    }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "var(--bg-hover)")
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "var(--bg-hover)")
                     }
                     onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "transparent")
                     }
                   >
+                    {/* User */}
                     <td
                       className={tw.td}
                       style={{ borderBottomColor: "var(--border-light)" }}
@@ -254,10 +326,25 @@ function UsersManagement() {
                         </div>
                         <div>
                           <div
-                            className="text-[13.5px] font-medium"
+                            className="text-[13.5px] font-medium flex items-center gap-2 flex-wrap"
                             style={{ color: "var(--text-primary)" }}
                           >
                             {u.name}
+                            {deleted && (
+                              <span
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                style={{
+                                  background: "var(--danger-bg)",
+                                  color: "var(--danger)",
+                                  border: "1px solid var(--danger)",
+                                }}
+                              >
+                                <span className="material-symbols-outlined text-[10px]">
+                                  person_off
+                                </span>
+                                Removed
+                              </span>
+                            )}
                           </div>
                           <div
                             className="text-[11px] mt-0.5"
@@ -268,6 +355,8 @@ function UsersManagement() {
                         </div>
                       </div>
                     </td>
+
+                    {/* Role */}
                     <td
                       className={tw.td}
                       style={{ borderBottomColor: "var(--border-light)" }}
@@ -276,6 +365,8 @@ function UsersManagement() {
                         {u.role}
                       </Badge>
                     </td>
+
+                    {/* College */}
                     <td
                       className={tw.td}
                       style={{
@@ -286,6 +377,8 @@ function UsersManagement() {
                     >
                       {u.college}
                     </td>
+
+                    {/* Joined */}
                     <td
                       className={tw.td}
                       style={{ borderBottomColor: "var(--border-light)" }}
@@ -297,6 +390,8 @@ function UsersManagement() {
                         {u.joined}
                       </span>
                     </td>
+
+                    {/* Status */}
                     <td
                       className={tw.td}
                       style={{ borderBottomColor: "var(--border-light)" }}
@@ -305,23 +400,39 @@ function UsersManagement() {
                         {u.status}
                       </Badge>
                     </td>
+
+                    {/* Actions */}
                     <td
                       className={tw.td}
                       style={{ borderBottomColor: "var(--border-light)" }}
                     >
                       <div className="flex items-center gap-2 justify-end">
-                        <BtnSecondary
-                          className={tw.btnSm}
-                          onClick={() => openEdit(u)}
-                        >
-                          Edit
-                        </BtnSecondary>
-                        <BtnDanger
-                          className={tw.btnSm}
-                          onClick={() => handleDelete(u._id)}
-                        >
-                          Remove
-                        </BtnDanger>
+                        {deleted ? (
+                          <BtnSecondary
+                            className={tw.btnSm}
+                            onClick={() => handleRestore(u._id)}
+                          >
+                            <span className="material-symbols-outlined text-[13px]">
+                              person_add
+                            </span>
+                            Restore
+                          </BtnSecondary>
+                        ) : (
+                          <>
+                            <BtnSecondary
+                              className={tw.btnSm}
+                              onClick={() => openEdit(u)}
+                            >
+                              Edit
+                            </BtnSecondary>
+                            <BtnDanger
+                              className={tw.btnSm}
+                              onClick={() => handleDelete(u._id)}
+                            >
+                              Remove
+                            </BtnDanger>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

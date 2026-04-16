@@ -1,4 +1,4 @@
-const AuditLog = require("../models/Log");
+const Log = require("../models/Log");
 
 const logAction = async ({
   action,
@@ -9,7 +9,7 @@ const logAction = async ({
   details,
 }) => {
   try {
-    await AuditLog.create({
+    await Log.create({
       action,
       entity,
       entityId,
