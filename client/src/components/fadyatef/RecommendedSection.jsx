@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCourses } from "../../context/CourseContext";
 import CourseCard from "./CourseCard";
 import algorithmsImage from "../../assets/images/algorithms-course.jpg";
+
+const MAX_RECOMMENDED = 3;
 
 const COURSE_IMAGES = [
   algorithmsImage,
@@ -21,19 +23,31 @@ export default function RecommendedSection() {
     (y) => y.meta?.status === "In Progress"
   );
 
-  // Get available courses from that year (not yet enrolled)
-  const recommended = inProgressYear?.available ?? [];
+  const available = inProgressYear?.available;
+
+  // Pool: not yet enrolled. Show at most 3; enrolling removes from pool so another
+  // course fills the slot on the next render.
+  const recommended = useMemo(
+    () =>
+      available?.length ? available.slice(0, MAX_RECOMMENDED) : [],
+    [available],
+  );
 
   if (recommended.length === 0) return null;
 
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Recommended for You
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Recommended for You
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Three open seats from your year — enroll on the dashboard to refresh this list.
+          </p>
+        </div>
         <button
-          className="text-xs font-semibold text-edublue hover:underline"
+          className="shrink-0 text-xs font-semibold text-edublue hover:underline"
           onClick={() => navigate("/std-dashboard#my-courses")}
         >
           View All

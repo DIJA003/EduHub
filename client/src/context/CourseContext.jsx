@@ -1,92 +1,181 @@
 import React, {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   useCallback,
 } from "react";
-import { studentApi } from "../services/api";
+import {
+  YEAR_1_ENROLLED,
+  YEAR_2_ENROLLED,
+  YEAR_2_AVAILABLE,
+  YEAR_3_PLANNED,
+  YEAR_3_AVAILABLE,
+  YEAR_4_PLANNED,
+  YEAR_4_AVAILABLE,
+} from "../data/yearCourseCatalog";
 
 const CourseContext = createContext(null);
 
+/** Credits counted only when course progress === 100 */
+export function computeYearEarnedCredits(enrolled) {
+  if (!enrolled?.length) return 0;
+  return enrolled.reduce(
+    (sum, c) => sum + (c.progress >= 100 ? c.credits || 0 : 0),
+    0,
+  );
+}
+
+/** Sum of credits for all enrolled courses (planned load for the year) */
+export function sumEnrolledCredits(enrolled) {
+  if (!enrolled?.length) return 0;
+  return enrolled.reduce((sum, c) => sum + (c.credits || 0), 0);
+}
+
+/** Active academic year: unlocked and explicitly In Progress */
+export function getCurrentAcademicYearId(years) {
+  if (!years) return "2";
+  const ordered = Object.keys(years).sort((a, b) => Number(a) - Number(b));
+  const active = ordered.find((id) => {
+    const m = years[id]?.meta;
+    return m && m.unlocked !== false && m.status === "In Progress";
+  });
+  if (active) return active;
+  const fallback = ordered.filter((id) => years[id]?.meta?.unlocked !== false);
+  return fallback[fallback.length - 1] ?? ordered[0] ?? "2";
+}
+
+function withYearEarnedCredits(year) {
+  const earnedCredits = computeYearEarnedCredits(year.enrolled);
+  return {
+    ...year,
+    meta: {
+      ...year.meta,
+      earnedCredits,
+    },
+  };
+}
+
 const INITIAL_STATE = {
+  lastCompletedCourse: null,
   years: {
+    1: {
+      meta: {
+        title: "Year One: Freshman Year",
+        description:
+          "Foundational concepts: computing, mathematics, and logic.",
+        status: "Completed",
+        earnedCredits: 42,
+        totalCredits: 42,
+        unlocked: true,
+      },
+      enrolled: YEAR_1_ENROLLED,
+      available: [],
+    },
     2: {
       meta: {
         title: "Year Two: Sophomore Year",
         description:
           "Core engineering principles and advanced programming foundations.",
         status: "In Progress",
-        earnedCredits: 12,
-        totalCredits: 21,
+        earnedCredits: 0,
+        totalCredits: 42,
+        unlocked: true,
       },
-      enrolled: [
-        {
-          id: "cs201",
-          name: "Data Structures",
-          code: "CS201",
-          credits: 4,
-          progress: 75,
-          nextItem: "Graph Algorithms",
-        },
-        {
-          id: "cs202",
-          name: "Algorithms",
-          code: "CS202",
-          credits: 4,
-          progress: 40,
-          nextItem: "Dynamic Programming",
-        },
-        {
-          id: "ma301",
-          name: "Discrete Mathematics",
-          code: "MA301",
-          credits: 4,
-          progress: 15,
-          nextItem: "Set Theory Quiz",
-        },
-        {
-          id: "ee205",
-          name: "Computer Architecture",
-          code: "EE205",
-          credits: 4,
-          progress: 90,
-          nextItem: "Final Review",
-        },
-      ],
-      available: [
-        {
-          id: "web-frameworks",
-          name: "Web Development Frameworks",
-          type: "Elective",
-          length: "8 weeks",
-          schedule: "MWF",
-          instructor: "Prof. Miller",
-        },
-        {
-          id: "db-systems",
-          name: "Database Systems",
-          type: "Core",
-          length: "10 weeks",
-          schedule: "TTh",
-          instructor: "Dr. Sarah J.",
-        },
-        {
-          id: "cyber-ethics",
-          name: "Cybersecurity Ethics",
-          type: "Elective",
-          length: "6 weeks",
-          schedule: "Fri",
-          instructor: "Prof. Alan T.",
-        },
-      ],
+      enrolled: YEAR_2_ENROLLED,
+      available: YEAR_2_AVAILABLE,
+    },
+    3: {
+      meta: {
+        title: "Year Three: Junior Year",
+        description:
+          "Advanced applications: software engineering, cloud, and AI.",
+        status: "Locked",
+        earnedCredits: 0,
+        totalCredits: 42,
+        unlocked: false,
+      },
+      enrolled: [],
+      plannedCurriculum: YEAR_3_PLANNED,
+      available: YEAR_3_AVAILABLE,
+    },
+    4: {
+      meta: {
+        title: "Year Four: Senior Year",
+        description:
+          "Capstone, research, and industry placement.",
+        status: "Locked",
+        earnedCredits: 0,
+        totalCredits: 42,
+        unlocked: false,
+      },
+      enrolled: [],
+      plannedCurriculum: YEAR_4_PLANNED,
+      available: YEAR_4_AVAILABLE,
     },
   },
 };
 
+function applyYearCompletionAndUnlock(prev, yearId, updatedYear) {
+  const total = updatedYear.meta?.totalCredits ?? 42;
+  const earned = computeYearEarnedCredits(updatedYear.enrolled);
+  const allComplete =
+    updatedYear.enrolled.length > 0 &&
+    updatedYear.enrolled.every((c) => c.progress >= 100);
+  const creditsMet = earned >= total;
+  const yearDone = allComplete && creditsMet;
+
+  const meta = {
+    ...updatedYear.meta,
+    earnedCredits: earned,
+    status: yearDone ? "Completed" : updatedYear.meta.status || "In Progress",
+  };
+
+  const nextId = String(Number(yearId) + 1);
+  const nextYear = prev.years[nextId];
+  let yearsOut = {
+    ...prev.years,
+    [yearId]: {
+      ...updatedYear,
+      meta,
+    },
+  };
+
+  if (yearDone && nextYear && !nextYear.meta.unlocked) {
+    yearsOut = {
+      ...yearsOut,
+      [nextId]: {
+        ...nextYear,
+        meta: {
+          ...nextYear.meta,
+          unlocked: true,
+          status:
+            nextYear.meta.status === "Locked" ? "In Progress" : nextYear.meta.status,
+        },
+      },
+    };
+  }
+
+  return { ...prev, years: yearsOut };
+}
+
 export function CourseProvider({ children }) {
-  const [state, setState] = useState(INITIAL_STATE);
+  const [state, setState] = useState(() => {
+    const y = { ...INITIAL_STATE.years };
+    Object.keys(y).forEach((id) => {
+      y[id] = withYearEarnedCredits(y[id]);
+    });
+    return {
+      ...INITIAL_STATE,
+      years: y,
+    };
+  });
+
+  const currentYearId = useMemo(
+    () => getCurrentAcademicYearId(state.years),
+    [state.years],
+  );
+
   const enrollCourse = useCallback((yearId, course) => {
     setState((prev) => {
       const year = prev.years[yearId];
@@ -94,36 +183,71 @@ export function CourseProvider({ children }) {
       if (year.enrolled.some((c) => c.id === course.id)) return prev;
 
       const creditDelta = course.credits || 3;
-      const updatedMeta = {
-        ...year.meta,
-        earnedCredits: Math.min(
-          year.meta.earnedCredits + creditDelta,
-          year.meta.totalCredits,
-        ),
-      };
+      const cap = year.meta?.totalCredits ?? 42;
+      if (sumEnrolledCredits(year.enrolled) + creditDelta > cap) return prev;
 
+      const enrolled = [
+        ...year.enrolled,
+        {
+          id: course.id,
+          name: course.name,
+          code: course.code || "ELEC",
+          credits: course.credits || 3,
+          progress: 0,
+          sectionsCompleted: 0,
+          nextItem: "Getting Started",
+        },
+      ];
+      const updatedYear = { ...year, enrolled, available: year.available.filter((c) => c.id !== course.id) };
+      const withEarned = withYearEarnedCredits(updatedYear);
       return {
         ...prev,
         years: {
           ...prev.years,
-          [yearId]: {
-            ...year,
-            meta: updatedMeta,
-            enrolled: [
-              ...year.enrolled,
-              {
-                id: course.id,
-                name: course.name,
-                code: course.code || "ELEC",
-                credits: course.credits || 3,
-                progress: 0,
-                nextItem: "Getting Started",
-              },
-            ],
-            available: year.available.filter((c) => c.id !== course.id),
-          },
+          [yearId]: withEarned,
         },
       };
+    });
+  }, []);
+
+  const updateCourseProgress = useCallback((yearId, courseId, payload) => {
+    const { progress, nextItem, sectionsCompleted } = payload;
+    setState((prev) => {
+      const year = prev.years[yearId];
+      if (!year) return prev;
+
+      const prevCourse = year.enrolled.find((c) => c.id === courseId);
+      const enrolled = year.enrolled.map((c) =>
+        c.id === courseId
+          ? {
+              ...c,
+              progress,
+              nextItem,
+              ...(sectionsCompleted !== undefined
+                ? { sectionsCompleted }
+                : {}),
+            }
+          : c,
+      );
+
+      let nextState = { ...prev };
+      if (progress === 100 && prevCourse && prevCourse.progress < 100) {
+        const done = enrolled.find((c) => c.id === courseId);
+        nextState = {
+          ...nextState,
+          lastCompletedCourse: {
+            name: done.name,
+            code: done.code,
+            yearId,
+            courseId,
+            completedAt: new Date().toISOString(),
+          },
+        };
+      }
+
+      const updatedYear = { ...year, enrolled };
+      const merged = applyYearCompletionAndUnlock(nextState, yearId, updatedYear);
+      return merged;
     });
   }, []);
 
@@ -134,39 +258,51 @@ export function CourseProvider({ children }) {
       const course = year.enrolled.find((c) => c.id === courseId);
       if (!course) return prev;
 
-      const creditDelta = course.credits || 3;
+      const enrolled = year.enrolled.filter((c) => c.id !== courseId);
+      const updatedYear = {
+        ...year,
+        enrolled,
+        available: [
+          ...year.available,
+          {
+            id: course.id,
+            name: course.name,
+            type: "Elective",
+            length: "Self-paced",
+            schedule: "Flexible",
+            instructor: "TBA",
+            credits: course.credits || 3,
+          },
+        ],
+      };
+      const withEarned = withYearEarnedCredits(updatedYear);
       return {
         ...prev,
         years: {
           ...prev.years,
-          [yearId]: {
-            ...year,
-            meta: {
-              ...year.meta,
-              earnedCredits: Math.max(year.meta.earnedCredits - creditDelta, 0),
-            },
-            enrolled: year.enrolled.filter((c) => c.id !== courseId),
-            available: [
-              ...year.available,
-              {
-                id: course.id,
-                name: course.name,
-                type: "Elective",
-                length: "Self-paced",
-                schedule: "Flexible",
-                instructor: "TBA",
-                credits: course.credits || 3,
-              },
-            ],
-          },
+          [yearId]: withEarned,
         },
       };
     });
   }, []);
 
   const value = useMemo(
-    () => ({ years: state.years, enrollCourse, undoEnrollment }),
-    [state.years, enrollCourse, undoEnrollment],
+    () => ({
+      years: state.years,
+      currentYearId,
+      lastCompletedCourse: state.lastCompletedCourse,
+      enrollCourse,
+      undoEnrollment,
+      updateCourseProgress,
+    }),
+    [
+      state.years,
+      currentYearId,
+      state.lastCompletedCourse,
+      enrollCourse,
+      undoEnrollment,
+      updateCourseProgress,
+    ],
   );
 
   return (

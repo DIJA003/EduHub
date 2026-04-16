@@ -10,6 +10,7 @@ import ChangePassword    from "../pages/auth/ChangePassword";
 import Home              from "../pages/Home";
 import AcademicYear      from "../pages/AcademicYear";
 import YearDetail        from "../pages/YearDetail";
+import CoursePlayer      from "../pages/CoursePlayer";
 import DataScienceCourses from "../pages/DataScienceCourses";
 import StudentDashboard  from "../pages/StudentDashboard";
 import StudentProfile    from "../pages/Studentprofile";
@@ -51,6 +52,9 @@ function AppRoutes() {
         />
         <Route path="/academic-year/:yearId"
           element={<ProtectedRoute requireVerified><YearDetail /></ProtectedRoute>}
+        />
+        <Route path="/academic-year/:yearId/course/:courseId"
+          element={<ProtectedRoute requireVerified><CoursePlayer /></ProtectedRoute>}
         />
         <Route path="/data-science"
           element={<ProtectedRoute requireVerified><DataScienceCourses /></ProtectedRoute>}

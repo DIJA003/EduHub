@@ -27,6 +27,8 @@ export function MaterialProvider({ children }) {
     status: m.status,
     size: m.size,
     uploader: m.uploader,
+    sectionId: m.sectionId || m.sectionRef || "",
+    sectionLabel: m.sectionLabel || m.section || "",
   });
 
   useEffect(() => {
@@ -62,6 +64,8 @@ export function MaterialProvider({ children }) {
       type: material.type || "file",
       uploadDate: new Date().toISOString(),
       status: "Draft",
+      sectionId: material.sectionId || "",
+      sectionLabel: material.sectionLabel || "",
     };
     setMaterials((prev) => [optimistic, ...prev]);
 
@@ -77,6 +81,8 @@ export function MaterialProvider({ children }) {
               : "Other",
         status: "Draft",
         uploader: material.uploader || "",
+        ...(material.sectionId && { sectionId: material.sectionId }),
+        ...(material.sectionLabel && { sectionLabel: material.sectionLabel }),
       };
       const res = await materialsApi.create(payload);
       setMaterials((prev) =>

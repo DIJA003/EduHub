@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useCourses } from "../context/CourseContext";
+import { useCourses, sumEnrolledCredits } from "../context/CourseContext";
 import { useMaterials } from "../context/MaterialContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import logo from "../assets/images/logo.png";
@@ -28,20 +28,18 @@ export default function StudentDashboard() {
 
   const { dbUser } = useAuth();
 
-  const { years, enrollCourse, undoEnrollment } = useCourses();
-  const { materials, addMaterial, removeMaterial } = useMaterials();
+  const { years, enrollCourse, undoEnrollment, currentYearId } = useCourses();
+  const { materials, removeMaterial } = useMaterials();
 
   const [activeLink,     setActiveLink]     = useState("dashboard");
-  const [selectedCourse, setSelectedCourse] = useState(null);
   const [undoTarget,     setUndoTarget]     = useState(null);
   const [limitDialogOpen,setLimitDialogOpen]= useState(false);
-  const fileInputRef = useRef(null);
 
-  const yearTwo        = years["2"];
-  const enrolledCourses= yearTwo?.enrolled || [];
-  const availableCourses= yearTwo?.available || [];
-  const earnedCredits  = yearTwo?.meta?.earnedCredits ?? 0;
-  const totalCredits   = yearTwo?.meta?.totalCredits  ?? 21;
+  const activeYear       = years[currentYearId];
+  const enrolledCourses  = activeYear?.enrolled || [];
+  const availableCourses = activeYear?.available || [];
+  const earnedCredits    = activeYear?.meta?.earnedCredits ?? 0;
+  const totalCredits     = activeYear?.meta?.totalCredits ?? 42;
 
   const firstName = dbUser?.name ? dbUser.name.split(" ")[0] : "Student";
 
@@ -56,39 +54,32 @@ export default function StudentDashboard() {
     navigate(`/std-dashboard#${id}`, { replace: true });
   };
 
-  const handleFileSelect = (e) => {
-    const files = e.target.files;
-    if (!files?.length || !selectedCourse) return;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const type = file.type.startsWith("video/") ? "video"
-                 : file.type.startsWith("image/") ? "photo"
-                 : file.type === "application/pdf" ? "pdf"
-                 : "file";
-      addMaterial({ courseId: selectedCourse.id, courseName: selectedCourse.name, fileName: file.name, type });
-    }
-    e.target.value = "";
-  };
-
-  const handleUploadClick = () => { if (selectedCourse) fileInputRef.current?.click(); };
-
   const openUndoDialog  = (course) => setUndoTarget({ id: course.id, name: course.name });
   const closeUndoDialog = ()       => setUndoTarget(null);
-  const confirmUndo     = ()       => { if (undoTarget) { undoEnrollment("2", undoTarget.id); closeUndoDialog(); } };
+  const confirmUndo     = ()       => { if (undoTarget) { undoEnrollment(currentYearId, undoTarget.id); closeUndoDialog(); } };
 
   const handleEnroll = (course) => {
     const credits = course.credits || 3;
-    if (earnedCredits + credits > totalCredits) { setLimitDialogOpen(true); return; }
-    enrollCourse("2", { id: course.id, name: course.name, code: course.code || "ELEC", credits });
+    const planned = sumEnrolledCredits(enrolledCourses);
+    if (planned + credits > totalCredits) {
+      setLimitDialogOpen(true);
+      return;
+    }
+    enrollCourse(currentYearId, { id: course.id, name: course.name, code: course.code || "ELEC", credits });
   };
 
   return (
     <div className="flex min-h-screen bg-slate-900">
       {/* Sidebar */}
       <aside className="flex w-56 flex-col border-r border-slate-700 bg-slate-900">
-        <div className="flex items-center gap-2 border-b border-slate-700 p-4">
-          <img src={logo} alt="EduHub" className="h-8 w-8 object-contain" />
-          <span className="font-semibold text-white">EduHub Student</span>
+        <div className="flex flex-col gap-0.5 border-b border-slate-700 p-4">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="EduHub" className="h-8 w-8 object-contain" />
+            <span className="font-semibold text-white">EduHub Student</span>
+          </div>
+          <p className="pl-10 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+            Year {currentYearId} · {activeYear?.meta?.title?.split(":")[0] || "Current"}
+          </p>
         </div>
         <nav className="flex-1 p-4">
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">MAIN MENU</p>
@@ -135,7 +126,7 @@ export default function StudentDashboard() {
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
-        message="You cannot enroll in more courses because your credits have reached the 21-credit limit for this year."
+        message={`You cannot enroll in more courses because your credits have reached the ${totalCredits}-credit limit for this year.`}
         confirmLabel="OK" showCancel={false}
         onConfirm={() => setLimitDialogOpen(false)} onCancel={() => setLimitDialogOpen(false)}
       />
@@ -152,7 +143,9 @@ export default function StudentDashboard() {
           {activeLink === "dashboard" && (
             <section>
               <h1 className="text-2xl font-bold text-white md:text-3xl">Welcome back, {firstName} 👋</h1>
-              <p className="mt-1 text-slate-400">Here's what needs your attention today.</p>
+              <p className="mt-1 text-slate-400">
+                Here&apos;s what needs your attention today — academic year {currentYearId}.
+              </p>
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { label: "Enrolled Courses",    value: String(enrolledCourses.length), sub: "active",   color: "text-emerald-400" },
@@ -176,7 +169,9 @@ export default function StudentDashboard() {
               <div className="mb-6 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-white">My Courses</h2>
-                  <p className="mt-1 text-sm text-slate-400">Your enrolled courses and available to enroll.</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Year {currentYearId}: enrolled courses and open seats. When you finish a year, your dashboard switches to the next year.
+                  </p>
                 </div>
                 <span className="text-sm font-medium text-slate-400">{earnedCredits} / {totalCredits} Credits</span>
               </div>
@@ -248,7 +243,7 @@ export default function StudentDashboard() {
           {activeLink === "upload-material" && (
             <section>
               <h2 className="text-lg font-semibold text-white">Upload Material</h2>
-              <p className="mt-1 text-sm text-slate-400">Click a course card to view its materials and upload new ones.</p>
+              <p className="mt-1 text-sm text-slate-400">Click a course to open it, pick a section, and upload materials there.</p>
               {enrolledCourses.length === 0 ? (
                 <div className="mt-6 rounded-xl border border-slate-700 bg-slate-800/50 p-6">
                   <p className="text-slate-400">
@@ -260,66 +255,30 @@ export default function StudentDashboard() {
                   </p>
                 </div>
               ) : (
-                <>
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {enrolledCourses.map((course) => {
-                      const courseMaterials = materials.filter((m) => m.courseId === course.id);
-                      const isSelected = selectedCourse?.id === course.id;
-                      return (
-                        <button
-                          key={course.id}
-                          onClick={() => setSelectedCourse(isSelected ? null : course)}
-                          className={`rounded-xl border p-5 text-left transition ${
-                            isSelected
-                              ? "border-blue-500 bg-slate-800 ring-1 ring-blue-500"
-                              : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
-                          }`}
-                        >
-                          <h3 className="font-semibold text-white">{course.name}</h3>
-                          <p className="mt-1 text-xs text-slate-400">
-                            {course.code} • {courseMaterials.length} material{courseMaterials.length !== 1 ? "s" : ""}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedCourse && (
-                    <div className="mt-6 rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-                      <p className="text-sm text-slate-400">
-                        Materials in <span className="font-medium text-white">{selectedCourse.name}</span>
-                      </p>
-                      <input ref={fileInputRef} type="file" multiple accept="video/*,image/*,.pdf" className="hidden" onChange={handleFileSelect} />
+                <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {enrolledCourses.map((course) => {
+                    const courseMaterials = materials.filter((m) => m.courseId === course.id);
+                    return (
                       <button
-                        onClick={handleUploadClick}
-                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        key={course.id}
+                        type="button"
+                        onClick={() =>
+                          navigate(`/academic-year/${currentYearId}/course/${course.id}?upload=1`)
+                        }
+                        className="rounded-xl border border-slate-700 bg-slate-800/50 p-5 text-left transition hover:border-blue-500/60 hover:bg-slate-800"
                       >
-                        <span>📎</span> Upload videos, photos, or PDFs
+                        <h3 className="font-semibold text-white">{course.name}</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {course.code} • {courseMaterials.length} material
+                          {courseMaterials.length !== 1 ? "s" : ""}
+                        </p>
+                        <p className="mt-3 text-xs font-medium text-blue-400">
+                          Open course → upload by section
+                        </p>
                       </button>
-                      <div className="mt-6 space-y-2">
-                        {materials.filter((m) => m.courseId === selectedCourse.id).map((m) => (
-                          <div key={m.id} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg">
-                                {m.type === "video" ? "🎬" : m.type === "photo" ? "🖼️" : m.type === "pdf" ? "📄" : "📎"}
-                              </span>
-                              <div>
-                                <p className="font-medium text-white">{m.fileName}</p>
-                                <p className="text-xs text-slate-400">{new Date(m.uploadDate).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-300">{m.type}</span>
-                              <button type="button" className="text-xs text-rose-400 hover:text-rose-300" onClick={() => removeMaterial(m.id)}>Remove</button>
-                            </div>
-                          </div>
-                        ))}
-                        {materials.filter((m) => m.courseId === selectedCourse.id).length === 0 && (
-                          <p className="text-sm text-slate-500">No materials yet. Upload above.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </>
+                    );
+                  })}
+                </div>
               )}
             </section>
           )}
@@ -344,12 +303,14 @@ export default function StudentDashboard() {
                         <p className="mt-0.5 text-slate-400">{m.fileName}</p>
                         <p className="mt-1 text-xs text-slate-500">{new Date(m.uploadDate).toLocaleString()}</p>
                         <button
-                          onClick={() => {
-                            const course = enrolledCourses.find((c) => c.id === m.courseId);
-                            if (course) { setSelectedCourse(course); handleSelectSection("upload-material"); }
-                          }}
+                          type="button"
+                          onClick={() =>
+                            navigate(`/academic-year/${currentYearId}/course/${m.courseId}?upload=1`)
+                          }
                           className="mt-2 text-xs text-blue-400 hover:underline"
-                        >View in upload material →</button>
+                        >
+                          Open course →
+                        </button>
                         <button type="button" className="ml-3 mt-2 text-xs text-rose-400 hover:text-rose-300" onClick={() => removeMaterial(m.id)}>Remove</button>
                       </div>
                     </div>

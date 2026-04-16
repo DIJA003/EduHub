@@ -5,8 +5,7 @@ import Header from "../components/fadyatef/Header";
 import Footer from "../components/fadyatef/Footer";
 import profileImage from "../assets/images/profile.jpg";
 
-const CERTIFICATES = [
-  { id: 1, name: "Data Structures",        date: "Earned Oct 12, 2023", color: "bg-blue-100",   icon: "🗂️" },
+const CERTIFICATES_STATIC = [
   { id: 2, name: "Python for Data Science", date: "Earned Sep 05, 2023", color: "bg-orange-100", icon: "🐍" },
   { id: 3, name: "Database Systems",        date: "Earned Aug 22, 2023", color: "bg-purple-100", icon: "🗄️" },
   { id: 4, name: "Intro to Cloud Computing",date: "Earned July 15, 2023",color: "bg-sky-100",   icon: "☁️" },
@@ -16,7 +15,7 @@ const TOTAL_CREDITS = 168;
 
 export default function StudentProfile() {
   const navigate = useNavigate();
-  const { years } = useCourses();
+  const { years, lastCompletedCourse } = useCourses();
 
   const [editMode,   setEditMode]   = useState(false);
   const [notifOn,    setNotifOn]    = useState(true);
@@ -247,11 +246,44 @@ export default function StudentProfile() {
             <div className={`rounded-2xl border p-5 shadow-sm ${card}`}>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className={`text-base font-bold ${text}`}>Recently Earned Certificates</h2>
-                <button className="text-sm font-semibold text-blue-500 hover:underline">View All</button>
+                <button type="button" className="text-sm font-semibold text-blue-500 hover:underline">View All</button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {CERTIFICATES.map((cert) => (
+                {lastCompletedCourse && (
                   <button
+                    type="button"
+                    key="last-course-cert"
+                    onClick={() => setActiveCard(activeCard === "last" ? null : "last")}
+                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition active:scale-95 ${
+                      activeCard === "last"
+                        ? "border-blue-400 bg-blue-50 ring-2 ring-blue-200"
+                        : darkMode
+                          ? "border-slate-700 bg-slate-700/50 hover:border-blue-500"
+                          : "border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50"
+                    }`}
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                      <span className="text-xl">🎓</span>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${text}`}>{lastCompletedCourse.name}</p>
+                      <p className={`text-xs ${muted}`}>
+                        {lastCompletedCourse.code} · Year {lastCompletedCourse.yearId} ·{" "}
+                        {new Date(lastCompletedCourse.completedAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                      {activeCard === "last" && (
+                        <p className="mt-1 text-xs font-medium text-blue-500">✓ Course completed</p>
+                      )}
+                    </div>
+                  </button>
+                )}
+                {CERTIFICATES_STATIC.map((cert) => (
+                  <button
+                    type="button"
                     key={cert.id}
                     onClick={() => setActiveCard(activeCard === cert.id ? null : cert.id)}
                     className={`flex items-center gap-3 rounded-xl border p-3 text-left transition active:scale-95 ${
@@ -275,6 +307,11 @@ export default function StudentProfile() {
                   </button>
                 ))}
               </div>
+              {!lastCompletedCourse && (
+                <p className={`mt-3 text-xs ${muted}`}>
+                  Complete a course to 100% to see your latest course certificate here.
+                </p>
+              )}
             </div>
           </div>
         </div>
