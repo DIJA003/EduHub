@@ -4,14 +4,13 @@ import { useCourses } from "../../context/CourseContext";
 import StatPill from "./StatPill";
 
 const CREDITS_PER_YEAR = 42;
-const TOTAL_YEARS = 4;
-const TOTAL_CREDITS = CREDITS_PER_YEAR * TOTAL_YEARS; // 168
+const TOTAL_CREDITS = CREDITS_PER_YEAR * 4; // 168
 
 const QUICK_LINKS = [
-  { label: "STD dashboard",          hash: ""                  },
-  { label: "My courses section",     hash: "#my-courses"       },
-  { label: "Upload material",        hash: "#upload-material"  },
-  { label: "Recent materials",       hash: "#recent-materials" },
+  { label: "STD dashboard",      hash: "dashboard"        },
+  { label: "My courses",         hash: "my-courses"       },
+  { label: "Upload material",    hash: "upload-material"  },
+  { label: "Recent materials",   hash: "recent-materials" },
 ];
 
 export default function RightSidebar() {
@@ -19,14 +18,21 @@ export default function RightSidebar() {
   const { years } = useCourses();
 
   const earnedCredits = Object.values(years).reduce(
-    (sum, year) => sum + (year.meta?.earnedCredits ?? 0), 0
+    (sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0
   );
-
   const progressPercent = Math.round((earnedCredits / TOTAL_CREDITS) * 100);
-
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progressPercent / 100) * circumference;
+
+  const goToDashboard = (hash) => {
+    // Navigate then set hash so StudentDashboard picks it up
+    navigate(`/std-dashboard`);
+    // Small delay to let the page mount before hash is set
+    setTimeout(() => {
+      window.location.hash = hash;
+    }, 50);
+  };
 
   return (
     <aside className="space-y-6">
@@ -50,7 +56,7 @@ export default function RightSidebar() {
             </span>
           </div>
           <div className="space-y-3">
-            <StatPill label="Total Credits"      value={`${earnedCredits} / ${TOTAL_CREDITS}`} />
+            <StatPill label="Total Credits"        value={`${earnedCredits} / ${TOTAL_CREDITS}`} />
             <StatPill label="Credits to pass year" value={`${CREDITS_PER_YEAR} hrs`} />
           </div>
         </div>
@@ -64,11 +70,11 @@ export default function RightSidebar() {
         <div className="space-y-2 text-sm">
           {QUICK_LINKS.map((link) => (
             <button
-              key={link.label}
+              key={link.hash}
               className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-slate-900 transition hover:bg-slate-50"
-              onClick={() => navigate(`/std-dashboard${link.hash}`)}
+              onClick={() => goToDashboard(link.hash)}
             >
-              <span className="font-medium capitalize">{link.label}</span>
+              <span className="font-medium">{link.label}</span>
             </button>
           ))}
         </div>

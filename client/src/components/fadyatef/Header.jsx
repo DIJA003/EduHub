@@ -1,38 +1,53 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useCourses } from "../../context/CourseContext";
 import logo from "../../assets/images/logo.png";
 import profileImage from "../../assets/images/profile.jpg";
 
-function Header({ onAction }) {
+function Header() {
+  const navigate = useNavigate();
+  const { years } = useCourses();
+
+  const handleCoursesClick = () => {
+    const inProgressYearId = Object.keys(years).find(
+      (id) => years[id].meta?.status === "In Progress"
+    );
+    if (inProgressYearId) {
+      navigate(`/academic-year/${inProgressYearId}`);
+    } else {
+      navigate("/academic-year");
+    }
+  };
+
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <div className="flex items-center gap-2">
-          <img
-            src={logo}
-            alt="EduHub logo"
-            className="h-9 w-9 object-contain"
-          />
+          <img src={logo} alt="EduHub logo" className="h-9 w-9 object-contain" />
           <span className="text-lg font-semibold text-slate-900">EduHub</span>
         </div>
         <nav className="hidden items-center gap-8 text-sm text-slate-600 md:flex">
-          <button className="font-medium text-slate-900 hover:text-edublue">
+          <button
+            className="font-medium text-slate-900 hover:text-edublue"
+            onClick={() => navigate("/academic-year")}
+          >
             Academic Years
           </button>
           <button
             className="hover:text-edublue"
-            onClick={() => onAction("Courses")}
+            onClick={handleCoursesClick}
           >
             Courses
           </button>
           <button
             className="hover:text-edublue"
-            onClick={() => onAction("Mentors")}
+            onClick={() => navigate("/home")}
           >
             Home
           </button>
           <button
             className="hover:text-edublue"
-            onClick={() => onAction("Profile")}
+            onClick={() => navigate("/profile")}
           >
             Profile
           </button>
@@ -40,7 +55,8 @@ function Header({ onAction }) {
             <img
               src={profileImage}
               alt="Profile"
-              className="h-9 w-9 rounded-full object-cover"
+              className="h-9 w-9 rounded-full object-cover cursor-pointer"
+              onClick={() => navigate("/profile")}
             />
           </div>
         </nav>
@@ -48,4 +64,5 @@ function Header({ onAction }) {
     </header>
   );
 }
+
 export default Header;
