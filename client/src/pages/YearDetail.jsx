@@ -176,6 +176,25 @@ export default function YearDetail() {
           </div>
         </div>
 
+        {isYearCompleted && (
+          <div className="mb-8 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-sky-50 px-5 py-5 shadow-sm md:flex md:items-center md:gap-5">
+            <span className="text-4xl" aria-hidden>
+              🎉
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold text-emerald-900">
+                Congratulations — you finished Year {yearId}!
+              </h2>
+              <p className="mt-1 text-sm text-emerald-800/90">
+                You earned <strong>{earnedCredits}</strong> of{" "}
+                <strong>{totalCredits}</strong> credit hours and completed this
+                year. You can revisit any course below to review materials and
+                sections anytime.
+              </p>
+            </div>
+          </div>
+        )}
+
         <section className="mb-10">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">

@@ -1,9 +1,43 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { useCourses } from "../context/CourseContext";
+import { useTheme } from "../context/ThemeContext";
 import Header from "../components/fadyatef/Header";
 import Footer from "../components/fadyatef/Footer";
 import profileImage from "../assets/images/profile.jpg";
+
+function buildProfileFormFromAccount(dbUser, user, currentYearId, years) {
+  const mongoId = dbUser?._id ?? dbUser?.id;
+  const studentId =
+    mongoId != null
+      ? `…${String(mongoId).slice(-8)}`
+      : user?.uid
+        ? user.uid.slice(0, 8)
+        : "—";
+
+  const activeYear = currentYearId && years?.[currentYearId];
+  const shortTitle = activeYear?.meta?.title?.split(":")[0]?.trim();
+  const yearLevel =
+    currentYearId && shortTitle
+      ? `${shortTitle} — in progress (Year ${currentYearId})`
+      : currentYearId
+        ? `Year ${currentYearId} — in progress`
+        : "—";
+
+  return {
+    name: dbUser?.name?.trim() || user?.displayName?.trim() || "Student",
+    studentId,
+    college:
+      dbUser?.college && dbUser.college !== "—"
+        ? dbUser.college
+        : "Not set",
+    yearLevel,
+    email: (dbUser?.email || user?.email || "").trim() || "—",
+    phone: "—",
+    graduation: "—",
+  };
+}
 
 const CERTIFICATES_STATIC = [
   { id: 2, name: "Python for Data Science", date: "Earned Sep 05, 2023", color: "bg-orange-100", icon: "🐍" },
@@ -15,33 +49,32 @@ const TOTAL_CREDITS = 168;
 
 export default function StudentProfile() {
   const navigate = useNavigate();
-  const { years, lastCompletedCourse } = useCourses();
+  const { user, dbUser } = useAuth();
+  const { years, lastCompletedCourse, currentYearId } = useCourses();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   const [editMode,   setEditMode]   = useState(false);
   const [notifOn,    setNotifOn]    = useState(true);
-  const [darkMode,   setDarkMode]   = useState(false);
   const [activeCard, setActiveCard] = useState(null);
   const [saved,      setSaved]      = useState(false);
 
-  const [form, setForm] = useState({
-    name:       "Alex Johnson",
-    studentId:  "294857",
-    major:      "Computer Science",
-    year:       "Senior Year",
-    email:      "alex.j@eduhub.edu",
-    phone:      "+1 (555) 012-3456",
-    graduation: "May 2025",
-  });
+  const baselineRef = useRef(
+    buildProfileFormFromAccount(null, null, null, {}),
+  );
+  const [form, setForm] = useState(() =>
+    buildProfileFormFromAccount(null, null, null, {}),
+  );
 
-  // Apply dark mode to the page
+  const applyAccountToForm = useCallback(() => {
+    const next = buildProfileFormFromAccount(dbUser, user, currentYearId, years);
+    baselineRef.current = next;
+    setForm(next);
+  }, [dbUser, user, currentYearId, years]);
+
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    return () => document.documentElement.classList.remove("dark");
-  }, [darkMode]);
+    if (editMode) return;
+    applyAccountToForm();
+  }, [editMode, applyAccountToForm]);
 
   const earnedCredits = Object.values(years).reduce(
     (sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0
@@ -49,12 +82,14 @@ export default function StudentProfile() {
   const progressPercent = Math.min(Math.round((earnedCredits / TOTAL_CREDITS) * 100), 100);
 
   const handleSave = () => {
+    baselineRef.current = { ...form };
     setSaved(true);
     setEditMode(false);
     setTimeout(() => setSaved(false), 3000);
   };
 
   const handleCancel = () => {
+    setForm({ ...baselineRef.current });
     setEditMode(false);
   };
 
@@ -89,8 +124,11 @@ export default function StudentProfile() {
         <div className={`mb-6 rounded-2xl border p-6 shadow-sm ${card}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-5">
-              <img src={profileImage} alt="Profile"
-                className="h-20 w-20 rounded-full object-cover ring-4 ring-blue-50" />
+              <img
+                src={user?.photoURL || profileImage}
+                alt=""
+                className="h-20 w-20 rounded-full object-cover ring-4 ring-blue-50"
+              />
               <div>
                 {editMode ? (
                   <input
@@ -101,8 +139,15 @@ export default function StudentProfile() {
                 ) : (
                   <h1 className={`text-2xl font-bold ${text}`}>{form.name}</h1>
                 )}
-                <p className="text-sm font-semibold text-blue-500">Student ID: {form.studentId}</p>
-                <p className={`text-sm ${muted}`}>{form.major} Major • {form.year}</p>
+                <p className="text-sm font-semibold text-blue-500">
+                  Account: {form.email}
+                </p>
+                <p className="text-xs font-medium text-slate-500">
+                  Record ID: {form.studentId}
+                </p>
+                <p className={`text-sm ${muted}`}>
+                  {form.college} • {dbUser?.role ? `${dbUser.role.charAt(0).toUpperCase()}${dbUser.role.slice(1)}` : "Student"}
+                </p>
               </div>
             </div>
 
@@ -142,10 +187,11 @@ export default function StudentProfile() {
               <h2 className={`mb-4 text-base font-bold ${text}`}>Personal Information</h2>
               <div className="space-y-3 text-sm">
                 {[
-                  { label: "Email",      key: "email",      type: "email" },
-                  { label: "Phone",      key: "phone",      type: "tel"   },
-                  { label: "Major",      key: "major",      type: "text"  },
-                  { label: "Graduation", key: "graduation", type: "text"  },
+                  { label: "Email",         key: "email",        type: "email" },
+                  { label: "Phone",         key: "phone",        type: "tel"   },
+                  { label: "College / program", key: "college",  type: "text"  },
+                  { label: "Year level",    key: "yearLevel",    type: "text"  },
+                  { label: "Graduation",    key: "graduation",   type: "text"  },
                 ].map(({ label, key, type }) => (
                   <div key={key} className="flex items-center justify-between gap-2">
                     <span className={`w-24 shrink-0 ${muted}`}>{label}</span>
@@ -180,7 +226,7 @@ export default function StudentProfile() {
                     <p className={`text-sm font-semibold ${text}`}>Dark Mode</p>
                     <p className={`text-xs ${muted}`}>Switch to dark interface</p>
                   </div>
-                  <Toggle on={darkMode} onToggle={() => setDarkMode(!darkMode)} />
+                  <Toggle on={darkMode} onToggle={toggleDarkMode} />
                 </div>
                 <button
                   onClick={() => navigate("/change-password")}
