@@ -16,6 +16,14 @@ const courseSchema = new mongoose.Schema(
     semesterId: { type: mongoose.Schema.Types.ObjectId, ref: "Semester" },
     creditHours: { type: Number },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true },
 );

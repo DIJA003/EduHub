@@ -11,17 +11,22 @@ const materialSchema = new mongoose.Schema(
     },
     size: { type: String, default: "" },
     uploader: { type: String, trim: true },
-
     status: {
       type: String,
       enum: ["Draft", "Active", "Archived"],
       default: "Draft",
     },
-
     fileUrl: { type: String, default: "" },
     courseRef: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
-
     uploadedByRef: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true },
 );
