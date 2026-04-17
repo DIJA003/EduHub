@@ -55,6 +55,40 @@ router.get("/login", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/password-changed", verifyToken, async (req, res) => {
+  try {
+    await logAction({
+      action: "UPDATE",
+      entity: "User",
+      entityId: req.user.id,
+      entityName: req.user.name,
+      performedBy: req.user,
+      details: { action: "password_changed" },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/profile", verifyToken, async (req, res) => {
+  try {
+    const { name, bio, college } = req.body;
+    const allowed = {};
+    if (name?.trim()) allowed.name = name.trim();
+    if (bio?.trim()) allowed.bio = bio.trim();
+    if (college?.trim()) allowed.college = college.trim();
+
+    const user = await User.findByIdAndUpdate(req.user.id, allowed, {
+      new: true,
+    }).select("-__v");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/dashboard/courses", verifyToken, getSavedCourses);
 router.post("/courses/:courseId/save", verifyToken, saveCourse);
 router.delete("/courses/:courseId/unsave", verifyToken, unsaveCourse);

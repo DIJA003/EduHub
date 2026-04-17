@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema(
   {
+    bio: { type: String, trim: true, default: "" },
     name: {
       type: String,
       required: true,

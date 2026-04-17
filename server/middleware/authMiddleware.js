@@ -1,10 +1,6 @@
 const admin = require("../config/firebase_admin");
 const User = require("../models/User");
 
-/**
- * Standard token verification — requires user to exist in DB.
- * Use for all protected routes EXCEPT /register.
- */
 exports.verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -28,6 +24,11 @@ exports.verifyToken = async (req, res, next) => {
       return res
         .status(403)
         .json({ message: "Account suspended. Contact support." });
+    }
+    if (dbUser.isDeleted) {
+      return res
+        .status(403)
+        .json({ message: "Account has been removed. Contact support." });
     }
 
     req.user = {

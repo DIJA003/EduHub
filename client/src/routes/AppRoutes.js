@@ -22,10 +22,16 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import MentorDashboard from "../pages/mentor/MentorDashboard";
 
 import ProtectedRoute from "../components/ProtectedRoute";
+import NotFound from "../pages/NotFound";
 
 function RoleRedirect() {
   const { user, dbUser, loading } = useAuth();
-  if (loading || user === undefined) return null;
+  if (loading || user === undefined)
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="text-slate-400 text-sm">Loading…</span>
+      </div>
+    );
   if (!user) return <Navigate to="/login" replace />;
   if (dbUser?.role === "admin") return <Navigate to="/admin" replace />;
   if (dbUser?.role === "mentor") return <Navigate to="/mentor" replace />;
@@ -111,7 +117,7 @@ function AppRoutes() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

@@ -26,7 +26,7 @@ function Header({ onAction }) {
           </button>
           <button
             className="hover:text-edublue"
-            onClick={() => onAction("Mentors")}
+            onClick={() => onAction("Home")}
           >
             Home
           </button>

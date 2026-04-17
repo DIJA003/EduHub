@@ -37,14 +37,6 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <span className="text-slate-400 text-sm">Loading…</span>
-      </div>
-    );
-  }
-
   return (
     <AuthContext.Provider value={{ user, dbUser, loading }}>
       {children}

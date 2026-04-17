@@ -9,7 +9,15 @@ const LogSchema = new mongoose.Schema(
     },
     entity: {
       type: String,
-      enum: ["College", "Course", "Material", "User"],
+      enum: [
+        "College",
+        "Course",
+        "Material",
+        "User",
+        "PasswordChange",
+        "Enrollment",
+        "Session",
+      ],
       required: true,
     },
     entityId: { type: mongoose.Schema.Types.ObjectId, required: true },
