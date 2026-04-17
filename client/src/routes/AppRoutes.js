@@ -32,7 +32,7 @@ function RoleRedirect() {
         <span className="text-slate-400 text-sm">Loading…</span>
       </div>
     );
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/home" replace />;
   if (dbUser?.role === "admin") return <Navigate to="/admin" replace />;
   if (dbUser?.role === "mentor") return <Navigate to="/mentor" replace />;
   return <Navigate to="/home" replace />;
@@ -48,7 +48,6 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/verify-email" element={<EmailVerification />} />
-
         <Route
           path="/change-password"
           element={
@@ -58,14 +57,7 @@ function AppRoutes() {
           }
         />
 
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute requireVerified>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/home" element={<Home />} />
 
         <Route
           path="/academic-year"

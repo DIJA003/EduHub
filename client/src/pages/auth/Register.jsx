@@ -8,6 +8,7 @@ import { auth } from "../../services/firebase";
 
 export default function Register() {
   const navigate = useNavigate();
+  const [role, setRole] = useState("student");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -26,7 +27,6 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!form.name.trim()) {
       setError("Please enter your name.");
       return;
@@ -35,8 +35,11 @@ export default function Register() {
       setError("Passwords do not match.");
       return;
     }
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!strongPassword.test(form.newPassword)) {
+      setError(
+        "Password must be at least 8 characters with uppercase, lowercase, and a number.",
+      );
       return;
     }
 
@@ -47,7 +50,9 @@ export default function Register() {
         form.email,
         form.password,
       );
-      await sendEmailVerification(userCredential.user);
+
+      const continueUrl = `${window.location.origin}/email-confirmed`;
+      await sendEmailVerification(userCredential.user, { url: continueUrl });
 
       try {
         const token = await userCredential.user.getIdToken();
@@ -59,12 +64,11 @@ export default function Register() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name: form.name.trim() }),
+          body: JSON.stringify({ name: form.name.trim(), role }),
         });
         const data = await response.json();
-        if (!response.ok) {
+        if (!response.ok)
           console.error("Backend registration failed:", data.message);
-        }
       } catch (backendErr) {
         console.error("Backend registration error:", backendErr.message);
       }
@@ -85,10 +89,20 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 lg:grid-cols-2">
-        <div className="relative hidden lg:block">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-700 to-blue-500" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white px-12">
-            <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-sm">
+        {/* Left panel */}
+        <div className="relative hidden lg:flex flex-col items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700" />
+          {/* decorative grid */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+          <div className="relative z-10 px-12 text-center text-white">
+            <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30">
               <svg
                 className="h-10 w-10 text-white"
                 fill="none"
@@ -103,34 +117,110 @@ export default function Register() {
                 />
               </svg>
             </div>
-            <h2 className="text-3xl font-black text-center">
-              Start your journey today
-            </h2>
-            <p className="mt-4 text-center text-blue-100 max-w-xs">
-              Join thousands of students and mentors on EduHub — the platform
-              built for academic success.
+            <h2 className="text-3xl font-black">Join EduHub today</h2>
+            <p className="mt-4 text-blue-100 max-w-xs mx-auto">
+              Whether you're here to learn or to teach, EduHub is built for your
+              journey.
             </p>
+            <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
+              {[
+                ["50K+", "Students"],
+                ["1.2K+", "Mentors"],
+                ["200+", "Colleges"],
+                ["98%", "Success Rate"],
+              ].map(([v, l]) => (
+                <div
+                  key={l}
+                  className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm"
+                >
+                  <p className="text-2xl font-black text-white">{v}</p>
+                  <p className="text-blue-100">{l}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Right panel — form */}
         <div className="flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
           <div className="w-full max-w-md">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6">
               <Link
                 to="/login"
-                className="text-sm font-semibold text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-300"
+                className="text-sm font-semibold text-slate-600 hover:text-blue-600 dark:text-slate-300 transition-colors"
               >
                 ← Back to Login
               </Link>
             </div>
 
-            <div className="rounded-2xl bg-white p-10 shadow-xl shadow-slate-900/10 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-700">
-              <h1 className="text-3xl font-black tracking-tight">
+            <div className="rounded-2xl bg-white p-8 shadow-xl shadow-slate-900/10 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-700">
+              <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
                 Create account
               </h1>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Register to get started with EduHub
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Join EduHub — it's free
               </p>
+
+              {/* Role selector */}
+              <div className="mt-6">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+                  I am joining as a…
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      value: "student",
+                      label: "Student",
+                      emoji: "🎓",
+                      desc: "Learn & grow",
+                    },
+                    {
+                      value: "mentor",
+                      label: "Mentor",
+                      emoji: "👨‍🏫",
+                      desc: "Teach & guide",
+                    },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRole(opt.value)}
+                      className={`flex flex-col items-center rounded-xl border-2 p-4 text-center transition-all duration-150 ${
+                        role === opt.value
+                          ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900/20"
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{opt.emoji}</span>
+                      <span
+                        className={`text-sm font-bold ${role === opt.value ? "text-blue-600" : "text-slate-800 dark:text-slate-200"}`}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {opt.desc}
+                      </span>
+                      {role === opt.value && (
+                        <span className="mt-2 inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-600">
+                          <svg
+                            className="h-2.5 w-2.5 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {error && (
                 <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
@@ -138,7 +228,7 @@ export default function Register() {
                 </div>
               )}
 
-              <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+              <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
                 <div>
                   <label className="sr-only" htmlFor="name">
                     Full Name
@@ -151,7 +241,7 @@ export default function Register() {
                     value={form.name}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white"
                     autoComplete="name"
                   />
                 </div>
@@ -163,11 +253,11 @@ export default function Register() {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="College email address"
+                    placeholder="Email address"
                     value={form.email}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white"
                     autoComplete="email"
                   />
                 </div>
@@ -179,11 +269,11 @@ export default function Register() {
                     id="password"
                     name="password"
                     type="password"
-                    placeholder="Password (min. 6 characters)"
+                    placeholder="Password (min 8 characters)"
                     value={form.password}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white"
                     autoComplete="new-password"
                   />
                 </div>
@@ -199,7 +289,7 @@ export default function Register() {
                     value={form.confirmPassword}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white"
                     autoComplete="new-password"
                   />
                 </div>
@@ -207,9 +297,11 @@ export default function Register() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-4 w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/30 transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "Creating account…" : "Create Account"}
+                  {loading
+                    ? "Creating account…"
+                    : `Create ${role === "mentor" ? "Mentor" : "Student"} Account`}
                 </button>
 
                 <p className="pt-2 text-center text-xs text-slate-600 dark:text-slate-300">
