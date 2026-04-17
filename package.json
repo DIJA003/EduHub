@@ -4,13 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "client": "npm start --prefix client",
-  "server": "npm run dev --prefix server",
-  "dev": "concurrently \"npm run server\" \"npm run client\""
+    "server": "npm run dev --prefix server"
   },
   "dependencies": {
     "concurrently": "^9.2.1",
