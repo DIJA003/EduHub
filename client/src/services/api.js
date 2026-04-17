@@ -130,6 +130,8 @@ export const mentorApi = {
   deleteMaterial: (id) => api.delete(`/mentor/materials/${id}`),
   assignStudent: (courseId, studentId) =>
     api.post(`/mentor/courses/${courseId}/students/${studentId}`, {}),
+  getDashboardStats: () => api.get("/mentor/dashboard/stats"),
+  getStudents: () => api.get("/mentor/students"),
 };
 
 // ── Student ───────────────────────────────────────────────────────────────────

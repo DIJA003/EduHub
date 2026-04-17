@@ -277,12 +277,23 @@ exports.rejectMaterial = async (req, res) => {
       });
     }
 
-    await Material.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: "Material rejected and deleted permanently",
+    await Material.findByIdAndUpdate(req.params.id, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      deletedBy: req.user?.id || null,
+      status: "Archived",
     });
+
+    await logAction({
+      action: "DELETE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: { reason: "rejected_by_mentor" },
+    });
+
+    res.json({ success: true, message: "Material rejected successfully" });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

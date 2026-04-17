@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const { logAction } = require("../utils/Logger");
 const {
   saveCourse,
   unsaveCourse,
@@ -29,6 +30,9 @@ router.post(
         firebaseUid: uid,
         email: email?.toLowerCase() || "",
         name: nameFromBody || email?.split("@")[0] || "User",
+        role: ["student", "mentor"].includes(req.body?.role)
+          ? req.body.role
+          : "student",
       });
 
       res.status(201).json(user);

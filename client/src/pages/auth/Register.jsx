@@ -36,7 +36,7 @@ export default function Register() {
       return;
     }
     const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!strongPassword.test(form.newPassword)) {
+    if (!strongPassword.test(form.password)) {
       setError(
         "Password must be at least 8 characters with uppercase, lowercase, and a number.",
       );

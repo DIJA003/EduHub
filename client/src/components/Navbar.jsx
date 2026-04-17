@@ -169,6 +169,22 @@ function AvatarMenu({ initials, name, onLogout, role }) {
             {name}
           </p>
         </div>
+        {role === "mentor" && (
+          <Link
+            to="/mentor/profile"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            👤 My Profile
+          </Link>
+        )}
+        {role === "student" && (
+          <Link
+            to="/std-dashboard"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            📊 My Dashboard
+          </Link>
+        )}
         <Link
           to="/change-password"
           className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"

@@ -24,6 +24,9 @@ import MentorDashboard from "../pages/mentor/MentorDashboard";
 import ProtectedRoute from "../components/ProtectedRoute";
 import NotFound from "../pages/NotFound";
 
+import EmailConfirmed from "../pages/auth/EmailConfirmed";
+import FirebaseActionHandler from "../pages/auth/FirebaseActionHandler";
+
 function RoleRedirect() {
   const { user, dbUser, loading } = useAuth();
   if (loading || user === undefined)
@@ -42,6 +45,9 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
+        <Route path="/email-confirmed" element={<EmailConfirmed />} />
+        <Route path="/auth/action" element={<FirebaseActionHandler />} />
+
         <Route path="/" element={<RoleRedirect />} />
 
         <Route path="/login" element={<Login />} />

@@ -67,12 +67,30 @@ function MentorProfile() {
 
   const handleSave = async () => {
     setSaving(true);
-    // TODO: PUT /api/users/profile  { name, bio, ... }
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
-    setEditMode(false);
+    try {
+      const API_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+      const { auth } = await import("../../services/firebase");
+      const token = await auth.currentUser?.getIdToken();
+      await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: form.name,
+          bio: form.bio,
+          college: form.college,
+        }),
+      });
+      setEditMode(false);
+    } catch (err) {
+      console.error("Profile save failed:", err.message);
+    } finally {
+      setSaving(false);
+    }
   };
-
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
