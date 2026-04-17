@@ -7,8 +7,8 @@ router.use(verifyToken);
 
 router.get("/", notificationController.getAll);
 router.get("/:id", notificationController.getById);
-router.delete("/:id", notificationController.softDelete);           
-router.delete("/delete-all", notificationController.deleteAll); 
-
+router.delete("/delete-all", notificationController.deleteAll);
+router.delete("/:id", notificationController.softDelete);
+router.patch("/:id/read", notificationController.markRead);
 
 module.exports = router;

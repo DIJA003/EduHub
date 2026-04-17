@@ -164,6 +164,12 @@ export function CourseProvider({ children }) {
     });
   }, []);
 
+  useEffect(() => {
+    studentApi
+      .getSavedCourses()
+      .then((res) => {})
+      .catch(() => {});
+  });
   const value = useMemo(
     () => ({ years: state.years, enrollCourse, undoEnrollment }),
     [state.years, enrollCourse, undoEnrollment],

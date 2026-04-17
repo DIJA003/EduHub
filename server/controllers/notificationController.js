@@ -1,9 +1,23 @@
 const Notification = require("../models/Notification");
 
 // Internal helper — called from other controllers, not an endpoint
-exports.createNotification = async ({ recipient, sender, type, message, materialRef, courseRef }) => {
+exports.createNotification = async ({
+  recipient,
+  sender,
+  type,
+  message,
+  materialRef,
+  courseRef,
+}) => {
   try {
-    await Notification.create({ recipient, sender, type, message, materialRef, courseRef });
+    await Notification.create({
+      recipient,
+      sender,
+      type,
+      message,
+      materialRef,
+      courseRef,
+    });
   } catch (err) {
     console.error("Notification creation failed:", err.message);
   }
@@ -11,9 +25,9 @@ exports.createNotification = async ({ recipient, sender, type, message, material
 
 exports.getAll = async (req, res) => {
   try {
-    const notifications = await Notification.find({ 
+    const notifications = await Notification.find({
       recipient: req.user.id,
-      isDeleted: false  
+      isDeleted: false,
     })
       .populate("sender", "name role")
       .populate("materialRef", "title type")
@@ -25,22 +39,21 @@ exports.getAll = async (req, res) => {
   }
 };
 
-
 exports.getById = async (req, res) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
       recipient: req.user.id,
-      isDeleted: false  
+      isDeleted: false,
     })
       .populate("sender", "name role")
       .populate("materialRef", "title type")
       .populate("courseRef", "title code");
-      
+
     if (!notification) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Notification not found or has been deleted" 
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found or has been deleted",
       });
     }
     res.json({ success: true, data: notification });
@@ -49,34 +62,33 @@ exports.getById = async (req, res) => {
   }
 };
 
-
 exports.softDelete = async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
       {
         _id: req.params.id,
         recipient: req.user.id,
-        isDeleted: false
+        isDeleted: false,
       },
       {
         isDeleted: true,
         deletedBy: req.user.id,
-        deletedAt: new Date()
+        deletedAt: new Date(),
       },
-      { new: true }
+      { new: true },
     );
 
     if (!notification) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Notification not found or already deleted" 
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found or already deleted",
       });
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "Notification deleted successfully",
-      data: notification
+      data: notification,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -88,21 +100,33 @@ exports.deleteAll = async (req, res) => {
     const result = await Notification.updateMany(
       {
         recipient: req.user.id,
-        isDeleted: false
+        isDeleted: false,
       },
       {
         isDeleted: true,
         deletedBy: req.user.id,
-        deletedAt: new Date()
-      }
+        deletedAt: new Date(),
+      },
     );
 
-    res.json({ 
-      success: true, 
-      message: `${result.modifiedCount} notifications deleted successfully`
+    res.json({
+      success: true,
+      message: `${result.modifiedCount} notifications deleted successfully`,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
+exports.markRead = async (req, res) => {
+  try {
+    const n = await Notification.findOneAndUpdate(
+      { _id: req.params.id, recipient: req.user.id },
+      { isRead: true },
+      { new: true },
+    );
+    if (!n) return res.status(404).json({ message: "Not found" });
+    res.json({ success: true, data: n });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

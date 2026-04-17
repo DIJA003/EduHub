@@ -95,6 +95,7 @@ export const adminUsersApi = {
   update: (id, data) => api.put(`/admin/users/${id}`, data),
   remove: (id) => api.delete(`/admin/users/${id}`),
   restore: (id) => api.patch(`/admin/users/${id}/restore`),
+  create: (data) => api.post("/admin/users", data),
 };
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -105,9 +106,6 @@ export const dashboardApi = {
 
 // ── History logs ──────────────────────────────────────────────────────
 export const logsApi = {
-  /**
-   * @param {{ entity?:string, action?:string, search?:string, page?:number, limit?:number }} params
-   */
   getLogs: (params = {}) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
@@ -150,4 +148,11 @@ export const enrollmentApi = {
     api.delete(`/admin/courses/${courseId}/students/${studentId}`),
   getStudentCourses: (studentId) =>
     api.get(`/admin/students/${studentId}/courses`),
+};
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const notificationsApi = {
+  getAll: () => api.get("/notifications"),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
+  deleteOne: (id) => api.delete(`/notifications/${id}`),
+  deleteAll: () => api.delete("/notifications/delete-all"),
 };

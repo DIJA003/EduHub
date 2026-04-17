@@ -57,6 +57,8 @@ app.use("/api/admin/semesters", semesterRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/materials", materialRoutes);
 app.use("/api/mentor", mentorRoutes);
+app.use("/api/student", studentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "EduHub API is running" });
@@ -73,8 +75,5 @@ app.use((err, req, res, next) => {
   const status = err.status || 500;
   res.status(status).json({ error: err.message || "Internal server error" });
 });
-
-app.use("/api/student", studentRoutes);
-app.use("/api/notifications", notificationRoutes);
 
 module.exports = app;

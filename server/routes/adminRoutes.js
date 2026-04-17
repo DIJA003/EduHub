@@ -86,6 +86,7 @@ router.delete("/materials/:id", ...authAdmin, material.remove);
 router.patch("/materials/:id/restore", ...authAdmin, material.restore);
 
 // ── Users ─────────────────────────────────────────────────────────────────────
+router.post("/users", ...authAdmin, adminUser.create);
 router.get("/users", ...authAdmin, adminUser.getAll);
 router.put("/users/:id", ...authAdmin, adminUser.update);
 router.delete("/users/:id", ...authAdmin, adminUser.remove);

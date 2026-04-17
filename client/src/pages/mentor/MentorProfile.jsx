@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
   PageHeader,
@@ -9,7 +9,7 @@ import {
   FormInput,
 } from "../../components/admin/adminUtils";
 import { useNavigate } from "react-router-dom";
-
+import { mentorApi } from "../../services/api";
 const MOCK_COURSES = [
   { name: "Data Structures", students: 32, videos: 8, status: "Active" },
   { name: "Algorithms", students: 28, videos: 12, status: "Active" },
@@ -35,6 +35,7 @@ function MentorProfile() {
   const { dbUser } = useAuth();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
+  const [stats, setStats] = useState(false);
   const [form, setForm] = useState({
     name: dbUser?.name || "Mentor User",
     email: dbUser?.email || "mentor@university.edu",
@@ -64,6 +65,15 @@ function MentorProfile() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  useEffect(() => {
+    mentorApi
+      .getDashboardStats()
+      .then((res) => {
+        if (res.data) setStats(res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);

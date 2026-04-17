@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { notificationsApi } from "../../services/api";
 
 function Navbar() {
+  const [notifCount, setNotifCount] = useState(0);
   const { dbUser } = useAuth();
   const [isLight, setIsLight] = useState(
     () => localStorage.getItem("eduhub-theme") === "light",
@@ -10,6 +12,16 @@ function Navbar() {
   useEffect(() => {
     if (isLight) document.documentElement.classList.add("light");
     else document.documentElement.classList.remove("light");
+  });
+
+  useEffect(() => {
+    notificationsApi
+      .getAll()
+      .then((res) => {
+        const unread = (res.data || []).filter((n) => !n.isRead).length;
+        setNotifCount(unread);
+      })
+      .catch(() => {});
   }, []);
 
   const toggleTheme = () => {
@@ -113,15 +125,15 @@ function Navbar() {
           <span className="material-symbols-outlined text-[18px]">
             notifications
           </span>
-          <span
-            className="absolute top-[6px] right-[6px] w-[7px] h-[7px] rounded-full"
-            style={{
-              background: "var(--danger)",
-              border: "2px solid var(--bg-surface)",
-            }}
-          />
+          {notifCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center text-white"
+              style={{ background: "var(--danger)" }}
+            >
+              {notifCount}
+            </span>
+          )}
         </button>
-
         <div
           className="w-px h-[22px] flex-shrink-0 mx-1"
           style={{ background: "var(--border)" }}
