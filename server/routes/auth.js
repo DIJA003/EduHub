@@ -1,7 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const authController = require('../controllers/authController');
+const authController = require("../controllers/authController");
 
-router.post('/verify-email', authController.verifyEmailExistence);
+router.post("/verify-email", authController.verifyEmailExistence);
 
 module.exports = router;

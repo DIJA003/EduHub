@@ -1,13 +1,15 @@
-const User     = require('../models/User');
-const Course   = require('../models/Course');
-const Material = require('../models/Material');
+const User = require("../models/User");
+const Course = require("../models/Course");
+const Material = require("../models/Material");
+
+const ACTIVE = { isDeleted: { $ne: true } };
 
 exports.getStats = async (req, res) => {
   try {
     const [totalStudents, totalMentors, activeCourses] = await Promise.all([
-      User.countDocuments({ role: 'student' }),
-      User.countDocuments({ role: 'mentor' }),
-      Course.countDocuments({ status: 'Published' }),
+      User.countDocuments({ ...ACTIVE, role: "student" }),
+      User.countDocuments({ ...ACTIVE, role: "mentor" }),
+      Course.countDocuments({ ...ACTIVE, status: "Published" }),
     ]);
 
     res.json({
@@ -26,16 +28,16 @@ exports.getStats = async (req, res) => {
 
 exports.getActivity = async (req, res) => {
   try {
-    const recentUsers = await User.find()
-      .select('name createdAt role')
+    const recentUsers = await User.find(ACTIVE)
+      .select("name createdAt role")
       .sort({ createdAt: -1 })
       .limit(10);
 
     const activity = recentUsers.map((u) => ({
-      id:     u._id,
-      user:   u.name,
+      id: u._id,
+      user: u.name,
       action: `joined as ${u.role}`,
-      time:   u.createdAt,
+      time: u.createdAt,
     }));
 
     res.json({ success: true, data: activity });

@@ -30,6 +30,5 @@ const courseSchema = new mongoose.Schema(
 
 courseSchema.index({ status: 1 });
 courseSchema.index({ instructorRef: 1 });
-courseSchema.index({ code: 1 });
 
 module.exports = mongoose.model("Course", courseSchema);

@@ -56,15 +56,10 @@ export default function DataScienceCourses() {
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
 
   const yearTwo = years["2"];
-  const enrolledIds = new Set(
-    (yearTwo?.enrolled || []).map((course) => course.id),
-  );
-  const visibleCourses = openCourses.filter(
-    (course) => !enrolledIds.has(course.id),
-  );
+  const enrolledIds = new Set((yearTwo?.enrolled || []).map((c) => c.id));
+  const visibleCourses = openCourses.filter((c) => !enrolledIds.has(c.id));
 
   const handleEnroll = (course) => {
-    // For now, we attach Data Science courses to Year Two
     const credits = 3;
     if (
       yearTwo &&
@@ -73,7 +68,6 @@ export default function DataScienceCourses() {
       setLimitDialogOpen(true);
       return;
     }
-
     enrollCourse("2", {
       id: course.id,
       name: course.name,
@@ -86,11 +80,13 @@ export default function DataScienceCourses() {
   const handleAction = (label) => {
     if (label === "Mentors" || label === "Home") navigate("/home");
     else if (label === "Courses") navigate("/academic-year");
+    else if (label === "STD dashboard") navigate("/std-dashboard");
   };
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Header onAction={handleAction} />
+
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
@@ -108,7 +104,7 @@ export default function DataScienceCourses() {
               Courses / Data Science Enrollment
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
-              Open Courses - Data Science
+              Open Courses — Data Science
             </h1>
             <p className="mt-2 text-sm text-slate-600">
               Select a course specialization to finalize your enrollment and
@@ -144,7 +140,6 @@ export default function DataScienceCourses() {
                 </span>
                 <span>{course.duration}</span>
               </div>
-
               <h2 className="text-sm font-semibold text-slate-900">
                 {course.name}
               </h2>
@@ -154,7 +149,6 @@ export default function DataScienceCourses() {
                   {course.instructor}
                 </span>
               </p>
-
               <button
                 type="button"
                 className="mt-4 inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700"
@@ -179,7 +173,7 @@ export default function DataScienceCourses() {
         </button>
       </main>
 
-      <Footer />
+      <Footer onAction={handleAction} />
     </div>
   );
 }
