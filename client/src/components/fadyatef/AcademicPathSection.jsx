@@ -65,18 +65,6 @@ export default function AcademicPathSection() {
           );
         })}
       </div>
-      <div className="mt-4">
-        <button
-          type="button"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-100 sm:w-auto"
-          aria-label="Add academic year"
-        >
-          <span className="text-lg leading-none" aria-hidden>
-            +
-          </span>
-          Add academic year
-        </button>
-      </div>
     </section>
   );
 }

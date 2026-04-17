@@ -36,7 +36,7 @@ export function Home() {
                 <span className="mb-6 inline-block rounded-full bg-blue-600/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-blue-600">
                   Connecting Minds
                 </span>
-                <h1 className="mb-8 text-5xl font-black leading-tight tracking-tight lg:text-7xl">
+                <h1 className="mb-8 text-5xl font-black leading-tight tracking-tight text-slate-900 lg:text-7xl">
                   Empowering Students &amp; Mentors —{" "}
                   <span className="text-blue-600">All in One Hub</span>
                 </h1>

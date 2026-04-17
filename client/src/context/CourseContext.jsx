@@ -286,6 +286,27 @@ export function CourseProvider({ children }) {
     });
   }, []);
 
+
+  const addCourseToYear = useCallback((yearId, course) => {
+    setState((prev) => {
+      const year = prev.years[yearId];
+      if (!year) return prev;
+      // avoid duplicates
+      if (year.available?.some((c) => c.id === course.id)) return prev;
+      if (year.enrolled?.some((c) => c.id === course.id)) return prev;
+      return {
+        ...prev,
+        years: {
+          ...prev.years,
+          [yearId]: {
+            ...year,
+            available: [...(year.available || []), course],
+          },
+        },
+      };
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       years: state.years,
@@ -294,6 +315,7 @@ export function CourseProvider({ children }) {
       enrollCourse,
       undoEnrollment,
       updateCourseProgress,
+      addCourseToYear,
     }),
     [
       state.years,
@@ -302,6 +324,7 @@ export function CourseProvider({ children }) {
       enrollCourse,
       undoEnrollment,
       updateCourseProgress,
+      addCourseToYear,
     ],
   );
 

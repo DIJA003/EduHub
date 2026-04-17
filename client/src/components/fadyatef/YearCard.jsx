@@ -49,7 +49,9 @@ export default function YearCard({
           className={`flex h-9 w-9 items-center justify-center rounded-full text-base font-semibold transition ${
             highlighted && !locked
               ? "bg-white text-edublue"
-              : "bg-slate-100 text-slate-700"
+              : year === "2"
+                ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-white"
+                : "bg-slate-100 text-slate-700"
           }`}
         >
           {year}

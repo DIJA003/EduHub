@@ -12,7 +12,13 @@ const COURSE_IMAGES = [
   "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=800",
 ];
 
-const TAG_COLORS = ["bg-sky-600", "bg-emerald-600", "bg-amber-500", "bg-purple-600", "bg-rose-600"];
+const TAG_COLORS = [
+  "bg-sky-600",
+  "bg-emerald-600",
+  "bg-amber-500",
+  "bg-purple-600",
+  "bg-rose-600",
+];
 
 export default function RecommendedSection() {
   const navigate = useNavigate();
@@ -20,7 +26,7 @@ export default function RecommendedSection() {
 
   // Find the In Progress year
   const inProgressYear = Object.values(years).find(
-    (y) => y.meta?.status === "In Progress"
+    (y) => y.meta?.status === "In Progress",
   );
 
   const available = inProgressYear?.available;
@@ -28,8 +34,7 @@ export default function RecommendedSection() {
   // Pool: not yet enrolled. Show at most 3; enrolling removes from pool so another
   // course fills the slot on the next render.
   const recommended = useMemo(
-    () =>
-      available?.length ? available.slice(0, MAX_RECOMMENDED) : [],
+    () => (available?.length ? available.slice(0, MAX_RECOMMENDED) : []),
     [available],
   );
 
@@ -43,11 +48,12 @@ export default function RecommendedSection() {
             Recommended for You
           </h2>
           <p className="mt-0.5 text-xs text-slate-400">
-            Three open seats from your year — enroll on the dashboard to refresh this list.
+            Three open seats from your year — enroll on the dashboard to refresh
+            this list.
           </p>
         </div>
         <button
-          className="shrink-0 text-xs font-semibold text-edublue hover:underline"
+          className="shrink-0 text-xs font-semibold text-blue-600 hover:underline"
           onClick={() => navigate("/std-dashboard#my-courses")}
         >
           View All

@@ -14,6 +14,7 @@ const MaterialContext = createContext(null);
 export function MaterialProvider({ children }) {
   const { user } = useAuth();
   const [materials, setMaterials] = useState([]);
+  const [pendingMaterials, setPendingMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,11 +25,19 @@ export function MaterialProvider({ children }) {
     fileName: m.title,
     type: (m.type || "file").toLowerCase(),
     uploadDate: m.createdAt || m.uploaded || new Date().toISOString(),
-    status: m.status,
+    status:
+      m.status === "pending"
+        ? "pending"
+        : m.status === "approved"
+          ? "approved"
+          : m.status === "rejected"
+            ? "rejected"
+            : "unknown",
     size: m.size,
     uploader: m.uploader,
     sectionId: m.sectionId || m.sectionRef || "",
     sectionLabel: m.sectionLabel || m.section || "",
+    pendingMessage: m.pendingMessage,
   });
 
   useEffect(() => {
@@ -63,11 +72,12 @@ export function MaterialProvider({ children }) {
       fileName: material.fileName,
       type: material.type || "file",
       uploadDate: new Date().toISOString(),
-      status: "Draft",
+      status: "pending",
       sectionId: material.sectionId || "",
       sectionLabel: material.sectionLabel || "",
     };
     setMaterials((prev) => [optimistic, ...prev]);
+    setPendingMaterials((prev) => [optimistic, ...prev]);
 
     try {
       const payload = {
@@ -79,7 +89,7 @@ export function MaterialProvider({ children }) {
             : material.type === "video"
               ? "Video"
               : "Other",
-        status: "Draft",
+        status: "pending",
         uploader: material.uploader || "",
         ...(material.sectionId && { sectionId: material.sectionId }),
         ...(material.sectionLabel && { sectionLabel: material.sectionLabel }),
@@ -109,9 +119,41 @@ export function MaterialProvider({ children }) {
     [materials],
   );
 
+  const approveMaterial = useCallback((id) => {
+    setPendingMaterials((prev) => prev.filter((m) => m.id !== id));
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: "approved" } : m)),
+    );
+  }, []);
+
+  const rejectMaterial = useCallback((id) => {
+    setPendingMaterials((prev) => prev.filter((m) => m.id !== id));
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status: "rejected" } : m)),
+    );
+  }, []);
+
   const value = useMemo(
-    () => ({ materials, loading, error, addMaterial, removeMaterial }),
-    [materials, loading, error, addMaterial, removeMaterial],
+    () => ({
+      materials,
+      pendingMaterials,
+      loading,
+      error,
+      addMaterial,
+      removeMaterial,
+      approveMaterial,
+      rejectMaterial,
+    }),
+    [
+      materials,
+      pendingMaterials,
+      loading,
+      error,
+      addMaterial,
+      removeMaterial,
+      approveMaterial,
+      rejectMaterial,
+    ],
   );
 
   return (
