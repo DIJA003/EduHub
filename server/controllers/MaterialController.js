@@ -391,7 +391,6 @@ exports.deleteMaterial = async (req, res) => {
             ? "Course not found"
             : "You can only manage materials in your courses",
       });
-    }
 
     await Material.findByIdAndUpdate(req.params.id, {
       isDeleted: true,
