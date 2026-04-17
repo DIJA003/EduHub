@@ -23,6 +23,7 @@ const EMPTY = {
   role: "Student",
   college: "",
   status: "Active",
+  password: "",
 };
 
 const ROLE_VARIANT = { Student: "blue", Mentor: "success", Admin: "warning" };
@@ -501,6 +502,17 @@ function UsersManagement() {
                 placeholder="user@eduhub.com"
               />
             </FormGroup>
+            {!editId && (
+              <FormGroup label="Password">
+                <FormInput
+                  type="password"
+                  value={form.password || ""}
+                  onChange={(e) => set("password", e.target.value)}
+                  placeholder="Password (min 8 chars)"
+                />
+              </FormGroup>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <FormGroup label="College">
                 <FormInput

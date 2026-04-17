@@ -35,7 +35,13 @@ const TYPE_ICON = {
 };
 
 const statusVariant = (s) =>
-  s === "Active" ? "success" : s === "Draft" ? "warning" : "default";
+  s === "Active"
+    ? "success"
+    : s === "Draft"
+      ? "warning"
+      : s === "Rejected"
+        ? "danger"
+        : "default";
 
 function MaterialsManagement() {
   const { confirmDialog, confirm } = useConfirm();
@@ -124,6 +130,27 @@ function MaterialsManagement() {
                 : m,
             )
           : p.filter((m) => m._id !== id),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const handleApprove = async (id) => {
+    try {
+      await materialsApi.approve(id);
+      setMaterials((p) =>
+        p.map((m) => (m._id === id ? { ...m, status: "Active" } : m)),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await materialsApi.reject(id);
+      setMaterials((p) =>
+        p.map((m) => (m._id === id ? { ...m, status: "Rejected" } : m)),
       );
     } catch (err) {
       setError(err.message);
@@ -379,7 +406,7 @@ function MaterialsManagement() {
 
                     {/* Actions */}
                     <TD>
-                      <div className="flex items-center gap-2 justify-end">
+                      <div className="flex items-center gap-2 justify-end flex-wrap">
                         {deleted ? (
                           <BtnSecondary
                             className={tw.btnSm}
@@ -392,6 +419,28 @@ function MaterialsManagement() {
                           </BtnSecondary>
                         ) : (
                           <>
+                            {m.status === "Draft" && (
+                              <>
+                                <BtnPrimary
+                                  className={tw.btnSm}
+                                  onClick={() => handleApprove(m._id)}
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    check_circle
+                                  </span>
+                                  Approve
+                                </BtnPrimary>
+                                <BtnDanger
+                                  className={tw.btnSm}
+                                  onClick={() => handleReject(m._id)}
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    cancel
+                                  </span>
+                                  Reject
+                                </BtnDanger>
+                              </>
+                            )}
                             <BtnSecondary
                               className={tw.btnSm}
                               onClick={() => openEdit(m)}

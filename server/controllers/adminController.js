@@ -3,17 +3,33 @@ const { logAction } = require("../utils/Logger");
 
 exports.create = async (req, res) => {
   try {
-    const { name, email, role, college } = req.body;
-    if (!name || !email)
-      return res.status(400).json({ message: "Name and email required" });
+    const { name, email, role, college, password } = req.body;
+    if (!name || !email || !password)
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
+
+    const admin = require("../config/firebase_admin");
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().createUser({
+        email: email.toLowerCase(),
+        password,
+        displayName: name,
+      });
+    } catch (firebaseErr) {
+      return res.status(400).json({ message: firebaseErr.message });
+    }
+    const User = require("../models/User");
     const user = await User.create({
       name,
       email: email.toLowerCase(),
       role: role?.toLowerCase() || "student",
       college,
-      firebaseUid: `manual-${Date.now()}`,
-      status: "Pending",
+      firebaseUid: firebaseUser.uid,
+      status: "Active",
     });
+
     res.status(201).json({ success: true, data: user });
   } catch (err) {
     if (err.code === 11000)

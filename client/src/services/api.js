@@ -130,6 +130,8 @@ export const mentorApi = {
     api.post(`/mentor/courses/${courseId}/students/${studentId}`, {}),
   getDashboardStats: () => api.get("/mentor/dashboard/stats"),
   getStudents: () => api.get("/mentor/students"),
+  approve: (id) => api.patch(`/mentor/materials/${id}/approve`, {}),
+  reject: (id) => api.delete(`/mentor/materials/${id}/reject`),
 };
 
 // ── Student ───────────────────────────────────────────────────────────────────
