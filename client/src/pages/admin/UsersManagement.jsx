@@ -87,10 +87,15 @@ function UsersManagement() {
     if (!form.name?.trim() || !form.email?.trim()) return;
     setSaving(true);
     try {
-      const res = await adminUsersApi.update(editId, form);
-      setUsers((p) =>
-        p.map((u) => (u._id === editId ? { ...u, ...res.data } : u)),
-      );
+      if (editId) {
+        const res = await adminUsersApi.update(editId, form);
+        setUsers((p) =>
+          p.map((u) => (u._id === editId ? { ...u, ...res.data } : u)),
+        );
+      } else {
+        const res = await adminUsersApi.create(form);
+        setUsers((p) => [res.data, ...p]);
+      }
       closeModal();
     } catch (err) {
       alert(err.message);
@@ -158,6 +163,18 @@ function UsersManagement() {
         subtitle="Manage students, mentors and administrators."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <BtnPrimary
+              onClick={() => {
+                setForm(EMPTY);
+                setEditId(null);
+                setModal(true);
+              }}
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                person_add
+              </span>
+              Add User
+            </BtnPrimary>
             {["All", "Student", "Mentor", "Admin"].map((r) => (
               <button
                 key={r}
@@ -445,7 +462,7 @@ function UsersManagement() {
 
       {modal && (
         <Modal
-          title="Edit User"
+          title={editId ? "Edit User" : "Add New User"}
           onClose={closeModal}
           footer={
             <>

@@ -12,7 +12,7 @@ function Navbar() {
   useEffect(() => {
     if (isLight) document.documentElement.classList.add("light");
     else document.documentElement.classList.remove("light");
-  });
+  }, [isLight]);
 
   useEffect(() => {
     notificationsApi
