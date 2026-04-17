@@ -12,6 +12,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const materialRoutes = require("./routes/materialRoutes");
 const mentorRoutes = require("./routes/MentorRoutes");
 const academicYearRoutes = require("./routes/academicYearRoutes");
+const studentRoutes = require("./routes/studentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -71,5 +73,8 @@ app.use((err, req, res, next) => {
   const status = err.status || 500;
   res.status(status).json({ error: err.message || "Internal server error" });
 });
+
+app.use("/api/student", studentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 module.exports = app;

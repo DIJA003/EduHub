@@ -12,9 +12,11 @@ const materialSchema = new mongoose.Schema(
     size: { type: String, default: "" },
     uploader: { type: String, trim: true },
     status: {
-      type: String,
-      enum: ["Draft", "Active", "Archived"],
-      default: "Draft",
+      status: {
+        type: String,
+        enum: ["Draft", "Active", "Archived", "Rejected"], // added Rejected
+        default: "Draft",
+      },
     },
     fileUrl: { type: String, default: "" },
     courseRef: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },

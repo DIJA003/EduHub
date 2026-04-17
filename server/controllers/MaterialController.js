@@ -4,6 +4,7 @@ const Course = require("../models/Course");
 const User = require("../models/User");
 const Enrollment = require("../models/Enrollment");
 const { logAction } = require("../utils/Logger");
+const { createNotification } = require("./notificationController");
 
 exports.getAll = async (req, res) => {
   try {
@@ -143,11 +144,15 @@ exports.restore = async (req, res) => {
 exports.approveMaterial = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
-    if (!material) {
+    if (!material)
       return res
         .status(404)
         .json({ success: false, message: "Material not found" });
-    }
+
+    if (material.status !== "Draft")
+      return res
+        .status(400)
+        .json({ success: false, message: "Only pending materials can be approved" });
 
     let course;
     if (req.user.role === "admin") {
@@ -159,7 +164,7 @@ exports.approveMaterial = async (req, res) => {
       });
     }
 
-    if (!course) {
+    if (!course)
       return res.status(403).json({
         success: false,
         message:
@@ -167,7 +172,6 @@ exports.approveMaterial = async (req, res) => {
             ? "Course not found"
             : "You can only manage materials in your courses",
       });
-    }
 
     const updated = await Material.findByIdAndUpdate(
       req.params.id,
@@ -182,11 +186,74 @@ exports.approveMaterial = async (req, res) => {
       entityName: updated.title,
       performedBy: req.user,
       details: { status: "Active", action: "approved" },
+      { new: true, runValidators: true }
+    );
+
+    await createNotification({
+      recipient: material.uploadedByRef,
+      sender: req.user.id,
+      type: "material_approved",
+      message: `Your material "${material.title}" has been approved in ${course.title}.`,
+      materialRef: material._id,
+      courseRef: course._id,
     });
 
     res.json({ success: true, data: updated });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+exports.rejectMaterial = async (req, res) => {
+  try {
+    const material = await Material.findById(req.params.id);
+    if (!material)
+      return res
+        .status(404)
+        .json({ success: false, message: "Material not found" });
+
+    if (material.status !== "Draft")
+      return res
+        .status(400)
+        .json({ success: false, message: "Only pending materials can be rejected" });
+
+    let course;
+    if (req.user.role === "admin") {
+      course = await Course.findById(material.courseRef);
+    } else {
+      course = await Course.findOne({
+        _id: material.courseRef,
+        instructorRef: req.user.id,
+      });
+    }
+
+    if (!course)
+      return res.status(403).json({
+        success: false,
+        message:
+          req.user.role === "admin"
+            ? "Course not found"
+            : "You can only manage materials in your courses",
+      });
+
+    const updated = await Material.findByIdAndUpdate(
+      req.params.id,
+      { status: "Rejected" },
+      { new: true }
+    );
+
+    await createNotification({
+      recipient: material.uploadedByRef,
+      sender: req.user.id,
+      type: "material_rejected",
+      message: `Your material "${material.title}" was rejected in ${course.title}.`,
+      materialRef: material._id,
+      courseRef: course._id,
+    });
+
+    res.json({ success: true, message: "Material rejected", data: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -210,7 +277,7 @@ exports.uploadMaterial = async (req, res) => {
       });
     }
 
-    if (!course) {
+    if (!course)
       return res.status(403).json({
         success: false,
         message:
@@ -218,11 +285,10 @@ exports.uploadMaterial = async (req, res) => {
             ? "Course not found"
             : "You can only upload to courses you teach",
       });
-    }
 
     const material = await Material.create({
       title: title || "Untitled",
-      course: course?.title || "",
+      course: course.title || "",
       type: type || "Other",
       size: size || "",
       uploader: req.user.name || req.user.email || "Mentor",
@@ -302,11 +368,10 @@ exports.rejectMaterial = async (req, res) => {
 exports.deleteMaterial = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
-    if (!material) {
+    if (!material)
       return res
         .status(404)
         .json({ success: false, message: "Material not found" });
-    }
 
     let course;
     if (req.user.role === "admin") {
@@ -318,7 +383,7 @@ exports.deleteMaterial = async (req, res) => {
       });
     }
 
-    if (!course) {
+    if (!course)
       return res.status(403).json({
         success: false,
         message:
@@ -342,9 +407,11 @@ exports.deleteMaterial = async (req, res) => {
       performedBy: req.user,
     });
 
+
+    await Material.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Material deleted permanently" });
   } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -362,7 +429,7 @@ exports.assignStudentToCourse = async (req, res) => {
       });
     }
 
-    if (!course) {
+    if (!course)
       return res.status(403).json({
         success: false,
         message:
@@ -370,7 +437,6 @@ exports.assignStudentToCourse = async (req, res) => {
             ? "Course not found"
             : "You can only assign students to your courses",
       });
-    }
 
     const student = await User.findOne({ _id: studentId, role: "student" });
     if (!student) {
@@ -406,9 +472,7 @@ exports.assignStudentToCourse = async (req, res) => {
 
 exports.getPendingMaterials = async (req, res) => {
   try {
-    const myCourses = await Course.find({ instructorRef: req.user.id }).select(
-      "_id",
-    );
+    const myCourses = await Course.find({ instructorRef: req.user.id }).select("_id");
     const courseIds = myCourses.map((c) => c._id);
 
     const pendingMaterials = await Material.find({
