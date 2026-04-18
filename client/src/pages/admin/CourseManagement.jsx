@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "../../components/admin/Modal";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -17,6 +17,8 @@ import {
   tw,
 } from "../../components/admin/adminUtils";
 import { coursesApi, collegesApi } from "../../services/api";
+import { academicYearsApi } from "../../services/api";
+import { adminUsersApi } from "../../services/api";
 
 const EMPTY = {
   code: "",
@@ -32,7 +34,7 @@ const statusVariant = (s) =>
 function CourseManagement() {
   const navigate = useNavigate();
   const { confirmDialog, confirm } = useConfirm();
-
+  const [academicYears, setAcademicYears] = useState([]);
   const [courses, setCourses] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,19 +45,22 @@ function CourseManagement() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [mentors, setMentors] = useState([]);
 
-  useEffect(() => {
-    loadData();
-  }, [showDeleted]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [cRes, colRes] = await Promise.all([
+      const mRes = await adminUsersApi.getAll().catch(() => ({ data: [] }));
+      setMentors(
+        (mRes.data || []).filter((u) => u.role === "Mentor" && !u.isDeleted),
+      );
+      const [cRes, colRes, ayRes] = await Promise.all([
         coursesApi.getAll(showDeleted),
         collegesApi.getAll(),
+        academicYearsApi.getAll(),
       ]);
+      setAcademicYears(ayRes.data || []);
       setCourses(cRes.data || []);
       setColleges(colRes.data || []);
     } catch (err) {
@@ -63,7 +68,11 @@ function CourseManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showDeleted]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filtered = courses.filter(
     (c) =>
@@ -431,13 +440,38 @@ function CourseManagement() {
                 ))}
               </FormSelect>
             </FormGroup>
+
+            <FormGroup label="Academic Year">
+              <FormSelect
+                value={form.academicYearRef || ""}
+                onChange={(e) => set("academicYearRef", e.target.value)}
+              >
+                <option value="">None</option>
+                {academicYears.map((y) => (
+                  <option key={y._id} value={y._id}>
+                    Year {y.year} {y.name ? `— ${y.name}` : ""}
+                  </option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
             <div className="grid grid-cols-2 gap-3">
-              <FormGroup label="Instructor">
-                <FormInput
-                  value={form.instructor}
-                  onChange={(e) => set("instructor", e.target.value)}
-                  placeholder="Dr. Name"
-                />
+              <FormGroup label="Instructor (Mentor)">
+                <FormSelect
+                  value={form.instructorRef || ""}
+                  onChange={(e) => {
+                    const m = mentors.find((x) => x._id === e.target.value);
+                    set("instructorRef", e.target.value);
+                    set("instructor", m?.name || "");
+                  }}
+                >
+                  <option value="">Unassigned</option>
+                  {mentors.map((m) => (
+                    <option key={m._id} value={m._id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </FormSelect>
               </FormGroup>
               <FormGroup label="Enrolled Students">
                 <FormInput

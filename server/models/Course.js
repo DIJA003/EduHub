@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const courseSchema = new mongoose.Schema(
   {
+    academicYearRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AcademicYear",
+      default: null,
+    },
     code: { type: String, required: true, unique: true, trim: true },
     title: { type: String, required: true, trim: true },
     college: { type: String, trim: true },

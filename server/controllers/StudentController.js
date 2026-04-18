@@ -2,6 +2,7 @@ const Material = require("../models/Material");
 const Course = require("../models/Course");
 const Enrollment = require("../models/Enrollment");
 const { createNotification } = require("./notificationController");
+const User = require("../models/User");
 
 exports.getMyCourses = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ exports.getMyCourses = async (req, res) => {
           activeMaterialCount: materialCount,
           enrolledAt: enrollment.enrolledAt,
         };
-      })
+      }),
     );
 
     res.json({ success: true, data: courses });
@@ -43,13 +44,14 @@ exports.getCourseDetails = async (req, res) => {
     });
 
     if (!enrollment)
-      return res
-        .status(403)
-        .json({ success: false, message: "You are not enrolled in this course" });
+      return res.status(403).json({
+        success: false,
+        message: "You are not enrolled in this course",
+      });
 
     const course = await Course.findById(req.params.courseId).populate(
       "instructorRef",
-      "name email"
+      "name email",
     );
 
     if (!course)
@@ -81,9 +83,10 @@ exports.uploadMaterial = async (req, res) => {
     });
 
     if (!enrollment)
-      return res
-        .status(403)
-        .json({ success: false, message: "You are not enrolled in this course" });
+      return res.status(403).json({
+        success: false,
+        message: "You are not enrolled in this course",
+      });
 
     const course = await Course.findById(courseRef);
     if (!course)
@@ -103,6 +106,15 @@ exports.uploadMaterial = async (req, res) => {
       uploadedByRef: req.user.id,
       uploaded: new Date().toISOString().split("T")[0],
     });
+    const { logAction } = require("../utils/Logger");
+    await logAction({
+      action: "CREATE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: { course: course.title, type: material.type, status: "Draft" },
+    });
 
     if (course.instructorRef) {
       await createNotification({
@@ -113,6 +125,23 @@ exports.uploadMaterial = async (req, res) => {
         materialRef: material._id,
         courseRef: course._id,
       });
+    }
+
+    const admins = await User.find({
+      role: "admin",
+      isDeleted: { $ne: true },
+    }).select("_id");
+    for (const admin of admins) {
+      if (admin._id.toString() !== course.instructorRef?.toString()) {
+        await createNotification({
+          recipient: admin._id,
+          sender: req.user.id,
+          type: "material_submitted",
+          message: `${req.user.name || "A student"} submitted "${material.title}" pending review in ${course.title}.`,
+          materialRef: material._id,
+          courseRef: course._id,
+        });
+      }
     }
 
     res.status(201).json({ success: true, data: material });

@@ -63,7 +63,7 @@ function HistoryLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
-
+  const [selected, setSelected] = useState(null);
   const [entityFilter, setEntityFilter] = useState("All");
   const [actionFilter, setActionFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -153,6 +153,45 @@ function HistoryLogs() {
       </span>
     );
   };
+  const Section = ({ label, children }) => (
+    <div>
+      <p
+        className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </p>
+      <div
+        className="rounded-lg overflow-hidden"
+        style={{
+          border: "1px solid var(--border)",
+          background: "var(--bg-card)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+
+  const Field = ({ label, value, mono }) => (
+    <div
+      className="flex items-start justify-between gap-4 px-4 py-2.5"
+      style={{ borderBottom: "1px solid var(--border-light)" }}
+    >
+      <span
+        className="text-[12px] flex-shrink-0"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </span>
+      <span
+        className={`text-[12.5px] text-right break-all ${mono ? "font-mono" : "font-medium"}`}
+        style={{ color: "var(--text-primary)" }}
+      >
+        {value}
+      </span>
+    </div>
+  );
 
   return (
     <div>
@@ -361,7 +400,8 @@ function HistoryLogs() {
               {logs.map((log) => (
                 <tr
                   key={log._id}
-                  className={tw.trHover}
+                  className={`${tw.trHover} cursor-pointer`}
+                  onClick={() => setSelected(log)}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.background = "var(--bg-hover)")
                   }
@@ -463,6 +503,109 @@ function HistoryLogs() {
                       </div>
                     </div>
                   </td>
+                  {selected && (
+                    <div
+                      className="fixed inset-0 z-[1000] flex justify-end"
+                      style={{ background: "rgba(0,0,0,0.55)" }}
+                      onClick={(e) =>
+                        e.target === e.currentTarget && setSelected(null)
+                      }
+                    >
+                      <div
+                        className="h-full w-full max-w-[480px] flex flex-col overflow-hidden"
+                        style={{
+                          background: "var(--bg-surface)",
+                          borderLeft: "1px solid var(--border)",
+                          animation: "slideIn 0.2s ease",
+                        }}
+                      >
+                        <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
+
+                        {/* Header */}
+                        <div
+                          className="flex items-center justify-between px-6 py-4"
+                          style={{ borderBottom: "1px solid var(--border)" }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <ActionBadge action={selected.action} />
+                            <span
+                              className="text-[15px] font-bold"
+                              style={{ color: "var(--text-primary)" }}
+                            >
+                              Log Detail
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => setSelected(null)}
+                            className="text-[20px] cursor-pointer hover:opacity-70"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                          {/* Meta */}
+                          <Section label="Record">
+                            <Field label="Entity" value={selected.entity} />
+                            <Field
+                              label="Name"
+                              value={selected.entityName || "—"}
+                            />
+                            <Field label="Action" value={selected.action} />
+                            <Field
+                              label="Time"
+                              value={formatDate(selected.createdAt)}
+                            />
+                          </Section>
+
+                          <Section label="Performed By">
+                            <Field
+                              label="Name"
+                              value={selected.performedBy?.name || "System"}
+                            />
+                            <Field
+                              label="Email"
+                              value={selected.performedBy?.email || "—"}
+                            />
+                          </Section>
+
+                          {/* Changed Fields */}
+                          {selected.details &&
+                            Object.keys(selected.details).length > 0 && (
+                              <Section label="What Changed">
+                                {Object.entries(selected.details).map(
+                                  ([k, v]) => (
+                                    <Field
+                                      key={k}
+                                      label={k
+                                        .replace(/([A-Z])/g, " $1")
+                                        .replace(/_/g, " ")}
+                                      value={
+                                        typeof v === "object"
+                                          ? JSON.stringify(v, null, 2)
+                                          : String(v)
+                                      }
+                                      mono={typeof v !== "string"}
+                                    />
+                                  ),
+                                )}
+                              </Section>
+                            )}
+
+                          <Section label="Internal IDs">
+                            <Field label="Log ID" value={selected._id} mono />
+                            <Field
+                              label="Entity ID"
+                              value={String(selected.entityId)}
+                              mono
+                            />
+                          </Section>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </tr>
               ))}
             </tbody>

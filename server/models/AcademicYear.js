@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const academicYearSchema = new mongoose.Schema(
   {
+    collegeRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      default: null,
+    },
     year: {
       type: Number,
       required: [true, "Year number is required"],

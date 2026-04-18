@@ -12,52 +12,6 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { mentorApi } from "../../services/api";
 
-// ─── Mock data (replace with real API calls) ──────────────────────────────────
-const MOCK_STATS = {
-  pendingReviews: 7,
-  approved: 34,
-  rejected: 5,
-  students: 120,
-};
-
-const MOCK_PENDING = [
-  {
-    _id: "1",
-    title: "Intro to Linked Lists",
-    uploader: "Ahmed Samy",
-    course: "Data Structures",
-    uploadedAt: "2025-03-10T10:00:00Z",
-  },
-  {
-    _id: "2",
-    title: "CSS Flexbox Deep Dive",
-    uploader: "Nour Tarek",
-    course: "Web Dev",
-    uploadedAt: "2025-03-11T08:30:00Z",
-  },
-  {
-    _id: "3",
-    title: "Binary Trees Explained",
-    uploader: "Omar Khalid",
-    course: "Algorithms",
-    uploadedAt: "2025-03-11T14:00:00Z",
-  },
-  {
-    _id: "4",
-    title: "React Hooks Tutorial",
-    uploader: "Layla Hassan",
-    course: "Web Dev",
-    uploadedAt: "2025-03-12T09:15:00Z",
-  },
-  {
-    _id: "5",
-    title: "SQL Joins Crash Course",
-    uploader: "Karim Ali",
-    course: "Databases",
-    uploadedAt: "2025-03-12T11:45:00Z",
-  },
-];
-
 function timeAgo(date) {
   const diff = Date.now() - new Date(date).getTime();
   const m = Math.floor(diff / 60000);

@@ -111,37 +111,88 @@ export function Navbar() {
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
-          {onHome ? (
+          {!dbUser ? (
+            onHome ? (
+              <>
+                <a
+                  className="text-sm font-semibold transition-colors hover:text-blue-500"
+                  href="#features"
+                >
+                  Features
+                </a>
+                <a
+                  className="text-sm font-semibold transition-colors hover:text-blue-500"
+                  href="#how-it-works"
+                >
+                  How it works
+                </a>
+                <a
+                  className="text-sm font-semibold transition-colors hover:text-blue-500"
+                  href="#testimonials"
+                >
+                  Testimonials
+                </a>
+              </>
+            ) : (
+              <NavLink
+                to="/home"
+                className="text-sm font-semibold hover:text-blue-600"
+              >
+                Home
+              </NavLink>
+            )
+          ) : role === "student" ? (
             <>
-              <a
-                className="text-sm font-semibold transition-colors hover:text-blue-500"
-                href="#features"
+              <NavLink
+                to="/home"
+                className="text-sm font-semibold hover:text-blue-600"
               >
-                Features
-              </a>
-              <a
-                className="text-sm font-semibold transition-colors hover:text-blue-500"
-                href="#how-it-works"
+                Home
+              </NavLink>
+              <NavLink
+                to="/academic-year"
+                className="text-sm font-semibold hover:text-blue-600"
               >
-                How it works
-              </a>
-              <a
-                className="text-sm font-semibold transition-colors hover:text-blue-500"
-                href="#colleges"
+                My Courses
+              </NavLink>
+              <NavLink
+                to="/std-dashboard"
+                className="text-sm font-semibold hover:text-blue-600"
               >
-                Colleges
-              </a>
-              <a
-                className="text-sm font-semibold transition-colors hover:text-blue-500"
-                href="#testimonials"
+                Dashboard
+              </NavLink>
+            </>
+          ) : role === "mentor" ? (
+            <>
+              <NavLink
+                to="/home"
+                className="text-sm font-semibold hover:text-blue-600"
               >
-                Testimonials
-              </a>
+                Home
+              </NavLink>
+              <NavLink
+                to="/mentor"
+                className="text-sm font-semibold hover:text-blue-600"
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/mentor/reviews"
+                className="text-sm font-semibold hover:text-blue-600"
+              >
+                Reviews
+              </NavLink>
+              <NavLink
+                to="/mentor/students"
+                className="text-sm font-semibold hover:text-blue-600"
+              >
+                Students
+              </NavLink>
             </>
           ) : (
             <NavLink
               to="/home"
-              className="text-sm font-semibold transition-colors hover:text-blue-600"
+              className="text-sm font-semibold hover:text-blue-600"
             >
               Home
             </NavLink>

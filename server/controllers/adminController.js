@@ -66,6 +66,13 @@ exports.getAll = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { name, email, role, college, status } = req.body;
+
+    const existing = await User.findById(req.params.id);
+    if (!existing)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
     const updatePayload = {
       ...(name && { name }),
       ...(email && { email: email.toLowerCase() }),
@@ -73,13 +80,30 @@ exports.update = async (req, res) => {
       ...(college && { college }),
       ...(status && { status }),
     };
+
     const user = await User.findByIdAndUpdate(req.params.id, updatePayload, {
       new: true,
     });
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+
+    const newRole = role?.toLowerCase();
+    if (existing.role === "mentor" && newRole && newRole !== "mentor") {
+      const Course = require("../models/Course");
+      await Course.updateMany(
+        { instructorRef: user._id },
+        { $unset: { instructorRef: "" }, instructor: "Unassigned" },
+      );
+
+      await logAction({
+        action: "UPDATE",
+        entity: "Course",
+        entityId: user._id, // use userId as reference
+        entityName: `Courses unassigned from ${user.name}`,
+        performedBy: req.user,
+        details: { reason: `User role changed from mentor to ${newRole}` },
+      });
+    }
+
+    // If role changed TO mentor from something else — nothing to do automatically
 
     await logAction({
       action: "UPDATE",

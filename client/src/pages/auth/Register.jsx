@@ -122,22 +122,6 @@ export default function Register() {
               Whether you're here to learn or to teach, EduHub is built for your
               journey.
             </p>
-            <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
-              {[
-                ["50K+", "Students"],
-                ["1.2K+", "Mentors"],
-                ["200+", "Colleges"],
-                ["98%", "Success Rate"],
-              ].map(([v, l]) => (
-                <div
-                  key={l}
-                  className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm"
-                >
-                  <p className="text-2xl font-black text-white">{v}</p>
-                  <p className="text-blue-100">{l}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -146,10 +130,10 @@ export default function Register() {
           <div className="w-full max-w-md">
             <div className="mb-6">
               <Link
-                to="/login"
+                to="/home"
                 className="text-sm font-semibold text-slate-600 hover:text-blue-600 dark:text-slate-300 transition-colors"
               >
-                ← Back to Login
+                ← Back to Home
               </Link>
             </div>
 

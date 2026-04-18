@@ -311,13 +311,10 @@ export function Home() {
             </p>
             <div className="relative z-10 flex flex-col justify-center gap-4 sm:flex-row">
               <button
-                onClick={() => navigate("/academic-year")}
+                onClick={() => navigate("/register")}
                 className="rounded-2xl bg-white px-10 py-4 text-lg font-black text-blue-700 transition-transform hover:scale-105"
               >
                 Get Started Now
-              </button>
-              <button className="rounded-2xl border-2 border-white/30 bg-transparent px-10 py-4 text-lg font-black text-white transition-colors hover:bg-white/10">
-                Contact Support
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@ import UsersManagement from "./UsersManagement";
 import HistoryLogs from "./HistoryLogs";
 import "../../assets/admin.css";
 import ChangePassword from "../auth/ChangePassword";
+import EnrollmentManagement from "./EnrollManagement";
 
 function AdminDashboard() {
   return (
@@ -31,6 +32,7 @@ function AdminDashboard() {
             <Route path="courses" element={<CourseManagement />} />
             <Route path="materials" element={<MaterialsManagement />} />
             <Route path="users" element={<UsersManagement />} />
+            <Route path="enrollments" element={<EnrollmentManagement />} />
             <Route path="history" element={<HistoryLogs />} />
             <Route path="change-password" element={<ChangePassword />} />
           </Routes>

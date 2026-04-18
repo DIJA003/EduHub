@@ -86,6 +86,8 @@ export const materialsApi = {
   update: (id, data) => api.put(`/admin/materials/${id}`, data),
   remove: (id) => api.delete(`/admin/materials/${id}`),
   restore: (id) => api.patch(`/admin/materials/${id}/restore`),
+  approve: (id) => api.patch(`/admin/materials/${id}/approve`, {}),
+  reject: (id) => api.patch(`/admin/materials/${id}/reject`, {}),
 };
 
 // ── Admin users ───────────────────────────────────────────────────────────────
@@ -143,13 +145,20 @@ export const studentApi = {
 
 // ── Enrollment ────────────────────────────────────────────────────────────────
 export const enrollmentApi = {
-  getStudents: (courseId) => api.get(`/admin/courses/${courseId}/students`),
-  addStudent: (courseId, data) =>
-    api.post(`/admin/courses/${courseId}/students`, data),
-  removeStudent: (courseId, studentId) =>
-    api.delete(`/admin/courses/${courseId}/students/${studentId}`),
-  getStudentCourses: (studentId) =>
-    api.get(`/admin/students/${studentId}/courses`),
+  // admin
+  getStudents: () => api.get("/admin/enrollments/students"),
+  getCourses: (showDeleted = false) =>
+    api.get(`/admin/courses?showDeleted=${showDeleted}`),
+  enroll: (studentId, courseId) =>
+    api.post("/admin/enrollments", { studentId, courseId }),
+  unenroll: (studentId, courseId) =>
+    api.delete(`/admin/enrollments/${studentId}/${courseId}`),
+  mentorStudents: () => api.get("/mentor/enrollable-students"),
+  mentorCourses: () => api.get("/mentor/my-courses"),
+  mentorEnroll: (studentId, courseId) =>
+    api.post("/mentor/enrollments", { studentId, courseId }),
+  mentorUnenroll: (studentId, courseId) =>
+    api.delete(`/mentor/enrollments/${studentId}/${courseId}`),
 };
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const notificationsApi = {
@@ -157,4 +166,10 @@ export const notificationsApi = {
   markRead: (id) => api.patch(`/notifications/${id}/read`),
   deleteOne: (id) => api.delete(`/notifications/${id}`),
   deleteAll: () => api.delete("/notifications/delete-all"),
+};
+// ── Academic Years ─────────────────────────────────────────────────────────────
+export const academicYearsApi = {
+  getAll: () => api.get("/academic-years"),
+  getByCollege: (colId) => api.get(`/academic-years/by-college/${colId}`),
+  getColleges: () => api.get("/academic-years/colleges"),
 };

@@ -1,10 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import YearCard from "./YearCard";
-
 export default function AcademicPathSection() {
   const navigate = useNavigate();
-
   const handleYearClick = (year) => {
     navigate(`/academic-year/${year}`);
   };
@@ -51,7 +49,9 @@ export default function AcademicPathSection() {
           className="inline-flex items-center justify-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:border-slate-400"
           aria-label="Add academic year"
         >
-          <span className="text-lg leading-none" aria-hidden>+</span>
+          <span className="text-lg leading-none" aria-hidden>
+            +
+          </span>
           Add academic year
         </button>
       </div>

@@ -1,12 +1,15 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "../../components/mentor/Sidebar";
-import Navbar  from "../../components/mentor/Navbar";
-import DashboardHome  from "./DashboardHome";
-import VideoReviews   from "./VideoReviews";
-import Students       from "./Students";
+import Navbar from "../../components/mentor/Navbar";
+import DashboardHome from "./DashboardHome";
+import VideoReviews from "./VideoReviews";
+import Students from "./Students";
 import UploadMaterial from "./UploadMaterial";
-import MentorProfile  from "./MentorProfile";
+import MentorProfile from "./MentorProfile";
 import "../../assets/admin.css"; // reuse the same design-system CSS
+import MentorHistory from "./MentorHistory";
+
+import EnrollStudents from "./EnrollStudents";
 
 function MentorDashboard() {
   return (
@@ -24,12 +27,14 @@ function MentorDashboard() {
           style={{ background: "var(--bg-base)" }}
         >
           <Routes>
-            <Route index              element={<DashboardHome />}  />
-            <Route path="reviews"     element={<VideoReviews />}   />
-            <Route path="students"    element={<Students />}       />
-            <Route path="upload"      element={<UploadMaterial />} />
-            <Route path="profile"     element={<MentorProfile />}  />
-            <Route path="*"           element={<Navigate to="/mentor" replace />} />
+            <Route index element={<DashboardHome />} />
+            <Route path="reviews" element={<VideoReviews />} />
+            <Route path="students" element={<Students />} />
+            <Route path="enroll" element={<EnrollStudents />} />
+            <Route path="upload" element={<UploadMaterial />} />
+            <Route path="history" element={<MentorHistory />} />
+            <Route path="profile" element={<MentorProfile />} />
+            <Route path="*" element={<Navigate to="/mentor" replace />} />
           </Routes>
         </div>
       </div>
