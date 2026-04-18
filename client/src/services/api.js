@@ -7,7 +7,8 @@ async function getToken(forceRefresh = false) {
   if (!user) return null;
   try {
     return await user.getIdToken(forceRefresh);
-  } catch {
+  } catch (err) {
+    console.warn("[api] getToken error:", err.message);
     return null;
   }
 }
@@ -18,35 +19,46 @@ async function request(method, path, body, retry = true) {
   const token = await getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    throw new Error("Network error — check your connection");
+  }
 
   if (res.status === 401 && retry) {
     const freshToken = await getToken(true);
     if (freshToken) {
       headers["Authorization"] = `Bearer ${freshToken}`;
-      const retryRes = await fetch(`${BASE_URL}${path}`, {
-        method,
-        headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-      const retryData = await retryRes.json().catch(() => ({}));
-      if (!retryRes.ok)
-        throw new Error(
-          retryData.message || `Request failed (${retryRes.status})`,
-        );
-      return retryData;
+      try {
+        const retryRes = await fetch(`${BASE_URL}${path}`, {
+          method,
+          headers,
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+        const retryData = await retryRes.json().catch(() => ({}));
+        if (!retryRes.ok) {
+          throw new Error(
+            retryData.message || `Request failed (${retryRes.status})`,
+          );
+        }
+        return retryData;
+      } catch (retryErr) {
+        throw retryErr;
+      }
     }
   }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok)
+  if (!res.ok) {
     throw new Error(
       data.message || data.error || `Request failed (${res.status})`,
     );
+  }
   return data;
 }
 
@@ -87,7 +99,6 @@ export const materialsApi = {
   remove: (id) => api.delete(`/admin/materials/${id}`),
   restore: (id) => api.patch(`/admin/materials/${id}/restore`),
   approve: (id) => api.patch(`/admin/materials/${id}/approve`, {}),
-  // FIX: was api.patch with wrong method; admin reject uses PATCH not DELETE
   reject: (id) => api.patch(`/admin/materials/${id}/reject`, {}),
 };
 
@@ -110,7 +121,6 @@ export const dashboardApi = {
 // ── History logs ──────────────────────────────────────────────────────────────
 export const logsApi = {
   getLogs: (params = {}) => {
-    // Filter out undefined/empty values before building query string
     const clean = Object.fromEntries(
       Object.entries(params).filter(
         ([, v]) => v !== undefined && v !== "" && v !== null,
@@ -127,7 +137,6 @@ export const mentorApi = {
   uploadMaterial: (data) => api.post("/mentor/materials/upload", data),
   getPendingMaterials: () => api.get("/mentor/materials/pending"),
   getMyMaterials: () => api.get("/mentor/materials/my-courses"),
-  // FIX: both approve and reject are now PATCH
   approveMaterial: (id, data) =>
     api.patch(`/mentor/materials/${id}/approve`, data || {}),
   rejectMaterial: (id, data) =>
@@ -149,7 +158,6 @@ export const studentApi = {
 
 // ── Enrollment (admin) ────────────────────────────────────────────────────────
 export const enrollmentApi = {
-  // admin
   getStudents: () => api.get("/admin/enrollments/students"),
   getAllEnrollments: () => api.get("/admin/enrollments/all"),
   getCourses: (showDeleted = false) =>
@@ -158,7 +166,6 @@ export const enrollmentApi = {
     api.post("/admin/enrollments", { studentId, courseId }),
   unenroll: (studentId, courseId) =>
     api.delete(`/admin/enrollments/${studentId}/${courseId}`),
-  // mentor
   mentorStudents: () => api.get("/mentor/enrollable-students"),
   mentorCourses: () => api.get("/mentor/my-courses"),
   mentorEnroll: (studentId, courseId) =>
@@ -215,4 +222,10 @@ export const mentorReviewApi = {
     api.patch(`/mentor/materials/${id}/approve`, { feedback }),
   reject: (id, feedback) =>
     api.patch(`/mentor/materials/${id}/reject`, { feedback }),
+};
+
+// ── Firebase upload (new) ─────────────────────────────────────────────────────
+export const uploadApi = {
+  getUploadUrl: (data) => api.post("/upload/signed-url", data),
+  confirmUpload: (data) => api.post("/upload/confirm", data),
 };

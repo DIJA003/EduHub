@@ -13,10 +13,19 @@ const materialSchema = new mongoose.Schema(
     uploader: { type: String, trim: true },
     status: {
       type: String,
-      enum: ["Draft", "Active", "Archived", "Rejected"],
+      enum: [
+        "Draft",
+        "pending",
+        "Active",
+        "approved",
+        "Archived",
+        "Rejected",
+        "rejected",
+      ],
       default: "Draft",
     },
     fileUrl: { type: String, default: "" },
+    storagePath: { type: String, default: "" },
     courseRef: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
     uploadedByRef: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
@@ -37,6 +46,7 @@ const materialSchema = new mongoose.Schema(
     courseId: { type: String, default: "" },
     sectionId: { type: String, default: "" },
     sectionLabel: { type: String, default: "" },
+    uploaded: { type: String, default: "" },
   },
   { timestamps: true },
 );
@@ -44,5 +54,6 @@ const materialSchema = new mongoose.Schema(
 materialSchema.index({ courseRef: 1, status: 1 });
 materialSchema.index({ uploadedByRef: 1 });
 materialSchema.index({ uploaderRole: 1, status: 1 });
+materialSchema.index({ isDeleted: 1, status: 1 });
 
 module.exports = mongoose.model("Material", materialSchema);

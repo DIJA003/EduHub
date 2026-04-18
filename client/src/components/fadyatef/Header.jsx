@@ -37,7 +37,7 @@ function Header() {
             Academic Years
           </button>
           <button className="hover:text-edublue" onClick={handleCoursesClick}>
-            Academic Years
+            My Academic Year
           </button>
           <button
             className="hover:text-edublue"
@@ -49,7 +49,7 @@ function Header() {
             className="hover:text-edublue"
             onClick={() => navigate("/profile")}
           >
-            Dashboard
+            Profile
           </button>
           {/* <div className="flex items-center gap-3">
             <img
