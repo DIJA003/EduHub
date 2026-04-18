@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { auth } from "../services/firebase";
 import { uploadApi } from "../services/api";
 
 export function useFirebaseUpload() {
@@ -18,35 +17,48 @@ export function useFirebaseUpload() {
       try {
         const signedRes = await uploadApi.getUploadUrl({
           fileName: file.name,
-          mimeType: file.type,
+          mimeType: file.type || "application/octet-stream",
           fileSize: file.size,
-          courseId,
-          sectionId,
-          sectionLabel,
-          yearId,
+          courseId: courseId || undefined,
+          sectionId: sectionId || undefined,
+          sectionLabel: sectionLabel || undefined,
+          yearId: yearId || undefined,
         });
 
         const { signedUrl, storagePath, fileType } = signedRes.data;
 
+        if (!signedUrl || !storagePath) {
+          throw new Error(
+            "Failed to get upload URL from server. Please try again.",
+          );
+        }
+
         await uploadWithProgress(signedUrl, file, (pct) => setProgress(pct));
+
+        setProgress(95);
 
         const confirmRes = await uploadApi.confirmUpload({
           storagePath,
           fileName: file.name,
-          mimeType: file.type,
+          mimeType: file.type || "application/octet-stream",
           fileSize: file.size,
-          courseId,
-          sectionId,
-          sectionLabel,
-          yearId,
+          courseId: courseId || undefined,
+          sectionId: sectionId || undefined,
+          sectionLabel: sectionLabel || undefined,
+          yearId: yearId || undefined,
           title: title || file.name.replace(/\.[^.]+$/, ""),
         });
+
+        if (!confirmRes.data) {
+          throw new Error("Upload confirmed but no material record returned.");
+        }
 
         setProgress(100);
         return confirmRes.data;
       } catch (err) {
-        setError(err.message);
-        throw err;
+        const message = err.message || "Upload failed";
+        setError(message);
+        throw new Error(message);
       } finally {
         setUploading(false);
       }
@@ -78,20 +90,36 @@ function uploadWithProgress(signedUrl, file, onProgress) {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+        reject(
+          new Error(
+            `Firebase upload failed: ${xhr.status} ${xhr.statusText}. Please check your internet connection.`,
+          ),
+        );
       }
     });
 
     xhr.addEventListener("error", () => {
-      reject(new Error("Network error during upload"));
+      reject(
+        new Error(
+          "Network error during file upload. Please check your connection.",
+        ),
+      );
     });
 
     xhr.addEventListener("abort", () => {
-      reject(new Error("Upload aborted"));
+      reject(new Error("Upload was aborted."));
     });
 
+    xhr.addEventListener("timeout", () => {
+      reject(new Error("Upload timed out. Please try again."));
+    });
+
+    xhr.timeout = 10 * 60 * 1000;
     xhr.open("PUT", signedUrl);
-    xhr.setRequestHeader("Content-Type", file.type);
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream",
+    );
     xhr.send(file);
   });
 }
