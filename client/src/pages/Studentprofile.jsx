@@ -6,35 +6,46 @@ import { useTheme } from "../context/ThemeContext";
 import Header from "../components/fadyatef/Header";
 import Footer from "../components/fadyatef/Footer";
 import profileImage from "../assets/images/profile.jpg";
+import { profileApi } from "../services/api";
 
-function buildProfileFormFromAccount(dbUser, user, currentYearId, years) {
+const PROFILE_STORAGE_KEY = "eduhub-profile-edits-v1";
+
+// Read user-saved edits from localStorage
+function loadProfileEdits() {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// Save user edits to localStorage
+function saveProfileEdits(form) {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(form));
+  } catch {}
+}
+
+function buildBaseFromAccount(dbUser, user, currentYearId, years) {
   const mongoId = dbUser?._id ?? dbUser?.id;
   const studentId =
     mongoId != null
       ? `…${String(mongoId).slice(-8)}`
-      : user?.uid
-        ? user.uid.slice(0, 8)
-        : "—";
+      : user?.uid ? user.uid.slice(0, 8) : "—";
 
-  const activeYear = currentYearId && years?.[currentYearId];
-  const shortTitle = activeYear?.meta?.title?.split(":")[0]?.trim();
-  const yearLevel =
+  const activeYear  = currentYearId && years?.[currentYearId];
+  const shortTitle  = activeYear?.meta?.title?.split(":")[0]?.trim();
+  const yearLevel   =
     currentYearId && shortTitle
       ? `${shortTitle} — in progress (Year ${currentYearId})`
-      : currentYearId
-        ? `Year ${currentYearId} — in progress`
-        : "—";
+      : currentYearId ? `Year ${currentYearId} — in progress` : "—";
 
   return {
-    name: dbUser?.name?.trim() || user?.displayName?.trim() || "Student",
+    name:       dbUser?.name?.trim()  || user?.displayName?.trim() || "Student",
     studentId,
-    college:
-      dbUser?.college && dbUser.college !== "—"
-        ? dbUser.college
-        : "Not set",
+    college:    dbUser?.college && dbUser.college !== "—" ? dbUser.college : "Not set",
     yearLevel,
-    email: (dbUser?.email || user?.email || "").trim() || "—",
-    phone: "—",
+    email:      (dbUser?.email || user?.email || "").trim() || "—",
+    phone:      "—",
     graduation: "—",
   };
 }
@@ -57,40 +68,76 @@ export default function StudentProfile() {
   const [notifOn,    setNotifOn]    = useState(true);
   const [activeCard, setActiveCard] = useState(null);
   const [saved,      setSaved]      = useState(false);
+  const [saving,     setSaving]     = useState(false);
 
-  const baselineRef = useRef(
-    buildProfileFormFromAccount(null, null, null, {}),
-  );
-  const [form, setForm] = useState(() =>
-    buildProfileFormFromAccount(null, null, null, {}),
-  );
+  // Load form: prefer localStorage edits, fall back to account data
+  const [form, setForm] = useState(() => {
+    const stored = loadProfileEdits();
+    if (stored) return stored;
+    return buildBaseFromAccount(null, null, null, {});
+  });
 
-  const applyAccountToForm = useCallback(() => {
-    const next = buildProfileFormFromAccount(dbUser, user, currentYearId, years);
-    baselineRef.current = next;
-    setForm(next);
-  }, [dbUser, user, currentYearId, years]);
+  // Snapshot of form before editing — for Cancel
+  const editSnapshotRef = useRef(null);
 
+  // Once dbUser loads, fill in any blank fields from account data
+  // but NEVER overwrite fields the user has already saved to localStorage
+  const accountFilledRef = useRef(false);
   useEffect(() => {
-    if (editMode) return;
-    applyAccountToForm();
-  }, [editMode, applyAccountToForm]);
+    if (!dbUser || accountFilledRef.current) return;
+    accountFilledRef.current = true;
 
-  const earnedCredits = Object.values(years).reduce(
-    (sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0
-  );
+    const stored = loadProfileEdits();
+    if (stored) {
+      // Already has saved edits — only update read-only fields
+      setForm((prev) => ({
+        ...prev,
+        studentId: buildBaseFromAccount(dbUser, user, currentYearId, years).studentId,
+        yearLevel: buildBaseFromAccount(dbUser, user, currentYearId, years).yearLevel,
+        email:     (dbUser?.email || user?.email || "").trim() || prev.email,
+        // Don't overwrite name/phone/college/graduation — user saved those
+      }));
+    } else {
+      // First time — populate from account
+      const base = buildBaseFromAccount(dbUser, user, currentYearId, years);
+      setForm(base);
+    }
+  }, [dbUser]); // eslint-disable-line
+
+  const earnedCredits  = Object.values(years).reduce((sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0);
   const progressPercent = Math.min(Math.round((earnedCredits / TOTAL_CREDITS) * 100), 100);
 
-  const handleSave = () => {
-    baselineRef.current = { ...form };
-    setSaved(true);
-    setEditMode(false);
-    setTimeout(() => setSaved(false), 3000);
+  const handleEdit = () => {
+    editSnapshotRef.current = { ...form }; // snapshot before editing
+    setEditMode(true);
   };
 
   const handleCancel = () => {
-    setForm({ ...baselineRef.current });
+    if (editSnapshotRef.current) setForm({ ...editSnapshotRef.current });
     setEditMode(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    // Persist to localStorage immediately so refresh keeps edits
+    saveProfileEdits(form);
+
+    // Try to persist to backend
+    try {
+      await profileApi.update({
+        name:       form.name,
+        phone:      form.phone,
+        graduation: form.graduation,
+        college:    form.college,
+      });
+    } catch (err) {
+      console.warn("Profile backend save failed — kept in localStorage:", err.message);
+    }
+
+    setSaving(false);
+    setSaved(true);
+    setEditMode(false);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   const Toggle = ({ on, onToggle }) => (
@@ -106,11 +153,11 @@ export default function StudentProfile() {
     </button>
   );
 
-  const bg     = darkMode ? "bg-slate-900"   : "bg-slate-50";
-  const card   = darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
-  const text   = darkMode ? "text-white"     : "text-slate-900";
-  const muted  = darkMode ? "text-slate-400" : "text-slate-500";
-  const input  = darkMode
+  const bg    = darkMode ? "bg-slate-900" : "bg-slate-50";
+  const card  = darkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
+  const text  = darkMode ? "text-white" : "text-slate-900";
+  const muted = darkMode ? "text-slate-400" : "text-slate-500";
+  const input = darkMode
     ? "bg-slate-700 border-slate-600 text-white focus:ring-blue-400"
     : "bg-white border-slate-300 text-slate-800 focus:ring-blue-500";
 
@@ -134,17 +181,13 @@ export default function StudentProfile() {
                   <input
                     className={`mb-1 w-full rounded-lg border px-3 py-1.5 text-xl font-bold focus:outline-none focus:ring-2 ${input}`}
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
                 ) : (
                   <h1 className={`text-2xl font-bold ${text}`}>{form.name}</h1>
                 )}
-                <p className="text-sm font-semibold text-blue-500">
-                  Account: {form.email}
-                </p>
-                <p className="text-xs font-medium text-slate-500">
-                  Record ID: {form.studentId}
-                </p>
+                <p className="text-sm font-semibold text-blue-500">Account: {form.email}</p>
+                <p className="text-xs font-medium text-slate-500">Record ID: {form.studentId}</p>
                 <p className={`text-sm ${muted}`}>
                   {form.college} • {dbUser?.role ? `${dbUser.role.charAt(0).toUpperCase()}${dbUser.role.slice(1)}` : "Student"}
                 </p>
@@ -161,13 +204,13 @@ export default function StudentProfile() {
                     }`}>
                     Cancel
                   </button>
-                  <button onClick={handleSave}
-                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 transition">
-                    Save Changes
+                  <button onClick={handleSave} disabled={saving}
+                    className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 transition disabled:opacity-60">
+                    {saving ? "Saving…" : "Save Changes"}
                   </button>
                 </>
               ) : (
-                <button onClick={() => setEditMode(true)}
+                <button onClick={handleEdit}
                   className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 active:scale-95 transition">
                   ✏️ Edit Profile
                 </button>
@@ -176,10 +219,10 @@ export default function StudentProfile() {
           </div>
         </div>
 
-        {/* Two-column layout */}
+        {/* Two-column */}
         <div className="grid gap-6 lg:grid-cols-[1fr,1.8fr]">
 
-          {/* Left column */}
+          {/* Left */}
           <div className="space-y-6">
 
             {/* Personal Information */}
@@ -187,23 +230,25 @@ export default function StudentProfile() {
               <h2 className={`mb-4 text-base font-bold ${text}`}>Personal Information</h2>
               <div className="space-y-3 text-sm">
                 {[
-                  { label: "Email",         key: "email",        type: "email" },
-                  { label: "Phone",         key: "phone",        type: "tel"   },
-                  { label: "College / program", key: "college",  type: "text"  },
-                  { label: "Year level",    key: "yearLevel",    type: "text"  },
-                  { label: "Graduation",    key: "graduation",   type: "text"  },
-                ].map(({ label, key, type }) => (
+                  { label: "Email",             key: "email",      type: "email", readOnly: true  },
+                  { label: "Phone",             key: "phone",      type: "tel",   readOnly: false },
+                  { label: "College / program", key: "college",    type: "text",  readOnly: false },
+                  { label: "Year level",        key: "yearLevel",  type: "text",  readOnly: true  },
+                  { label: "Graduation",        key: "graduation", type: "text",  readOnly: false },
+                ].map(({ label, key, type, readOnly }) => (
                   <div key={key} className="flex items-center justify-between gap-2">
-                    <span className={`w-24 shrink-0 ${muted}`}>{label}</span>
-                    {editMode ? (
+                    <span className={`w-28 shrink-0 ${muted}`}>{label}</span>
+                    {editMode && !readOnly ? (
                       <input
                         type={type}
                         className={`flex-1 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${input}`}
                         value={form[key]}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                       />
                     ) : (
-                      <span className={`font-medium text-right ${text}`}>{form[key]}</span>
+                      <span className={`font-medium text-right ${text} ${readOnly && editMode ? "opacity-50" : ""}`}>
+                        {form[key]}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -238,7 +283,7 @@ export default function StudentProfile() {
             </div>
           </div>
 
-          {/* Right column */}
+          {/* Right */}
           <div className="space-y-6">
 
             {/* Academic Overview */}
@@ -249,9 +294,7 @@ export default function StudentProfile() {
                   darkMode ? "bg-slate-700 border-slate-600" : "bg-slate-50 border-slate-100 hover:bg-blue-50"
                 }`}>
                   <span className="text-3xl font-bold text-blue-500">3.8</span>
-                  <span className={`mt-1 text-[10px] font-semibold uppercase tracking-wide ${muted}`}>
-                    Cumulative GPA
-                  </span>
+                  <span className={`mt-1 text-[10px] font-semibold uppercase tracking-wide ${muted}`}>Cumulative GPA</span>
                 </div>
                 <div className={`flex flex-col items-center justify-center rounded-xl border p-4 cursor-default transition hover:border-blue-300 ${
                   darkMode ? "bg-slate-700 border-slate-600" : "bg-slate-50 border-slate-100 hover:bg-blue-50"
@@ -260,17 +303,13 @@ export default function StudentProfile() {
                     {earnedCredits}
                     <span className={`text-base font-semibold ${muted}`}> / {TOTAL_CREDITS}</span>
                   </span>
-                  <span className={`mt-1 text-[10px] font-semibold uppercase tracking-wide ${muted}`}>
-                    Total Credits
-                  </span>
+                  <span className={`mt-1 text-[10px] font-semibold uppercase tracking-wide ${muted}`}>Total Credits</span>
                 </div>
                 <div className={`flex flex-col items-center justify-center rounded-xl border p-4 cursor-default transition ${
                   darkMode ? "bg-emerald-900/30 border-emerald-800 hover:bg-emerald-900/50" : "bg-emerald-50 border-emerald-100 hover:bg-emerald-100"
                 }`}>
                   <span className="text-3xl">🏅</span>
-                  <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-500">
-                    Dean's List
-                  </span>
+                  <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-500">Dean's List</span>
                 </div>
               </div>
 
@@ -315,15 +354,9 @@ export default function StudentProfile() {
                       <p className={`text-sm font-semibold ${text}`}>{lastCompletedCourse.name}</p>
                       <p className={`text-xs ${muted}`}>
                         {lastCompletedCourse.code} · Year {lastCompletedCourse.yearId} ·{" "}
-                        {new Date(lastCompletedCourse.completedAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        {new Date(lastCompletedCourse.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                       </p>
-                      {activeCard === "last" && (
-                        <p className="mt-1 text-xs font-medium text-blue-500">✓ Course completed</p>
-                      )}
+                      {activeCard === "last" && <p className="mt-1 text-xs font-medium text-blue-500">✓ Course completed</p>}
                     </div>
                   </button>
                 )}
@@ -336,8 +369,8 @@ export default function StudentProfile() {
                       activeCard === cert.id
                         ? "border-blue-400 bg-blue-50 ring-2 ring-blue-200"
                         : darkMode
-                        ? "border-slate-700 bg-slate-700/50 hover:border-blue-500"
-                        : "border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50"
+                          ? "border-slate-700 bg-slate-700/50 hover:border-blue-500"
+                          : "border-slate-100 bg-slate-50 hover:border-blue-200 hover:bg-blue-50"
                     }`}
                   >
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${cert.color}`}>
@@ -346,9 +379,7 @@ export default function StudentProfile() {
                     <div>
                       <p className={`text-sm font-semibold ${text}`}>{cert.name}</p>
                       <p className={`text-xs ${muted}`}>{cert.date}</p>
-                      {activeCard === cert.id && (
-                        <p className="mt-1 text-xs font-medium text-blue-500">✓ Certificate earned</p>
-                      )}
+                      {activeCard === cert.id && <p className="mt-1 text-xs font-medium text-blue-500">✓ Certificate earned</p>}
                     </div>
                   </button>
                 ))}
@@ -362,7 +393,6 @@ export default function StudentProfile() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

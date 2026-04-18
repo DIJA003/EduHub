@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMaterials } from "../../context/MaterialContext";
+import { mentorReviewApi } from "../../services/api";
 import { Badge, PageHeader, TableWrap, TableSearch, EmptyState, BtnPrimary, BtnDanger, BtnSecondary, tw } from "../../components/admin/adminUtils";
 
 const STATUS_VARIANT = { pending: "warning", approved: "success", rejected: "danger" };
@@ -16,7 +17,7 @@ function timeAgo(date) {
 function VideoReviews() {
   const { materials, pendingMaterials, approveMaterial, rejectMaterial } = useMaterials();
 
-  // Combine pending from context + mock data for display
+  // allMaterials = real backend data (from MaterialContext) + fallback mock
   const MOCK = [
     { id: "m1", fileName: "Intro to Linked Lists",  uploader: "Ahmed Samy",   courseName: "Data Structures", status: "pending",  uploadDate: "2025-03-10T10:00:00Z" },
     { id: "m2", fileName: "CSS Flexbox Deep Dive",  uploader: "Nour Tarek",   courseName: "Web Dev",         status: "pending",  uploadDate: "2025-03-11T08:30:00Z" },
@@ -25,11 +26,10 @@ function VideoReviews() {
     { id: "m5", fileName: "SQL Joins Crash Course", uploader: "Karim Ali",    courseName: "Databases",       status: "rejected", uploadDate: "2025-03-07T11:45:00Z" },
   ];
 
-  // Merge real pending materials from students with mock data
-  const allMaterials = [
-    ...pendingMaterials.map((m) => ({ ...m, uploader: m.uploader || "Student" })),
-    ...MOCK.filter((mock) => !pendingMaterials.some((p) => p.id === mock.id)),
-  ];
+  const realMaterials = materials.length > 0 ? materials : [];
+  const allMaterials = realMaterials.length > 0
+    ? realMaterials.map((m) => ({ ...m, uploader: m.uploader || "Student" }))
+    : MOCK;
 
   const [localStatus, setLocalStatus] = useState({});
   const [search,       setSearch]       = useState("");
@@ -53,8 +53,8 @@ function VideoReviews() {
     setLocalStatus((prev) => ({ ...prev, [feedbackId]: newStatus }));
     // If it's a real material from context, update context too
     if (pendingMaterials.some((m) => m.id === feedbackId)) {
-      if (actionType === "approve") approveMaterial(feedbackId);
-      else rejectMaterial(feedbackId);
+      if (actionType === "approve") approveMaterial(feedbackId, feedbackText);
+      else rejectMaterial(feedbackId, feedbackText);
     }
     setFeedbackId(null);
   };

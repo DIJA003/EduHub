@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../services/firebase";
+import { useAuth } from "../context/AuthContext";
 import Header from "../components/fadyatef/Header";
 import AcademicPathSection from "../components/fadyatef/AcademicPathSection";
 import RecommendedSection from "../components/fadyatef/RecommendedSection";
@@ -9,34 +9,7 @@ import Footer from "../components/fadyatef/Footer";
 
 export default function AcademicYear() {
   const navigate = useNavigate();
-  const [dbUser, setDbUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (!firebaseUser) {
-        navigate("/login");
-        return;
-      }
-
-      try {
-        const token = await firebaseUser.getIdToken();
-        const res = await fetch("http://localhost:8000/api/users/login", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDbUser(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user data:", err);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
+  const { dbUser, loading } = useAuth();
 
   const handleAction = (label) => {
     alert(`You clicked: ${label}`);

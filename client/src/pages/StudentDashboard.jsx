@@ -38,8 +38,21 @@ export default function StudentDashboard() {
   const [undoTarget,      setUndoTarget]      = useState(null);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
 
-  // Activity log
-  const [activityLog, setActivityLog] = useState([]);
+  // Activity log — persisted to localStorage so it survives refresh
+  const ACTIVITY_KEY = "eduhub-activity-log-v1";
+  const [activityLog, setActivityLog] = useState(() => {
+    try {
+      const stored = localStorage.getItem(ACTIVITY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  // Persist activity log whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activityLog.slice(0, 50)));
+    } catch {}
+  }, [activityLog]);
   const prevEnrolled  = useRef([]);
   const prevMaterials = useRef([]);
 

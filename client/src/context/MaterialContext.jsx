@@ -6,43 +6,38 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { materialsApi } from "../services/api";
+import { studentMaterialsApi, mentorReviewApi } from "../services/api";
 import { useAuth } from "./AuthContext";
 
 const MaterialContext = createContext(null);
 
 export function MaterialProvider({ children }) {
-  const { user } = useAuth();
-  const [materials, setMaterials] = useState([]);
+  const { user, dbUser } = useAuth();
+  const [materials,        setMaterials]        = useState([]);
   const [pendingMaterials, setPendingMaterials] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading,          setLoading]          = useState(false);
+  const [error,            setError]            = useState(null);
 
   const shapeFromApi = (m) => ({
-    id: m._id,
-    courseId: m.courseRef || m.course || "",
-    courseName: m.course || "",
-    fileName: m.title,
-    type: (m.type || "file").toLowerCase(),
-    uploadDate: m.createdAt || m.uploaded || new Date().toISOString(),
-    status:
-      m.status === "pending"
-        ? "pending"
-        : m.status === "approved"
-          ? "approved"
-          : m.status === "rejected"
-            ? "rejected"
-            : "unknown",
-    size: m.size,
-    uploader: m.uploader,
-    sectionId: m.sectionId || m.sectionRef || "",
-    sectionLabel: m.sectionLabel || m.section || "",
-    pendingMessage: m.pendingMessage,
+    id:           m._id,
+    courseId:     m.courseId || m.courseRef || m.course || "",
+    courseName:   m.course   || "",
+    fileName:     m.title,
+    type:         (m.type || "file").toLowerCase(),
+    uploadDate:   m.createdAt || m.uploaded || new Date().toISOString(),
+    status:       m.status || "pending",
+    size:         m.size,
+    uploader:     m.uploader,
+    sectionId:    m.sectionId  || "",
+    sectionLabel: m.sectionLabel || "",
+    mentorFeedback: m.mentorFeedback || "",
   });
 
+  // ── Load materials on login ────────────────────────────────────────────────
   useEffect(() => {
     if (!user) {
       setMaterials([]);
+      setPendingMaterials([]);
       return;
     }
 
@@ -50,30 +45,44 @@ export function MaterialProvider({ children }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await materialsApi.getAll();
-        setMaterials((res.data || []).map(shapeFromApi));
+        if (dbUser?.role === "mentor" || dbUser?.role === "admin") {
+          // Mentor: get pending student materials for review
+          const res = await mentorReviewApi.getPending();
+          const shaped = (res.data || []).map(shapeFromApi);
+          setPendingMaterials(shaped);
+          setMaterials(shaped);
+        } else {
+          // Student: get own uploaded materials
+          const res = await studentMaterialsApi.getAll();
+          const shaped = (res.data || []).map(shapeFromApi);
+          setMaterials(shaped);
+          setPendingMaterials(shaped.filter((m) => m.status === "pending"));
+        }
       } catch (err) {
-        console.error("Failed to load materials:", err.message);
+        console.warn("MaterialContext: backend unavailable, using local state:", err.message);
         setError(err.message);
         setMaterials([]);
+        setPendingMaterials([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchMaterials();
-  }, [user]);
+  }, [user, dbUser?.role]);
 
+  // ── addMaterial (student uploads) ─────────────────────────────────────────
   const addMaterial = useCallback(async (material) => {
+    // Optimistic local update
     const optimistic = {
-      id: `tmp-${Date.now()}`,
-      courseId: material.courseId || "",
-      courseName: material.courseName || "",
-      fileName: material.fileName,
-      type: material.type || "file",
-      uploadDate: new Date().toISOString(),
-      status: "pending",
-      sectionId: material.sectionId || "",
+      id:           `tmp-${Date.now()}`,
+      courseId:     material.courseId     || "",
+      courseName:   material.courseName   || "",
+      fileName:     material.fileName,
+      type:         material.type         || "file",
+      uploadDate:   new Date().toISOString(),
+      status:       "pending",
+      sectionId:    material.sectionId    || "",
       sectionLabel: material.sectionLabel || "",
     };
     setMaterials((prev) => [optimistic, ...prev]);
@@ -81,56 +90,66 @@ export function MaterialProvider({ children }) {
 
     try {
       const payload = {
-        title: material.fileName,
-        course: material.courseName,
-        type:
-          material.type === "pdf"
-            ? "PDF"
-            : material.type === "video"
-              ? "Video"
-              : "Other",
-        status: "pending",
-        uploader: material.uploader || "",
-        ...(material.sectionId && { sectionId: material.sectionId }),
-        ...(material.sectionLabel && { sectionLabel: material.sectionLabel }),
+        title:        material.fileName,
+        course:       material.courseName || "",
+        type:         material.type === "pdf"   ? "PDF"
+                    : material.type === "video" ? "Video"
+                    : "Other",
+        courseId:     material.courseId     || "",
+        yearId:       material.yearId       || "",
+        sectionId:    material.sectionId    || "",
+        sectionLabel: material.sectionLabel || "",
       };
-      const res = await materialsApi.create(payload);
-      setMaterials((prev) =>
-        prev.map((m) => (m.id === optimistic.id ? shapeFromApi(res.data) : m)),
-      );
+      const res = await studentMaterialsApi.create(payload);
+      const saved = shapeFromApi(res.data);
+      setMaterials((prev) => prev.map((m) => m.id === optimistic.id ? saved : m));
+      setPendingMaterials((prev) => prev.map((m) => m.id === optimistic.id ? saved : m));
     } catch (err) {
-      setMaterials((prev) => prev.filter((m) => m.id !== optimistic.id));
-      console.error("Failed to save material:", err.message);
+      // Backend unavailable — keep optimistic entry
+      console.warn("Material upload to backend failed, keeping local:", err.message);
     }
   }, []);
 
-  const removeMaterial = useCallback(
-    async (id) => {
-      const backup = materials.find((m) => m.id === id);
-      setMaterials((prev) => prev.filter((m) => m.id !== id));
+  // ── removeMaterial ────────────────────────────────────────────────────────
+  const removeMaterial = useCallback(async (id) => {
+    const backup = materials.find((m) => m.id === id);
+    setMaterials((prev) => prev.filter((m) => m.id !== id));
+    setPendingMaterials((prev) => prev.filter((m) => m.id !== id));
 
+    if (!id.startsWith("tmp-")) {
       try {
-        await materialsApi.remove(id);
+        await studentMaterialsApi.remove(id);
       } catch (err) {
         if (backup) setMaterials((prev) => [backup, ...prev]);
-        console.error("Failed to remove material:", err.message);
+        console.warn("Failed to remove material from backend:", err.message);
       }
-    },
-    [materials],
-  );
+    }
+  }, [materials]);
 
-  const approveMaterial = useCallback((id) => {
+  // ── approveMaterial (mentor) ───────────────────────────────────────────────
+  const approveMaterial = useCallback(async (id, feedback = "") => {
     setPendingMaterials((prev) => prev.filter((m) => m.id !== id));
     setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: "approved" } : m)),
+      prev.map((m) => m.id === id ? { ...m, status: "approved" } : m)
     );
+    try {
+      await mentorReviewApi.approve(id, feedback);
+    } catch (err) {
+      console.warn("Backend approve failed:", err.message);
+    }
   }, []);
 
-  const rejectMaterial = useCallback((id) => {
+  // ── rejectMaterial (mentor) ───────────────────────────────────────────────
+  const rejectMaterial = useCallback(async (id, feedback = "") => {
     setPendingMaterials((prev) => prev.filter((m) => m.id !== id));
     setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: "rejected" } : m)),
+      prev.map((m) => m.id === id ? { ...m, status: "rejected" } : m)
     );
+    try {
+      await mentorReviewApi.reject(id, feedback);
+    } catch (err) {
+      console.warn("Backend reject failed:", err.message);
+    }
   }, []);
 
   const value = useMemo(
@@ -144,28 +163,16 @@ export function MaterialProvider({ children }) {
       approveMaterial,
       rejectMaterial,
     }),
-    [
-      materials,
-      pendingMaterials,
-      loading,
-      error,
-      addMaterial,
-      removeMaterial,
-      approveMaterial,
-      rejectMaterial,
-    ],
+    [materials, pendingMaterials, loading, error, addMaterial, removeMaterial, approveMaterial, rejectMaterial],
   );
 
   return (
-    <MaterialContext.Provider value={value}>
-      {children}
-    </MaterialContext.Provider>
+    <MaterialContext.Provider value={value}>{children}</MaterialContext.Provider>
   );
 }
 
 export function useMaterials() {
   const ctx = useContext(MaterialContext);
-  if (!ctx)
-    throw new Error("useMaterials must be used within MaterialProvider");
+  if (!ctx) throw new Error("useMaterials must be used within MaterialProvider");
   return ctx;
 }
