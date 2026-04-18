@@ -1,11 +1,9 @@
 const Course = require("../models/Course");
 const { logAction } = require("../utils/Logger");
 
-// GET ALL COURSES
 exports.getAll = async (req, res) => {
   try {
     const showDeleted = req.query.showDeleted === "true";
-    // $ne:true catches both false and undefined (pre-migration records)
     const filter = showDeleted ? {} : { isDeleted: { $ne: true } };
     const courses = await Course.find(filter).sort({ createdAt: -1 });
     res.json({ success: true, data: courses });
@@ -14,15 +12,14 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// GET COURSE BY ID (WITH APPROVED MATERIALS ONLY)
 exports.getById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
-    if (!course) {
+    if (!course)
       return res
         .status(404)
         .json({ success: false, message: "Course not found" });
-    }
+
     const Material = require("../models/Material");
     const materials = await Material.find({
       courseRef: course._id,
@@ -36,7 +33,6 @@ exports.getById = async (req, res) => {
   }
 };
 
-// CREATE COURSE
 exports.create = async (req, res) => {
   try {
     const payload = { ...req.body };
@@ -50,36 +46,38 @@ exports.create = async (req, res) => {
       entityId: course._id,
       entityName: course.title,
       performedBy: req.user,
+      req,
       details: {
         code: course.code,
         title: course.title,
         status: course.status,
+        college: course.college,
+        instructor: course.instructor,
+        creditHours: course.creditHours,
       },
     });
 
     res.status(201).json({ success: true, data: course });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.code === 11000)
       return res
         .status(400)
         .json({ success: false, message: "Course code already exists" });
-    }
     res.status(400).json({ success: false, message: err.message });
   }
 };
 
-// UPDATE COURSE
 exports.update = async (req, res) => {
   try {
+    const before = await Course.findById(req.params.id).lean();
     const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!course) {
+    if (!course)
       return res
         .status(404)
         .json({ success: false, message: "Course not found" });
-    }
 
     await logAction({
       action: "UPDATE",
@@ -87,21 +85,34 @@ exports.update = async (req, res) => {
       entityId: course._id,
       entityName: course.title,
       performedBy: req.user,
-      details: req.body,
+      req,
+      details: {
+        before: {
+          code: before?.code,
+          title: before?.title,
+          status: before?.status,
+          instructor: before?.instructor,
+        },
+        after: {
+          code: course.code,
+          title: course.title,
+          status: course.status,
+          instructor: course.instructor,
+        },
+        changes: req.body,
+      },
     });
 
     res.json({ success: true, data: course });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.code === 11000)
       return res
         .status(400)
         .json({ success: false, message: "Course code already exists" });
-    }
     res.status(400).json({ success: false, message: err.message });
   }
 };
 
-// SOFT DELETE — data is preserved, never removed from DB
 exports.remove = async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
@@ -113,11 +124,10 @@ exports.remove = async (req, res) => {
       },
       { new: true },
     );
-    if (!course) {
+    if (!course)
       return res
         .status(404)
         .json({ success: false, message: "Course not found" });
-    }
 
     await logAction({
       action: "DELETE",
@@ -125,6 +135,12 @@ exports.remove = async (req, res) => {
       entityId: course._id,
       entityName: course.title,
       performedBy: req.user,
+      req,
+      details: {
+        softDeleted: true,
+        deletedBy: req.user?.name,
+        code: course.code,
+      },
     });
 
     res.json({ success: true, message: "Course deleted successfully" });
@@ -133,7 +149,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-// RESTORE A SOFT-DELETED COURSE
 exports.restore = async (req, res) => {
   try {
     const course = await Course.findByIdAndUpdate(
@@ -141,11 +156,10 @@ exports.restore = async (req, res) => {
       { isDeleted: false, deletedAt: null, deletedBy: null },
       { new: true },
     );
-    if (!course) {
+    if (!course)
       return res
         .status(404)
         .json({ success: false, message: "Course not found" });
-    }
 
     await logAction({
       action: "RESTORE",
@@ -153,6 +167,8 @@ exports.restore = async (req, res) => {
       entityId: course._id,
       entityName: course.title,
       performedBy: req.user,
+      req,
+      details: { restoredBy: req.user?.name, code: course.code },
     });
 
     res.json({

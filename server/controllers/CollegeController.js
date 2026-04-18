@@ -37,7 +37,12 @@ exports.create = async (req, res) => {
       entityId: college._id,
       entityName: college.name,
       performedBy: req.user,
-      details: { name: college.name, status: college.status },
+      req,
+      details: {
+        name: college.name,
+        status: college.status,
+        years: college.years,
+      },
     });
 
     res.status(201).json({ success: true, data: college });
@@ -48,6 +53,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const before = await College.findById(req.params.id).lean();
     const college = await College.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -63,7 +69,12 @@ exports.update = async (req, res) => {
       entityId: college._id,
       entityName: college.name,
       performedBy: req.user,
-      details: req.body,
+      req,
+      details: {
+        before: { name: before?.name, status: before?.status },
+        after: { name: college.name, status: college.status },
+        changes: req.body,
+      },
     });
 
     res.json({ success: true, data: college });
@@ -72,7 +83,6 @@ exports.update = async (req, res) => {
   }
 };
 
-// ── Soft delete — marks as deleted, never removes from DB ────────────────────
 exports.remove = async (req, res) => {
   try {
     const college = await College.findByIdAndUpdate(
@@ -95,6 +105,8 @@ exports.remove = async (req, res) => {
       entityId: college._id,
       entityName: college.name,
       performedBy: req.user,
+      req,
+      details: { softDeleted: true, deletedBy: req.user?.name },
     });
 
     res.json({
@@ -107,7 +119,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-// ── Restore a soft-deleted college ───────────────────────────────────────────
 exports.restore = async (req, res) => {
   try {
     const college = await College.findByIdAndUpdate(
@@ -126,6 +137,8 @@ exports.restore = async (req, res) => {
       entityId: college._id,
       entityName: college.name,
       performedBy: req.user,
+      req,
+      details: { restoredBy: req.user?.name },
     });
 
     res.json({

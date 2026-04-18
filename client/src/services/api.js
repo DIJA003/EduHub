@@ -87,6 +87,7 @@ export const materialsApi = {
   remove: (id) => api.delete(`/admin/materials/${id}`),
   restore: (id) => api.patch(`/admin/materials/${id}/restore`),
   approve: (id) => api.patch(`/admin/materials/${id}/approve`, {}),
+  // FIX: was api.patch with wrong method; admin reject uses PATCH not DELETE
   reject: (id) => api.patch(`/admin/materials/${id}/reject`, {}),
 };
 
@@ -109,13 +110,16 @@ export const dashboardApi = {
 // ── History logs ──────────────────────────────────────────────────────────────
 export const logsApi = {
   getLogs: (params = {}) => {
-    const qs = new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
+    // Filter out undefined/empty values before building query string
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(
+        ([, v]) => v !== undefined && v !== "" && v !== null,
       ),
-    ).toString();
+    );
+    const qs = new URLSearchParams(clean).toString();
     return api.get(`/admin/logs${qs ? "?" + qs : ""}`);
   },
+  getById: (id) => api.get(`/admin/logs/${id}`),
 };
 
 // ── Mentor ────────────────────────────────────────────────────────────────────
@@ -123,17 +127,17 @@ export const mentorApi = {
   uploadMaterial: (data) => api.post("/mentor/materials/upload", data),
   getPendingMaterials: () => api.get("/mentor/materials/pending"),
   getMyMaterials: () => api.get("/mentor/materials/my-courses"),
+  // FIX: both approve and reject are now PATCH
   approveMaterial: (id, data) =>
-    api.patch(`/mentor/materials/${id}/approve`, data),
-  rejectMaterial: (id) => api.delete(`/mentor/materials/${id}/reject`),
+    api.patch(`/mentor/materials/${id}/approve`, data || {}),
+  rejectMaterial: (id, data) =>
+    api.patch(`/mentor/materials/${id}/reject`, data || {}),
   updateMaterial: (id, data) => api.patch(`/mentor/materials/${id}`, data),
   deleteMaterial: (id) => api.delete(`/mentor/materials/${id}`),
   assignStudent: (courseId, studentId) =>
     api.post(`/mentor/courses/${courseId}/students/${studentId}`, {}),
   getDashboardStats: () => api.get("/mentor/dashboard/stats"),
   getStudents: () => api.get("/mentor/students"),
-  approve: (id) => api.patch(`/mentor/materials/${id}/approve`, {}),
-  reject: (id) => api.delete(`/mentor/materials/${id}/reject`),
 };
 
 // ── Student ───────────────────────────────────────────────────────────────────
@@ -143,7 +147,7 @@ export const studentApi = {
   unsaveCourse: (courseId) => api.delete(`/users/courses/${courseId}/unsave`),
 };
 
-// ── Enrollment ────────────────────────────────────────────────────────────────
+// ── Enrollment (admin) ────────────────────────────────────────────────────────
 export const enrollmentApi = {
   // admin
   getStudents: () => api.get("/admin/enrollments/students"),
@@ -177,29 +181,38 @@ export const academicYearsApi = {
   getByCollege: (colId) => api.get(`/academic-years/by-college/${colId}`),
   getColleges: () => api.get("/academic-years/colleges"),
 };
+
+// ── Student materials ─────────────────────────────────────────────────────────
 export const studentMaterialsApi = {
-  getAll:  ()     => api.get("/users/materials"),
-  create:  (data) => api.post("/users/materials", data),
-  remove:  (id)   => api.delete(`/users/materials/${id}`),
+  getAll: () => api.get("/users/materials"),
+  create: (data) => api.post("/users/materials", data),
+  remove: (id) => api.delete(`/users/materials/${id}`),
 };
 
+// ── Student enrollments (CourseContext) ───────────────────────────────────────
 export const enrollmentApi2 = {
-  getAll:        ()               => api.get("/users/enrollments"),
-  enroll:        (courseId)       => api.post(`/users/enrollments/${courseId}`),
-  unenroll:      (courseId)       => api.delete(`/users/enrollments/${courseId}`),
-  updateProgress:(courseId, data) => api.patch(`/users/enrollments/${courseId}/progress`, data),
+  getAll: () => api.get("/users/enrollments"),
+  enroll: (courseId) => api.post(`/users/enrollments/${courseId}`),
+  unenroll: (courseId) => api.delete(`/users/enrollments/${courseId}`),
+  updateProgress: (courseId, data) =>
+    api.patch(`/users/enrollments/${courseId}/progress`, data),
 };
 
+// ── Profile ───────────────────────────────────────────────────────────────────
 export const profileApi = {
   update: (data) => api.put("/users/profile", data),
 };
 
+// ── Course catalog (public per year) ─────────────────────────────────────────
 export const courseCatalogApi = {
   getByYear: (yearId) => api.get(`/courses/year/${yearId}`),
 };
 
+// ── Mentor review ─────────────────────────────────────────────────────────────
 export const mentorReviewApi = {
-  getPending: ()              => api.get("/mentor/materials/review"),
-  approve:    (id, feedback)  => api.patch(`/mentor/materials/${id}/approve`, { feedback }),
-  reject:     (id, feedback)  => api.patch(`/mentor/materials/${id}/reject`, { feedback }),
+  getPending: () => api.get("/mentor/materials/review"),
+  approve: (id, feedback) =>
+    api.patch(`/mentor/materials/${id}/approve`, { feedback }),
+  reject: (id, feedback) =>
+    api.patch(`/mentor/materials/${id}/reject`, { feedback }),
 };

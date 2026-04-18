@@ -51,14 +51,14 @@ function Header() {
           >
             Dashboard
           </button>
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <img
               src={profileImage}
               alt="Profile"
               className="h-9 w-9 rounded-full object-cover cursor-pointer"
               onClick={() => navigate("/profile")}
             />
-          </div>
+          </div> */}
         </nav>
       </div>
     </header>

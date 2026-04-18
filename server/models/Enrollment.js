@@ -25,9 +25,37 @@ const enrollmentSchema = new mongoose.Schema(
     progress: { type: Number, default: 0, min: 0, max: 100 },
     sectionsCompleted: { type: Number, default: 0 },
     nextItem: { type: String, default: "Getting Started" },
+
+    droppedAt: { type: Date, default: null },
+    droppedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    reEnrolledAt: { type: Date, default: null },
+    reEnrolledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
-enrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
+// IMPORTANT: Remove the unique index on (student, course) — it prevents re-enrollment.
+// Instead, enforce uniqueness only on ACTIVE enrollments at the application layer.
+// We use a partial index so the DB only enforces uniqueness when status === "active".
+// enrollmentSchema.index(
+//   { student: 1, course: 1 },
+//   {
+//     unique: true,
+//     partialFilterExpression: { status: "active" },
+//     name: "unique_active_enrollment",
+//   },
+// );
+
+enrollmentSchema.index({ student: 1, status: 1 });
+enrollmentSchema.index({ course: 1, status: 1 });
+enrollmentSchema.index({ enrolledBy: 1 });
+
 module.exports = mongoose.model("Enrollment", enrollmentSchema);

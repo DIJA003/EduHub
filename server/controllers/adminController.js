@@ -9,7 +9,7 @@ exports.create = async (req, res) => {
         .status(400)
         .json({ message: "Name, email, and password are required" });
 
-    const admin = require("../config/firebase_admin");
+    const { admin } = require("../config/firebase_admin");
     let firebaseUser;
     try {
       firebaseUser = await admin.auth().createUser({
@@ -20,7 +20,7 @@ exports.create = async (req, res) => {
     } catch (firebaseErr) {
       return res.status(400).json({ message: firebaseErr.message });
     }
-    const User = require("../models/User");
+
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -28,6 +28,21 @@ exports.create = async (req, res) => {
       college,
       firebaseUid: firebaseUser.uid,
       status: "Active",
+    });
+
+    await logAction({
+      action: "CREATE",
+      entity: "User",
+      entityId: user._id,
+      entityName: user.name,
+      performedBy: req.user,
+      req,
+      details: {
+        createdUserRole: user.role,
+        createdUserEmail: user.email,
+        college: user.college,
+        createdBy: req.user?.name,
+      },
     });
 
     res.status(201).json({ success: true, data: user });
@@ -92,18 +107,19 @@ exports.update = async (req, res) => {
         { instructorRef: user._id },
         { $unset: { instructorRef: "" }, instructor: "Unassigned" },
       );
-
       await logAction({
         action: "UPDATE",
         entity: "Course",
-        entityId: user._id, // use userId as reference
-        entityName: `Courses unassigned from ${user.name}`,
+        entityId: user._id,
+        entityName: `Courses unassigned from ${existing.name}`,
         performedBy: req.user,
-        details: { reason: `User role changed from mentor to ${newRole}` },
+        req,
+        details: {
+          reason: `Role changed from mentor to ${newRole}`,
+          affectedUser: existing.name,
+        },
       });
     }
-
-    // If role changed TO mentor from something else — nothing to do automatically
 
     await logAction({
       action: "UPDATE",
@@ -111,7 +127,17 @@ exports.update = async (req, res) => {
       entityId: user._id,
       entityName: user.name,
       performedBy: req.user,
-      details: updatePayload,
+      req,
+      details: {
+        before: {
+          name: existing.name,
+          role: existing.role,
+          status: existing.status,
+          college: existing.college,
+        },
+        after: updatePayload,
+        updatedBy: req.user?.name,
+      },
     });
 
     res.json({ success: true, data: user });
@@ -142,6 +168,12 @@ exports.remove = async (req, res) => {
       entityId: user._id,
       entityName: user.name,
       performedBy: req.user,
+      req,
+      details: {
+        softDeleted: true,
+        deletedUser: { name: user.name, email: user.email, role: user.role },
+        deletedBy: req.user?.name,
+      },
     });
 
     res.json({ success: true, message: "User removed successfully" });
@@ -168,6 +200,11 @@ exports.restore = async (req, res) => {
       entityId: user._id,
       entityName: user.name,
       performedBy: req.user,
+      req,
+      details: {
+        restoredUser: { name: user.name, email: user.email, role: user.role },
+        restoredBy: req.user?.name,
+      },
     });
 
     res.json({

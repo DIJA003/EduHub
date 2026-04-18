@@ -8,6 +8,37 @@ import {
 } from "../../components/admin/adminUtils";
 import { logsApi } from "../../services/api";
 
+const ENTITY_TYPES = [
+  "All",
+  "College",
+  "Course",
+  "Material",
+  "User",
+  "Enrollment",
+  "Session",
+  "Notification",
+  "AcademicYear",
+  "System",
+];
+const ACTION_TYPES = [
+  "All",
+  "CREATE",
+  "UPDATE",
+  "DELETE",
+  "RESTORE",
+  "LOGIN",
+  "REGISTER",
+  "LOGOUT",
+  "PASSWORD_CHANGE",
+  "EMAIL_VERIFY",
+  "ENROLL",
+  "UNENROLL",
+  "APPROVE",
+  "REJECT",
+  "UPLOAD",
+  "ERROR",
+];
+
 const ACTION_STYLE = {
   CREATE: {
     bg: "var(--success-bg)",
@@ -25,6 +56,45 @@ const ACTION_STYLE = {
     color: "var(--warning)",
     icon: "restore",
   },
+  LOGIN: {
+    bg: "var(--accent-glow)",
+    color: "var(--accent-light)",
+    icon: "login",
+  },
+  REGISTER: {
+    bg: "var(--success-bg)",
+    color: "var(--success)",
+    icon: "person_add",
+  },
+  LOGOUT: { bg: "var(--bg-card)", color: "var(--text-muted)", icon: "logout" },
+  PASSWORD_CHANGE: {
+    bg: "var(--warning-bg)",
+    color: "var(--warning)",
+    icon: "lock_reset",
+  },
+  EMAIL_VERIFY: {
+    bg: "var(--success-bg)",
+    color: "var(--success)",
+    icon: "mark_email_read",
+  },
+  ENROLL: {
+    bg: "var(--success-bg)",
+    color: "var(--success)",
+    icon: "how_to_reg",
+  },
+  UNENROLL: {
+    bg: "var(--danger-bg)",
+    color: "var(--danger)",
+    icon: "person_remove",
+  },
+  APPROVE: {
+    bg: "var(--success-bg)",
+    color: "var(--success)",
+    icon: "check_circle",
+  },
+  REJECT: { bg: "var(--danger-bg)", color: "var(--danger)", icon: "cancel" },
+  UPLOAD: { bg: "var(--info-bg)", color: "var(--info)", icon: "upload_file" },
+  ERROR: { bg: "var(--danger-bg)", color: "var(--danger)", icon: "error" },
 };
 
 const ENTITY_ICON = {
@@ -32,6 +102,11 @@ const ENTITY_ICON = {
   Course: "menu_book",
   Material: "description",
   User: "person",
+  Enrollment: "how_to_reg",
+  Session: "login",
+  Notification: "notifications",
+  AcademicYear: "calendar_today",
+  System: "settings",
 };
 
 function timeAgo(date) {
@@ -55,8 +130,271 @@ function formatDate(date) {
   });
 }
 
-const ENTITIES = ["All", "College", "Course", "Material", "User"];
-const ACTIONS = ["All", "CREATE", "UPDATE", "DELETE", "RESTORE"];
+function ActionBadge({ action }) {
+  const s = ACTION_STYLE[action] || {
+    bg: "var(--bg-card)",
+    color: "var(--text-secondary)",
+    icon: "circle",
+  };
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-[10px] py-[3px] rounded-full text-[11px] font-semibold"
+      style={{
+        background: s.bg,
+        color: s.color,
+        border: `1px solid ${s.color}30`,
+      }}
+    >
+      <span className="material-symbols-outlined text-[12px]">{s.icon}</span>
+      {action}
+    </span>
+  );
+}
+
+function FilterBtn({ label, active, onClick, style = {} }) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-3 py-1.5 rounded-sm text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
+      style={
+        active
+          ? {
+              background: "var(--accent)",
+              borderColor: "var(--accent)",
+              color: "#fff",
+              ...style,
+            }
+          : {
+              background: "var(--bg-card)",
+              borderColor: "var(--border)",
+              color: "var(--text-secondary)",
+            }
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
+function DetailsPanel({ log, onClose }) {
+  if (!log) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex justify-end"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="h-full w-full max-w-[480px] flex flex-col overflow-hidden"
+        style={{
+          background: "var(--bg-surface)",
+          borderLeft: "1px solid var(--border)",
+          animation: "slideIn 0.2s ease",
+        }}
+      >
+        <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <div className="flex items-center gap-3">
+            <ActionBadge action={log.action} />
+            <span
+              className="text-[15px] font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Log Detail
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-sm cursor-pointer text-[20px] transition-all"
+            style={{
+              color: "var(--text-muted)",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Record */}
+          <section>
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Record
+            </p>
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{
+                border: "1px solid var(--border)",
+                background: "var(--bg-card)",
+              }}
+            >
+              {[
+                ["Entity", log.entity],
+                ["Name", log.entityName || "—"],
+                ["Action", log.action],
+                ["Time", formatDate(log.createdAt)],
+                ["Success", log.success ? "✅ Yes" : "❌ No"],
+                ...(log.errorMessage ? [["Error", log.errorMessage]] : []),
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-start justify-between gap-4 px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--border-light)" }}
+                >
+                  <span
+                    className="text-[12px] flex-shrink-0"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className="text-[12.5px] text-right font-medium break-all"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {String(value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Performed By */}
+          <section>
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Performed By
+            </p>
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{
+                border: "1px solid var(--border)",
+                background: "var(--bg-card)",
+              }}
+            >
+              {[
+                ["Name", log.performedBy?.name || "System"],
+                ["Email", log.performedBy?.email || "—"],
+                ["Role", log.performedBy?.role || "—"],
+                ["IP", log.ip || "—"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-start justify-between gap-4 px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--border-light)" }}
+                >
+                  <span
+                    className="text-[12px] flex-shrink-0"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className="text-[12.5px] text-right font-medium break-all"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Details */}
+          {log.details && Object.keys(log.details).length > 0 && (
+            <section>
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+                style={{ color: "var(--text-muted)" }}
+              >
+                What Changed
+              </p>
+              <div
+                className="rounded-lg overflow-hidden"
+                style={{
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-card)",
+                }}
+              >
+                {Object.entries(log.details).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-start justify-between gap-4 px-4 py-2.5"
+                    style={{ borderBottom: "1px solid var(--border-light)" }}
+                  >
+                    <span
+                      className="text-[12px] flex-shrink-0"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {k.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
+                    </span>
+                    <span
+                      className={`text-[12.5px] text-right break-all ${typeof v !== "string" ? "font-mono" : "font-medium"}`}
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {typeof v === "object"
+                        ? JSON.stringify(v, null, 2)
+                        : String(v)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* IDs */}
+          <section>
+            <p
+              className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Internal IDs
+            </p>
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{
+                border: "1px solid var(--border)",
+                background: "var(--bg-card)",
+              }}
+            >
+              {[
+                ["Log ID", log._id],
+                ["Entity ID", String(log.entityId || "—")],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-start justify-between gap-4 px-4 py-2.5"
+                  style={{ borderBottom: "1px solid var(--border-light)" }}
+                >
+                  <span
+                    className="text-[12px] flex-shrink-0"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className="text-[12.5px] text-right font-mono break-all"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HistoryLogs() {
   const [logs, setLogs] = useState([]);
@@ -80,16 +418,17 @@ function HistoryLogs() {
       if (search.trim()) params.search = search.trim();
 
       const res = await logsApi.getLogs(params);
+      // API returns { success, data, total, page, limit, pages }
       setLogs(res.data || []);
       setTotal(res.total || 0);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to load logs");
+      setLogs([]);
     } finally {
       setLoading(false);
     }
   }, [entityFilter, actionFilter, search, page]);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [entityFilter, actionFilter, search]);
@@ -99,123 +438,30 @@ function HistoryLogs() {
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
-  const FilterBtn = ({ label, active, onClick }) => (
-    <button
-      onClick={onClick}
-      className="px-3 py-1.5 rounded-sm text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
-      style={
-        active
-          ? {
-              background: "var(--accent)",
-              borderColor: "var(--accent)",
-              color: "#fff",
-            }
-          : {
-              background: "var(--bg-card)",
-              borderColor: "var(--border)",
-              color: "var(--text-secondary)",
-            }
-      }
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = "var(--bg-hover)";
-          e.currentTarget.style.color = "var(--text-primary)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = "var(--bg-card)";
-          e.currentTarget.style.color = "var(--text-secondary)";
-        }
-      }}
-    >
-      {label}
-    </button>
-  );
-
-  const ActionBadge = ({ action }) => {
-    const s = ACTION_STYLE[action] || {
-      bg: "var(--bg-card)",
-      color: "var(--text-secondary)",
-      icon: "circle",
-    };
-    return (
-      <span
-        className="inline-flex items-center gap-1 px-[10px] py-[3px] rounded-full text-[11px] font-semibold"
-        style={{
-          background: s.bg,
-          color: s.color,
-          border: `1px solid ${s.color}30`,
-        }}
-      >
-        <span className="material-symbols-outlined text-[12px]">{s.icon}</span>
-        {action}
-      </span>
-    );
-  };
-  const Section = ({ label, children }) => (
-    <div>
-      <p
-        className="text-[10px] font-bold uppercase tracking-[0.1em] mb-2"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {label}
-      </p>
-      <div
-        className="rounded-lg overflow-hidden"
-        style={{
-          border: "1px solid var(--border)",
-          background: "var(--bg-card)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-
-  const Field = ({ label, value, mono }) => (
-    <div
-      className="flex items-start justify-between gap-4 px-4 py-2.5"
-      style={{ borderBottom: "1px solid var(--border-light)" }}
-    >
-      <span
-        className="text-[12px] flex-shrink-0"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {label}
-      </span>
-      <span
-        className={`text-[12.5px] text-right break-all ${mono ? "font-mono" : "font-medium"}`}
-        style={{ color: "var(--text-primary)" }}
-      >
-        {value}
-      </span>
-    </div>
-  );
-
   return (
     <div>
       <PageHeader
         title="History Logs"
-        subtitle="Full logs trail of every create, update, delete, and restore action."
+        subtitle="Full audit trail of every action performed in the system."
       />
 
-      {/* Filters */}
+      {/* Entity filter */}
       <div
-        className="rounded-lg px-5 py-4 mb-4 flex flex-wrap items-center gap-3"
+        className="rounded-lg px-5 py-4 mb-4"
         style={{
           background: "var(--bg-surface)",
           border: "1px solid var(--border)",
         }}
       >
-        <div className="flex flex-wrap gap-1.5">
+        {/* Entity row */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
           <span
             className="text-[11px] font-bold uppercase tracking-[0.07em] self-center mr-1"
             style={{ color: "var(--text-muted)" }}
           >
             Entity
           </span>
-          {ENTITIES.map((e) => (
+          {ENTITY_TYPES.map((e) => (
             <FilterBtn
               key={e}
               label={e}
@@ -225,19 +471,15 @@ function HistoryLogs() {
           ))}
         </div>
 
-        <div
-          className="w-px h-6 flex-shrink-0"
-          style={{ background: "var(--border)" }}
-        />
-
-        <div className="flex flex-wrap gap-1.5">
+        {/* Action row */}
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className="text-[11px] font-bold uppercase tracking-[0.07em] self-center mr-1"
             style={{ color: "var(--text-muted)" }}
           >
             Action
           </span>
-          {ACTIONS.map((a) => {
+          {ACTION_TYPES.map((a) => {
             const s = ACTION_STYLE[a];
             return (
               <button
@@ -263,18 +505,6 @@ function HistoryLogs() {
                           color: "var(--text-secondary)",
                         }
                 }
-                onMouseEnter={(e) => {
-                  if (actionFilter !== a) {
-                    e.currentTarget.style.background = "var(--bg-hover)";
-                    e.currentTarget.style.color = "var(--text-primary)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (actionFilter !== a) {
-                    e.currentTarget.style.background = "var(--bg-card)";
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                  }
-                }}
               >
                 {s && (
                   <span className="material-symbols-outlined text-[12px]">
@@ -287,11 +517,12 @@ function HistoryLogs() {
           })}
         </div>
 
-        <div className="ml-auto">
+        {/* Search */}
+        <div className="mt-3">
           <TableSearch
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name…"
+            placeholder="Search by name, email, or entity…"
           />
         </div>
       </div>
@@ -314,7 +545,7 @@ function HistoryLogs() {
             className="text-[13.5px] font-semibold"
             style={{ color: "var(--text-primary)" }}
           >
-            {loading ? "Loading…" : `${total} log entries`}
+            {loading ? "Loading…" : `${total.toLocaleString()} log entries`}
           </span>
         }
         footer={
@@ -370,7 +601,7 @@ function HistoryLogs() {
           <EmptyState
             icon="📋"
             title="No log entries found"
-            description="Actions performed on colleges, courses, materials, and users will appear here."
+            description="Actions performed in the system will appear here. Try changing your filters."
           />
         ) : (
           <table className="w-full border-collapse">
@@ -380,8 +611,9 @@ function HistoryLogs() {
                   "Time",
                   "Action",
                   "Entity",
-                  "Record Name",
+                  "Record",
                   "Performed By",
+                  "Status",
                 ].map((h) => (
                   <th
                     key={h}
@@ -431,7 +663,7 @@ function HistoryLogs() {
                     </div>
                   </td>
 
-                  {/* Action badge */}
+                  {/* Action */}
                   <td
                     className={tw.td}
                     style={{ borderBottomColor: "var(--border-light)" }}
@@ -492,16 +724,38 @@ function HistoryLogs() {
                         >
                           {log.performedBy?.name || "System"}
                         </p>
-                        {log.performedBy?.email && (
+                        {log.performedBy?.role && (
                           <p
                             className="text-[11px]"
                             style={{ color: "var(--text-muted)" }}
                           >
-                            {log.performedBy.email}
+                            {log.performedBy.role}
                           </p>
                         )}
                       </div>
                     </div>
+                  </td>
+
+                  {/* Success/Fail */}
+                  <td
+                    className={tw.td}
+                    style={{ borderBottomColor: "var(--border-light)" }}
+                  >
+                    {log.success !== false ? (
+                      <span
+                        className="text-[11px] font-semibold"
+                        style={{ color: "var(--success)" }}
+                      >
+                        ✓ OK
+                      </span>
+                    ) : (
+                      <span
+                        className="text-[11px] font-semibold"
+                        style={{ color: "var(--danger)" }}
+                      >
+                        ✗ Failed
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -509,91 +763,8 @@ function HistoryLogs() {
           </table>
         )}
       </TableWrap>
-      {selected && (
-        <div
-          className="fixed inset-0 z-[1000] flex justify-end"
-          style={{ background: "rgba(0,0,0,0.55)" }}
-          onClick={(e) => e.target === e.currentTarget && setSelected(null)}
-        >
-          <div
-            className="h-full w-full max-w-[480px] flex flex-col overflow-hidden"
-            style={{
-              background: "var(--bg-surface)",
-              borderLeft: "1px solid var(--border)",
-              animation: "slideIn 0.2s ease",
-            }}
-          >
-            <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
-            <div
-              className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: "1px solid var(--border)" }}
-            >
-              <div className="flex items-center gap-3">
-                <ActionBadge action={selected.action} />
-                <span
-                  className="text-[15px] font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Log Detail
-                </span>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-sm cursor-pointer text-[20px] transition-all"
-                style={{
-                  color: "var(--text-muted)",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              <Section label="Record">
-                <Field label="Entity" value={selected.entity} />
-                <Field label="Name" value={selected.entityName || "—"} />
-                <Field label="Action" value={selected.action} />
-                <Field label="Time" value={formatDate(selected.createdAt)} />
-              </Section>
-              <Section label="Performed By">
-                <Field
-                  label="Name"
-                  value={selected.performedBy?.name || "System"}
-                />
-                <Field
-                  label="Email"
-                  value={selected.performedBy?.email || "—"}
-                />
-              </Section>
-              {selected.details && Object.keys(selected.details).length > 0 && (
-                <Section label="What Changed">
-                  {Object.entries(selected.details).map(([k, v]) => (
-                    <Field
-                      key={k}
-                      label={k.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
-                      value={
-                        typeof v === "object"
-                          ? JSON.stringify(v, null, 2)
-                          : String(v)
-                      }
-                      mono={typeof v !== "string"}
-                    />
-                  ))}
-                </Section>
-              )}
-              <Section label="Internal IDs">
-                <Field label="Log ID" value={selected._id} mono />
-                <Field
-                  label="Entity ID"
-                  value={String(selected.entityId)}
-                  mono
-                />
-              </Section>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <DetailsPanel log={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }

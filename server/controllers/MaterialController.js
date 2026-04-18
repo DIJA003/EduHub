@@ -5,7 +5,6 @@ const User = require("../models/User");
 const Enrollment = require("../models/Enrollment");
 const { logAction } = require("../utils/Logger");
 const { createNotification } = require("./notificationController");
-const { bucket } = require('../config/firebase_admin'); 
 
 exports.getAll = async (req, res) => {
   try {
@@ -33,40 +32,10 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const file = req.file; 
-    
-    if (!file) {
-      return res.status(400).json({ success: false, message: 'Please upload a file' });
-    }
-
-    const fileName = `materials/${Date.now()}_${file.originalname}`;
-    const fileUpload = bucket.file(fileName);
-
-    const blobStream = fileUpload.createWriteStream({
-      metadata: { contentType: file.mimetype }
-    });
-
-    blobStream.on('error', (error) => {
-      console.error('Firebase Upload Error:', error);
-      return res.status(500).json({ success: false, message: 'Error uploading file to Firebase' });
-    });
-
-    blobStream.on('finish', async () => {
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
-
-      const material = await Material.create({
-        ...req.body,
-        fileUrl: publicUrl, 
-        fileType: file.mimetype, 
-        status: 'Pending', 
-        uploaded: new Date().toISOString().split('T')[0],
-      });
-
-      res.status(201).json({ success: true, data: material });
     const materialData = {
       ...req.body,
       uploaded: new Date().toISOString().split("T")[0],
-      status: "Active",
+      status: req.body.status || "Active",
       uploadedByRef: req.user.id,
     };
     const material = await Material.create(materialData);
@@ -77,12 +46,15 @@ exports.create = async (req, res) => {
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
-      details: { course: material.course, type: material.type },
+      req,
+      details: {
+        course: material.course,
+        type: material.type,
+        status: material.status,
+      },
     });
 
-
-    blobStream.end(file.buffer);
-
+    res.status(201).json({ success: true, data: material });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -90,6 +62,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const before = await Material.findById(req.params.id).lean();
     const material = await Material.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -105,7 +78,12 @@ exports.update = async (req, res) => {
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
-      details: req.body,
+      req,
+      details: {
+        before: { title: before?.title, status: before?.status },
+        after: { title: material.title, status: material.status },
+        changes: req.body,
+      },
     });
 
     res.json({ success: true, data: material });
@@ -136,6 +114,12 @@ exports.remove = async (req, res) => {
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
+      req,
+      details: {
+        softDeleted: true,
+        deletedBy: req.user?.name,
+        course: material.course,
+      },
     });
 
     res.json({ success: true, message: "Material deleted successfully" });
@@ -162,6 +146,8 @@ exports.restore = async (req, res) => {
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
+      req,
+      details: { restoredBy: req.user?.name },
     });
 
     res.json({
@@ -174,6 +160,7 @@ exports.restore = async (req, res) => {
   }
 };
 
+// ── Approve (admin or assigned mentor) ───────────────────────────────────────
 exports.approveMaterial = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
@@ -182,11 +169,13 @@ exports.approveMaterial = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Material not found" });
 
-    if (material.status !== "Draft")
-      return res.status(400).json({
-        success: false,
-        message: "Only pending materials can be approved",
-      });
+    if (!["Draft", "pending"].includes(material.status))
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Only pending materials can be approved",
+        });
 
     let course;
     if (req.user.role === "admin") {
@@ -197,29 +186,37 @@ exports.approveMaterial = async (req, res) => {
         instructorRef: req.user.id,
       });
     }
-
     if (!course)
-      return res.status(403).json({
-        success: false,
-        message:
-          req.user.role === "admin"
-            ? "Course not found"
-            : "You can only manage materials in your courses",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            req.user.role === "admin"
+              ? "Course not found"
+              : "You can only manage materials in your courses",
+        });
 
+    const feedback = req.body?.feedback || "";
     const updated = await Material.findByIdAndUpdate(
       req.params.id,
-      { status: "Active" },
+      { status: "Active", mentorFeedback: feedback },
       { new: true, runValidators: true },
     );
 
     await logAction({
-      action: "UPDATE",
+      action: "APPROVE",
       entity: "Material",
       entityId: updated._id,
       entityName: updated.title,
       performedBy: req.user,
-      details: { status: "Active", action: "approved" },
+      req,
+      details: {
+        course: course.title,
+        feedback,
+        approvedBy: req.user.name,
+        studentId: material.uploadedByRef,
+      },
     });
 
     await createNotification({
@@ -237,6 +234,7 @@ exports.approveMaterial = async (req, res) => {
   }
 };
 
+// ── Reject (admin or assigned mentor) — PATCH not DELETE ─────────────────────
 exports.rejectMaterial = async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
@@ -245,11 +243,13 @@ exports.rejectMaterial = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Material not found" });
 
-    if (material.status !== "Draft")
-      return res.status(400).json({
-        success: false,
-        message: "Only pending materials can be rejected",
-      });
+    if (!["Draft", "pending"].includes(material.status))
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Only pending materials can be rejected",
+        });
 
     let course;
     if (req.user.role === "admin") {
@@ -260,27 +260,44 @@ exports.rejectMaterial = async (req, res) => {
         instructorRef: req.user.id,
       });
     }
-
     if (!course)
-      return res.status(403).json({
-        success: false,
-        message:
-          req.user.role === "admin"
-            ? "Course not found"
-            : "You can only manage materials in your courses",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            req.user.role === "admin"
+              ? "Course not found"
+              : "You can only manage materials in your courses",
+        });
 
+    const feedback = req.body?.feedback || "";
     const updated = await Material.findByIdAndUpdate(
       req.params.id,
-      { status: "Rejected" },
+      { status: "Rejected", mentorFeedback: feedback },
       { new: true },
     );
+
+    await logAction({
+      action: "REJECT",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      req,
+      details: {
+        course: course.title,
+        feedback,
+        rejectedBy: req.user.name,
+        studentId: material.uploadedByRef,
+      },
+    });
 
     await createNotification({
       recipient: material.uploadedByRef,
       sender: req.user.id,
       type: "material_rejected",
-      message: `Your material "${material.title}" was rejected in ${course.title}.`,
+      message: `Your material "${material.title}" was rejected in ${course.title}.${feedback ? ` Feedback: ${feedback}` : ""}`,
       materialRef: material._id,
       courseRef: course._id,
     });
@@ -291,15 +308,15 @@ exports.rejectMaterial = async (req, res) => {
   }
 };
 
+// ── Mentor uploads material to their own course ───────────────────────────────
 exports.uploadMaterial = async (req, res) => {
   try {
     const { courseRef, title, type, size, fileUrl } = req.body;
 
-    if (!courseRef || !mongoose.Types.ObjectId.isValid(courseRef)) {
+    if (!courseRef || !mongoose.Types.ObjectId.isValid(courseRef))
       return res
         .status(400)
         .json({ success: false, message: "Invalid or missing courseRef" });
-    }
 
     let course;
     if (req.user.role === "admin") {
@@ -310,15 +327,16 @@ exports.uploadMaterial = async (req, res) => {
         instructorRef: req.user.id,
       });
     }
-
     if (!course)
-      return res.status(403).json({
-        success: false,
-        message:
-          req.user.role === "admin"
-            ? "Course not found"
-            : "You can only upload to courses you teach",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            req.user.role === "admin"
+              ? "Course not found"
+              : "You can only upload to courses you teach",
+        });
 
     const material = await Material.create({
       title: title || "Untitled",
@@ -330,16 +348,24 @@ exports.uploadMaterial = async (req, res) => {
       fileUrl: fileUrl || "",
       courseRef,
       uploadedByRef: req.user.id,
+      uploaderRole: req.user.role,
       uploaded: new Date().toISOString().split("T")[0],
     });
 
     await logAction({
-      action: "CREATE",
+      action: "UPLOAD",
       entity: "Material",
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
-      details: { course: material.course, type: material.type },
+      req,
+      details: {
+        courseId: courseRef,
+        courseTitle: course.title,
+        type: material.type,
+        status: material.status,
+        uploadedBy: req.user.name,
+      },
     });
 
     res.status(201).json({ success: true, data: material });
@@ -365,15 +391,16 @@ exports.deleteMaterial = async (req, res) => {
         instructorRef: req.user.id,
       });
     }
-
     if (!course)
-      return res.status(403).json({
-        success: false,
-        message:
-          req.user.role === "admin"
-            ? "Course not found"
-            : "You can only manage materials in your courses",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            req.user.role === "admin"
+              ? "Course not found"
+              : "You can only manage materials in your courses",
+        });
 
     await Material.findByIdAndUpdate(req.params.id, {
       isDeleted: true,
@@ -387,7 +414,14 @@ exports.deleteMaterial = async (req, res) => {
       entityId: material._id,
       entityName: material.title,
       performedBy: req.user,
+      req,
+      details: {
+        softDeleted: true,
+        courseTitle: course.title,
+        deletedBy: req.user.name,
+      },
     });
+
     res.json({ success: true, message: "Material deleted" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -407,29 +441,52 @@ exports.assignStudentToCourse = async (req, res) => {
         instructorRef: req.user.id,
       });
     }
-
     if (!course)
-      return res.status(403).json({
-        success: false,
-        message:
-          req.user.role === "admin"
-            ? "Course not found"
-            : "You can only assign students to your courses",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message:
+            req.user.role === "admin"
+              ? "Course not found"
+              : "You can only assign students to your courses",
+        });
 
     const student = await User.findOne({ _id: studentId, role: "student" });
-    if (!student) {
+    if (!student)
       return res
         .status(404)
         .json({ success: false, message: "Student not found" });
-    }
 
-    const enrollment = await Enrollment.create({
+    const existing = await Enrollment.findOne({
       student: studentId,
       course: courseId,
-      enrolledBy: req.user.id,
-      status: "active",
     });
+    let enrollment;
+    let isReEnroll = false;
+
+    if (existing) {
+      if (existing.status === "active")
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Student is already enrolled in this course",
+          });
+      existing.status = "active";
+      existing.reEnrolledAt = new Date();
+      existing.reEnrolledBy = req.user.id;
+      await existing.save();
+      enrollment = existing;
+      isReEnroll = true;
+    } else {
+      enrollment = await Enrollment.create({
+        student: studentId,
+        course: courseId,
+        enrolledBy: req.user.id,
+        status: "active",
+      });
+    }
 
     const activeCount = await Enrollment.countDocuments({
       course: courseId,
@@ -437,14 +494,31 @@ exports.assignStudentToCourse = async (req, res) => {
     });
     await Course.findByIdAndUpdate(courseId, { students: activeCount });
 
-    res.status(201).json({ success: true, data: enrollment });
+    await logAction({
+      action: "ENROLL",
+      entity: "Enrollment",
+      entityId: enrollment._id,
+      entityName: `${student.name} → ${course.title}`,
+      performedBy: req.user,
+      req,
+      details: {
+        studentId,
+        studentName: student.name,
+        courseId,
+        courseTitle: course.title,
+        isReEnroll,
+        enrolledBy: req.user.name,
+      },
+    });
+
+    res
+      .status(isReEnroll ? 200 : 201)
+      .json({ success: true, data: enrollment });
   } catch (err) {
-    if (err.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Student is already enrolled in this course",
-      });
-    }
+    if (err.code === 11000)
+      return res
+        .status(400)
+        .json({ success: false, message: "Student is already enrolled" });
     res.status(400).json({ success: false, message: err.message });
   }
 };
@@ -458,7 +532,7 @@ exports.getPendingMaterials = async (req, res) => {
 
     const pendingMaterials = await Material.find({
       courseRef: { $in: courseIds },
-      status: "Draft",
+      status: { $in: ["Draft", "pending"] },
       isDeleted: { $ne: true },
       uploadedByRef: { $ne: req.user.id },
     })
