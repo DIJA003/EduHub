@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { to: "/mentor/enroll", icon: "how_to_reg", label: "Enroll Students" },
   { to: "/mentor/upload", icon: "upload_file", label: "Upload Material" },
   { to: "/mentor/profile", icon: "manage_accounts", label: "My Profile" },
-  { to: "/change-password", icon: "lock", label: "Change Password" },
+  // { to: "/change-password", icon: "lock", label: "Change Password" },
   { to: "/mentor/history", icon: "history", label: "My History" },
 ];
 

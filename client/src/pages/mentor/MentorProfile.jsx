@@ -39,8 +39,8 @@ function MentorProfile() {
   const [form, setForm] = useState({
     name: dbUser?.name || "Mentor User",
     email: dbUser?.email || "mentor@university.edu",
-    college: dbUser?.college || "Faculty of Engineering",
-    bio: dbUser?.bio || "Passionate about teaching and helping students grow.",
+    college: dbUser?.college || "",
+    bio: dbUser?.bio || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -51,12 +51,12 @@ function MentorProfile() {
       action: "Change",
       onClick: () => navigate("/change-password"),
     },
-    {
-      label: "Email Notifications",
-      icon: "notifications",
-      action: "Manage",
-      onClick: () => {},
-    },
+    // {
+    //   label: "Email Notifications",
+    //   icon: "notifications",
+    //   action: "Manage",
+    //   onClick: () => {},
+    // },
   ];
 
   const initials = form.name
