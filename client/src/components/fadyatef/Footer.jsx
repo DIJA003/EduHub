@@ -1,16 +1,16 @@
 import React from "react";
 import logo from "../../assets/images/logo.png";
-import { useNavigate } from "react-router-dom";
+//import { useNavigate } from "react-router-dom";
 
 export default function Footer({ onAction }) {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
 
-  const platformLinks = {
-    Dashboard: () => navigate("/std-dashboard"),
-    "All Courses": () => navigate("/academic-year"),
-    Mentorship: () => navigate("/home"),
-    Resources: () => navigate("/home"),
-  };
+  // const platformLinks = {
+  //   Dashboard: () => navigate("/std-dashboard"),
+  //   "All Courses": () => navigate("/academic-year"),
+  //   Mentorship: () => navigate("/home"),
+  //   Resources: () => navigate("/home"),
+  // };
   return (
     <footer className="mt-10 border-t border-slate-200 pt-10 text-xs text-slate-500">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 md:flex-row md:justify-between">
