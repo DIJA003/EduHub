@@ -9,6 +9,9 @@ const material  = require('../controllers/MaterialController.js');
 const adminUser = require('../controllers/adminController');
 const dashboard = require('../controllers/DashboardController');
 
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
 router.get('/dashboard/stats',    verifyToken, dashboard.getStats);
 router.get('/dashboard/activity', verifyToken, dashboard.getActivity);
 
@@ -26,7 +29,7 @@ router.delete('/courses/:id', verifyToken, course.remove);
 
 router.get   ('/materials',     verifyToken, material.getAll);
 router.get   ('/materials/:id', verifyToken, material.getById);
-router.post  ('/materials',     verifyToken, material.create);
+router.post('/materials', verifyToken, upload.single('file'), material.create);
 router.put   ('/materials/:id', verifyToken, material.update);
 router.delete('/materials/:id', verifyToken, material.remove);
 

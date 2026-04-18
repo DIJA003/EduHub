@@ -3,6 +3,10 @@ const router   = express.Router();
 const User     = require('../models/User');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+const multer = require('multer');
+const material = require('../controllers/MaterialController'); // تأكد إن المسار صح
+const upload = multer({ storage: multer.memoryStorage() });
+
 router.post('/register', verifyToken, async (req, res) => {
   try {
     const { uid, email, name } = req.user;
@@ -38,4 +42,6 @@ router.get('/login', verifyToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+router.post('/upload-material', verifyToken, upload.single('file'), material.create);
+
+module.exports = router;  
