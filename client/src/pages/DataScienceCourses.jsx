@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCourses } from "../context/CourseContext";
+import { useCourses, sumEnrolledCredits } from "../context/CourseContext";
 import Header from "../components/fadyatef/Header";
 import Footer from "../components/fadyatef/Footer";
 import ConfirmDialog from "../components/common/ConfirmDialog";
@@ -52,29 +52,33 @@ const openCourses = [
 
 export default function DataScienceCourses() {
   const navigate = useNavigate();
-  const { enrollCourse, years } = useCourses();
+  const { enrollCourse, years, currentYearId } = useCourses();
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
 
-  const yearTwo = years["2"];
-  const enrolledIds = new Set((yearTwo?.enrolled || []).map((c) => c.id));
-  const visibleCourses = openCourses.filter((c) => !enrolledIds.has(c.id));
+  const activeYear = years[currentYearId];
+  const enrolledIds = new Set(
+    (activeYear?.enrolled || []).map((course) => course.id),
+  );
+  const visibleCourses = openCourses.filter(
+    (course) => !enrolledIds.has(course.id),
+  );
 
   const handleEnroll = (course) => {
     const credits = 3;
-    if (
-      yearTwo &&
-      yearTwo.meta.earnedCredits + credits > yearTwo.meta.totalCredits
-    ) {
+    const planned = sumEnrolledCredits(activeYear?.enrolled || []);
+    const cap = activeYear?.meta?.totalCredits ?? 42;
+    if (planned + credits > cap) {
       setLimitDialogOpen(true);
       return;
     }
-    enrollCourse("2", {
+
+    enrollCourse(currentYearId, {
       id: course.id,
       name: course.name,
       code: "DS" + Math.floor(Math.random() * 900 + 100),
       credits,
     });
-    navigate("/academic-year/2");
+    navigate(`/academic-year/${currentYearId}`);
   };
 
   const handleAction = (label) => {
@@ -90,7 +94,7 @@ export default function DataScienceCourses() {
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
-        message="You cannot enroll in more courses because your credits have reached the 21-credit limit for this year."
+        message={`You cannot enroll in more courses because your planned credits would exceed the ${activeYear?.meta?.totalCredits ?? 42}-credit limit for this year.`}
         confirmLabel="OK"
         showCancel={false}
         onConfirm={() => setLimitDialogOpen(false)}
@@ -167,9 +171,9 @@ export default function DataScienceCourses() {
         <button
           type="button"
           className="mt-4 rounded-full border border-slate-300 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"
-          onClick={() => navigate("/academic-year/2")}
+          onClick={() => navigate(`/academic-year/${currentYearId}`)}
         >
-          Back to Year Two
+          Back to Year {currentYearId}
         </button>
       </main>
 

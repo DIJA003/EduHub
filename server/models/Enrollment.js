@@ -22,7 +22,9 @@ const enrollmentSchema = new mongoose.Schema(
       enum: ["active", "dropped", "completed"],
       default: "active",
     },
-    enrolledAt: { type: Date, default: Date.now },
+    progress: { type: Number, default: 0, min: 0, max: 100 },
+    sectionsCompleted: { type: Number, default: 0 },
+    nextItem: { type: String, default: "Getting Started" },
   },
   { timestamps: true },
 );

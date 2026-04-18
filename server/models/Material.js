@@ -27,11 +27,22 @@ const materialSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    uploaderRole: {
+      type: String,
+      enum: ["student", "mentor", "admin"],
+      default: "mentor",
+    },
+    mentorFeedback: { type: String, default: "" },
+    yearId: { type: String, default: "" },
+    courseId: { type: String, default: "" },
+    sectionId: { type: String, default: "" },
+    sectionLabel: { type: String, default: "" },
   },
   { timestamps: true },
 );
 
 materialSchema.index({ courseRef: 1, status: 1 });
 materialSchema.index({ uploadedByRef: 1 });
+materialSchema.index({ uploaderRole: 1, status: 1 });
 
 module.exports = mongoose.model("Material", materialSchema);

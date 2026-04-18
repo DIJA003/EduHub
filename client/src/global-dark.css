@@ -1,0 +1,94 @@
+/**
+ * Global “student app” dark theme when Profile toggles dark mode.
+ * Uses class `eduhub-dark` on <html> (see ThemeContext).
+ */
+html.eduhub-dark {
+  color-scheme: dark;
+}
+
+html.eduhub-dark body {
+  background-color: #020617;
+  color: #e2e8f0;
+}
+
+/* Common light surfaces → dark */
+html.eduhub-dark .bg-slate-50,
+html.eduhub-dark .bg-slate-100 {
+  background-color: #0f172a !important;
+}
+
+html.eduhub-dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+html.eduhub-dark .bg-sky-50 {
+  background-color: rgba(30 58 138 / 0.25) !important;
+}
+
+/* Text */
+html.eduhub-dark .text-slate-900,
+html.eduhub-dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+html.eduhub-dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+html.eduhub-dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.eduhub-dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.eduhub-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Borders */
+html.eduhub-dark .border-slate-200,
+html.eduhub-dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+html.eduhub-dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+/* Dividers / rings */
+html.eduhub-dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/* Hero / gradients that start from white */
+html.eduhub-dark .from-white {
+  --tw-gradient-from: #0f172a var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(15 23 42 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+html.eduhub-dark .via-slate-50 {
+  --tw-gradient-via: #0f172a var(--tw-gradient-via-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via),
+    var(--tw-gradient-to);
+}
+
+html.eduhub-dark .to-slate-50 {
+  --tw-gradient-to: #020617 var(--tw-gradient-to-position);
+}
+
+/* Placeholder */
+html.eduhub-dark .placeholder-slate-500::placeholder {
+  color: #64748b !important;
+}
+
+/* Inputs */
+html.eduhub-dark input,
+html.eduhub-dark textarea,
+html.eduhub-dark select {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #475569;
+}

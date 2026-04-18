@@ -15,8 +15,10 @@ import ChangePassword from "../pages/auth/ChangePassword";
 import Home from "../pages/Home";
 import AcademicYear from "../pages/AcademicYear";
 import YearDetail from "../pages/YearDetail";
+import CoursePlayer from "../pages/CoursePlayer";
 import DataScienceCourses from "../pages/DataScienceCourses";
 import StudentDashboard from "../pages/StudentDashboard";
+import StudentProfile from "../pages/Studentprofile";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import MentorDashboard from "../pages/mentor/MentorDashboard";
@@ -92,8 +94,16 @@ function AppRoutes() {
         <Route
           path="/std-dashboard"
           element={
-            <ProtectedRoute requireVerified allowedRoles={["student"]}>
+            <ProtectedRoute requireVerified>
               <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute requireVerified>
+              <StudentProfile />
             </ProtectedRoute>
           }
         />

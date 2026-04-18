@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useCourses } from "../context/CourseContext";
+import { useCourses, sumEnrolledCredits } from "../context/CourseContext";
 import { useMaterials } from "../context/MaterialContext";
+import { useTheme } from "../context/ThemeContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import logo from "../assets/images/logo.png";
 
@@ -59,28 +60,209 @@ const openCourses = [
   },
 ];
 
+const STATUS_COLOR = {
+  pending: "text-amber-400",
+  approved: "text-emerald-400",
+  rejected: "text-rose-400",
+};
+const STATUS_LABEL = {
+  pending: "⏳ Pending review",
+  approved: "✅ Approved",
+  rejected: "❌ Rejected",
+};
+
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { dbUser } = useAuth();
-
-  const { years, enrollCourse, undoEnrollment } = useCourses();
-  const { materials, addMaterial, removeMaterial } = useMaterials();
+  const { darkMode } = useTheme();
+  const { years, enrollCourse, undoEnrollment, currentYearId } = useCourses();
+  const { materials, removeMaterial } = useMaterials();
 
   const [activeLink, setActiveLink] = useState("dashboard");
-  const [selectedCourse, setSelectedCourse] = useState(null);
   const [undoTarget, setUndoTarget] = useState(null);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
-  const fileInputRef = useRef(null);
 
-  const yearTwo = years["2"];
-  const enrolledCourses = yearTwo?.enrolled || [];
-  const availableCourses = yearTwo?.available || [];
-  const earnedCredits = yearTwo?.meta?.earnedCredits ?? 0;
-  const totalCredits = yearTwo?.meta?.totalCredits ?? 21;
+  // Activity log — persisted to localStorage so it survives refresh
+  const ACTIVITY_KEY = "eduhub-activity-log-v1";
+  const [activityLog, setActivityLog] = useState(() => {
+    try {
+      const stored = localStorage.getItem(ACTIVITY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
+  // Persist activity log whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        ACTIVITY_KEY,
+        JSON.stringify(activityLog.slice(0, 50)),
+      );
+    } catch {}
+  }, [activityLog]);
+  const prevEnrolled = useRef([]);
+  const prevMaterials = useRef([]);
+
+  const activeYear = years[currentYearId];
+  const enrolledCourses = activeYear?.enrolled || [];
+  const availableCourses = activeYear?.available || [];
+  const earnedCredits = activeYear?.meta?.earnedCredits ?? 0;
+  const totalCredits = activeYear?.meta?.totalCredits ?? 42;
   const firstName = dbUser?.name ? dbUser.name.split(" ")[0] : "Student";
+
+  // isMounted ref — skip logging on first render (initial data load)
+  const isMounted = useRef(false);
+
+  // Track enrollment changes → activity log
+  useEffect(() => {
+    if (!isMounted.current) {
+      // First render: just set the baseline, don't log anything
+      prevEnrolled.current = enrolledCourses;
+      return;
+    }
+
+    const prev = prevEnrolled.current;
+    const curr = enrolledCourses;
+
+    curr.forEach((c) => {
+      if (!prev.some((p) => p.id === c.id)) {
+        setActivityLog((log) => [
+          {
+            id: Date.now() + Math.random(),
+            icon: "📚",
+            text: `Enrolled in "${c.name}"`,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            color: "text-emerald-400",
+          },
+          ...log,
+        ]);
+      }
+    });
+
+    prev.forEach((p) => {
+      if (!curr.some((c) => c.id === p.id)) {
+        setActivityLog((log) => [
+          {
+            id: Date.now() + Math.random(),
+            icon: "🗑️",
+            text: `Unenrolled from "${p.name}"`,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            color: "text-rose-400",
+          },
+          ...log,
+        ]);
+      }
+    });
+
+    // Track progress/section changes per course
+    curr.forEach((c) => {
+      const prevC = prev.find((p) => p.id === c.id);
+      if (prevC) {
+        if (c.nextItem !== prevC.nextItem) {
+          setActivityLog((log) => [
+            {
+              id: Date.now() + Math.random(),
+              icon: "▶️",
+              text: `Moved to section "${c.nextItem}" in "${c.name}"`,
+              time: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              color: "text-blue-400",
+            },
+            ...log,
+          ]);
+        }
+        if (c.progress === 100 && prevC.progress < 100) {
+          setActivityLog((log) => [
+            {
+              id: Date.now() + Math.random(),
+              icon: "🎉",
+              text: `Completed "${c.name}"!`,
+              time: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              color: "text-emerald-300",
+            },
+            ...log,
+          ]);
+        }
+      }
+    });
+
+    prevEnrolled.current = curr;
+  }, [enrolledCourses]);
+
+  // Track material uploads → activity log
+  useEffect(() => {
+    if (!isMounted.current) {
+      prevMaterials.current = materials;
+      isMounted.current = true; // set after both baselines are set
+      return;
+    }
+
+    const prev = prevMaterials.current;
+    const curr = materials;
+
+    curr.forEach((m) => {
+      if (!prev.some((p) => p.id === m.id)) {
+        setActivityLog((log) => [
+          {
+            id: Date.now() + Math.random(),
+            icon: "📎",
+            text: `Uploaded "${m.fileName}" — pending mentor review`,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            color: "text-amber-400",
+          },
+          ...log,
+        ]);
+      }
+      // Material status change (approved/rejected)
+      const prevM = prev.find((p) => p.id === m.id);
+      if (prevM && m.status !== prevM.status) {
+        const icon =
+          m.status === "approved"
+            ? "✅"
+            : m.status === "rejected"
+              ? "❌"
+              : "⏳";
+        const color =
+          m.status === "approved"
+            ? "text-emerald-400"
+            : m.status === "rejected"
+              ? "text-rose-400"
+              : "text-amber-400";
+        setActivityLog((log) => [
+          {
+            id: Date.now() + Math.random(),
+            icon,
+            text: `"${m.fileName}" was ${m.status} by mentor`,
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            color,
+          },
+          ...log,
+        ]);
+      }
+    });
+
+    prevMaterials.current = curr;
+  }, [materials]);
 
   // Sync active tab from URL hash
   useEffect(() => {
@@ -93,49 +275,24 @@ export default function StudentDashboard() {
     navigate(`/std-dashboard#${id}`, { replace: true });
   };
 
-  const handleFileSelect = (e) => {
-    const files = e.target.files;
-    if (!files?.length || !selectedCourse) return;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const type = file.type.startsWith("video/")
-        ? "video"
-        : file.type.startsWith("image/")
-          ? "photo"
-          : file.type === "application/pdf"
-            ? "pdf"
-            : "file";
-      addMaterial({
-        courseId: selectedCourse.id,
-        courseName: selectedCourse.name,
-        fileName: file.name,
-        type,
-      });
-    }
-    e.target.value = "";
-  };
-
-  const handleUploadClick = () => {
-    if (selectedCourse) fileInputRef.current?.click();
-  };
-
   const openUndoDialog = (course) =>
     setUndoTarget({ id: course.id, name: course.name });
   const closeUndoDialog = () => setUndoTarget(null);
   const confirmUndo = () => {
     if (undoTarget) {
-      undoEnrollment("2", undoTarget.id);
+      undoEnrollment(currentYearId, undoTarget.id);
       closeUndoDialog();
     }
   };
 
   const handleEnroll = (course) => {
     const credits = course.credits || 3;
-    if (earnedCredits + credits > totalCredits) {
+    const planned = sumEnrolledCredits(enrolledCourses);
+    if (planned + credits > totalCredits) {
       setLimitDialogOpen(true);
       return;
     }
-    enrollCourse("2", {
+    enrollCourse(currentYearId, {
       id: course.id,
       name: course.name,
       code: course.code || "ELEC",
@@ -143,13 +300,32 @@ export default function StudentDashboard() {
     });
   };
 
+  // Dark mode classes
+  const bg = darkMode ? "bg-slate-900" : "bg-slate-900";
+  const sidebar = darkMode
+    ? "bg-slate-950 border-slate-800"
+    : "bg-slate-900 border-slate-700";
+  const cardBg = darkMode
+    ? "bg-slate-800/60 border-slate-700"
+    : "bg-slate-800/50 border-slate-700";
+  const courseTxt = darkMode ? "text-slate-300" : "text-white";
+  const hoverLink = darkMode
+    ? "hover:bg-slate-700 hover:text-white"
+    : "hover:bg-slate-800 hover:text-white";
+
   return (
-    <div className="flex min-h-screen bg-slate-900">
+    <div className={`flex min-h-screen ${bg}`}>
       {/* Sidebar */}
-      <aside className="flex w-56 flex-col border-r border-slate-700 bg-slate-900">
-        <div className="flex items-center gap-2 border-b border-slate-700 p-4">
-          <img src={logo} alt="EduHub" className="h-8 w-8 object-contain" />
-          <span className="font-semibold text-white">EduHub Student</span>
+      <aside className={`flex w-56 flex-col border-r ${sidebar}`}>
+        <div className="flex flex-col gap-0.5 border-b border-slate-700 p-4">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="EduHub" className="h-8 w-8 object-contain" />
+            <span className="font-semibold text-white">EduHub Student</span>
+          </div>
+          <p className="pl-10 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+            Year {currentYearId} ·{" "}
+            {activeYear?.meta?.title?.split(":")[0] || "Current"}
+          </p>
         </div>
         <nav className="flex-1 p-4">
           <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -163,7 +339,7 @@ export default function StudentDashboard() {
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                     activeLink === link.id
                       ? "bg-slate-700 text-white"
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                      : `text-slate-300 ${hoverLink}`
                   }`}
                 >
                   {link.label}
@@ -206,7 +382,7 @@ export default function StudentDashboard() {
       <ConfirmDialog
         open={limitDialogOpen}
         title="Credit limit reached"
-        message="You cannot enroll in more courses because your credits have reached the 21-credit limit for this year."
+        message={`You cannot enroll in more courses because your credits have reached the ${totalCredits}-credit limit for this year.`}
         confirmLabel="OK"
         showCancel={false}
         onConfirm={() => setLimitDialogOpen(false)}
@@ -229,8 +405,11 @@ export default function StudentDashboard() {
                 Welcome back, {firstName} 👋
               </h1>
               <p className="mt-1 text-slate-400">
-                Here's what needs your attention today.
+                Here&apos;s what needs your attention today — academic year{" "}
+                {currentYearId}.
               </p>
+
+              {/* Stats */}
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   {
@@ -276,6 +455,42 @@ export default function StudentDashboard() {
                   </div>
                 ))}
               </div>
+
+              {/* Activity Log */}
+              <div className="mt-8">
+                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                  Recent Activity
+                </h2>
+                {activityLog.length === 0 ? (
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
+                    <p className="text-sm text-slate-500">
+                      No activity yet. Enroll in a course or upload materials to
+                      see your log here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activityLog.slice(0, 10).map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-start gap-4 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3"
+                      >
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-base">
+                          {entry.icon}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${entry.color}`}>
+                            {entry.text}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {entry.time}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
           )}
 
@@ -288,7 +503,7 @@ export default function StudentDashboard() {
                     My Courses
                   </h2>
                   <p className="mt-1 text-sm text-slate-400">
-                    Your enrolled courses and available to enroll.
+                    Year {currentYearId}: enrolled courses and open seats.
                   </p>
                 </div>
                 <span className="text-sm font-medium text-slate-400">
@@ -311,11 +526,11 @@ export default function StudentDashboard() {
                   enrolledCourses.map((course) => (
                     <div
                       key={course.id}
-                      className="rounded-xl border border-slate-700 bg-slate-800/50 p-5"
+                      className={`rounded-xl border ${cardBg} p-5`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-semibold text-white">
+                          <h3 className={`font-semibold ${courseTxt}`}>
                             {course.name}
                           </h3>
                           <p className="text-xs text-slate-400">
@@ -368,12 +583,12 @@ export default function StudentDashboard() {
                 {availableCourses.map((course) => (
                   <div
                     key={course.id}
-                    className="rounded-xl border border-slate-700 bg-slate-800/50 p-5"
+                    className={`rounded-xl border ${cardBg} p-5`}
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                       {course.type}
                     </p>
-                    <h3 className="mt-1 text-sm font-semibold text-white">
+                    <h3 className={`mt-1 text-sm font-semibold ${courseTxt}`}>
                       {course.name}
                     </h3>
                     <p className="mt-1 text-xs text-slate-400">
@@ -413,7 +628,8 @@ export default function StudentDashboard() {
                 Upload Material
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Click a course card to view its materials and upload new ones.
+                Materials are sent to your mentor for review before being
+                published.
               </p>
               {enrolledCourses.length === 0 ? (
                 <div className="mt-6 rounded-xl border border-slate-700 bg-slate-800/50 p-6">
@@ -435,102 +651,86 @@ export default function StudentDashboard() {
                       const courseMaterials = materials.filter(
                         (m) => m.courseId === course.id,
                       );
-                      const isSelected = selectedCourse?.id === course.id;
+                      const pendingCount = courseMaterials.filter(
+                        (m) => m.status === "pending",
+                      ).length;
                       return (
                         <button
                           key={course.id}
+                          type="button"
                           onClick={() =>
-                            setSelectedCourse(isSelected ? null : course)
+                            navigate(
+                              `/academic-year/${currentYearId}/course/${course.id}?upload=1`,
+                            )
                           }
-                          className={`rounded-xl border p-5 text-left transition ${
-                            isSelected
-                              ? "border-blue-500 bg-slate-800 ring-1 ring-blue-500"
-                              : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
-                          }`}
+                          className="rounded-xl border border-slate-700 bg-slate-800/50 p-5 text-left transition hover:border-blue-500/60 hover:bg-slate-800"
                         >
-                          <h3 className="font-semibold text-white">
+                          <h3 className={`font-semibold ${courseTxt}`}>
                             {course.name}
                           </h3>
                           <p className="mt-1 text-xs text-slate-400">
                             {course.code} • {courseMaterials.length} material
                             {courseMaterials.length !== 1 ? "s" : ""}
                           </p>
+                          {pendingCount > 0 && (
+                            <p className="mt-1 text-xs text-amber-400">
+                              ⏳ {pendingCount} pending review
+                            </p>
+                          )}
+                          <p className="mt-3 text-xs font-medium text-blue-400">
+                            Open course → upload by section
+                          </p>
                         </button>
                       );
                     })}
                   </div>
-                  {selectedCourse && (
-                    <div className="mt-6 rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-                      <p className="text-sm text-slate-400">
-                        Materials in{" "}
-                        <span className="font-medium text-white">
-                          {selectedCourse.name}
-                        </span>
-                      </p>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="video/*,image/*,.pdf"
-                        className="hidden"
-                        onChange={handleFileSelect}
-                      />
-                      <button
-                        onClick={handleUploadClick}
-                        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                      >
-                        <span>📎</span> Upload videos, photos, or PDFs
-                      </button>
-                      <div className="mt-6 space-y-2">
-                        {materials
-                          .filter((m) => m.courseId === selectedCourse.id)
-                          .map((m) => (
-                            <div
-                              key={m.id}
-                              className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 px-4 py-3"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="text-lg">
-                                  {m.type === "video"
-                                    ? "🎬"
-                                    : m.type === "photo"
-                                      ? "🖼️"
-                                      : m.type === "pdf"
-                                        ? "📄"
-                                        : "📎"}
-                                </span>
-                                <div>
-                                  <p className="font-medium text-white">
-                                    {m.fileName}
-                                  </p>
-                                  <p className="text-xs text-slate-400">
-                                    {new Date(
-                                      m.uploadDate,
-                                    ).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-300">
-                                  {m.type}
-                                </span>
-                                <button
-                                  type="button"
-                                  className="text-xs text-rose-400 hover:text-rose-300"
-                                  onClick={() => removeMaterial(m.id)}
+                  {/* Materials list with status */}
+                  {materials.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Your Uploaded Materials
+                      </h3>
+                      <div className="space-y-2">
+                        {materials.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">
+                                {m.type === "video"
+                                  ? "🎬"
+                                  : m.type === "pdf"
+                                    ? "📄"
+                                    : "📎"}
+                              </span>
+                              <div>
+                                <p
+                                  className={`text-sm font-medium ${courseTxt}`}
                                 >
-                                  Remove
-                                </button>
+                                  {m.fileName}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {m.courseName}
+                                </p>
                               </div>
                             </div>
-                          ))}
-                        {materials.filter(
-                          (m) => m.courseId === selectedCourse.id,
-                        ).length === 0 && (
-                          <p className="text-sm text-slate-500">
-                            No materials yet. Upload above.
-                          </p>
-                        )}
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`text-xs font-medium ${STATUS_COLOR[m.status] || "text-slate-400"}`}
+                              >
+                                {STATUS_LABEL[m.status] || m.status}
+                              </span>
+                              <button
+                                type="button"
+                                className="text-xs text-rose-400 hover:text-rose-300"
+                                onClick={() => removeMaterial(m.id)}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -546,16 +746,12 @@ export default function StudentDashboard() {
                 Recent Materials
               </h2>
               <p className="mt-1 text-sm text-slate-400">
-                Notifications for newly uploaded materials.
+                Status of your uploaded materials.
               </p>
               <div className="mt-6 space-y-3">
                 {materials.length === 0 ? (
                   <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-                    <p className="text-slate-400">No new materials yet.</p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Upload materials in <strong>Upload Material</strong> to
-                      see notifications here.
-                    </p>
+                    <p className="text-slate-400">No materials yet.</p>
                   </div>
                 ) : (
                   materials.map((m) => (
@@ -567,31 +763,23 @@ export default function StudentDashboard() {
                         🔔
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white">
-                          New material uploaded to{" "}
-                          <strong>{m.courseName}</strong>
+                        <p className={`text-sm ${courseTxt}`}>
+                          Uploaded to <strong>{m.courseName}</strong> —{" "}
+                          <span
+                            className={
+                              STATUS_COLOR[m.status] || "text-slate-400"
+                            }
+                          >
+                            {STATUS_LABEL[m.status] || m.status}
+                          </span>
                         </p>
                         <p className="mt-0.5 text-slate-400">{m.fileName}</p>
                         <p className="mt-1 text-xs text-slate-500">
                           {new Date(m.uploadDate).toLocaleString()}
                         </p>
                         <button
-                          onClick={() => {
-                            const course = enrolledCourses.find(
-                              (c) => c.id === m.courseId,
-                            );
-                            if (course) {
-                              setSelectedCourse(course);
-                              handleSelectSection("upload-material");
-                            }
-                          }}
-                          className="mt-2 text-xs text-blue-400 hover:underline"
-                        >
-                          View in upload material →
-                        </button>
-                        <button
                           type="button"
-                          className="ml-3 mt-2 text-xs text-rose-400 hover:text-rose-300"
+                          className="ml-0 mt-2 text-xs text-rose-400 hover:text-rose-300"
                           onClick={() => removeMaterial(m.id)}
                         >
                           Remove
@@ -604,63 +792,7 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ── My History ── */}
-          {activeLink === "my-history" && (
-            <section>
-              <h2 className="text-lg font-semibold text-white">
-                My Upload History
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                All materials you have submitted across courses.
-              </p>
-              <div className="mt-6 space-y-3">
-                {materials.length === 0 ? (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-6">
-                    <p className="text-slate-400">No uploads yet.</p>
-                  </div>
-                ) : (
-                  [...materials].reverse().map((m) => (
-                    <div
-                      key={m.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">
-                          {m.type === "video"
-                            ? "🎬"
-                            : m.type === "pdf"
-                              ? "📄"
-                              : "📎"}
-                        </span>
-                        <div>
-                          <p className="font-medium text-white">{m.fileName}</p>
-                          <p className="text-xs text-slate-400">
-                            {m.courseName}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {new Date(m.uploadDate).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          m.status === "Active"
-                            ? "bg-emerald-900/50 text-emerald-400"
-                            : m.status === "Rejected"
-                              ? "bg-red-900/50 text-red-400"
-                              : "bg-amber-900/50 text-amber-400"
-                        }`}
-                      >
-                        {m.status || "Pending"}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* ── Explore (electives) ── */}
+          {/* ── Explore ── */}
           {activeLink === "explore-courses" && (
             <section>
               <h2 className="text-lg font-semibold text-white">
@@ -683,12 +815,12 @@ export default function StudentDashboard() {
                         </span>
                         <span>{course.duration}</span>
                       </div>
-                      <h2 className="text-sm font-semibold text-white">
+                      <h2 className={`text-sm font-semibold ${courseTxt}`}>
                         {course.name}
                       </h2>
                       <p className="mt-2 text-xs text-slate-400">
                         Instructor:{" "}
-                        <span className="font-medium text-slate-200">
+                        <span className="font-medium text-slate-300">
                           {course.instructor}
                         </span>
                       </p>

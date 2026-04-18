@@ -64,6 +64,20 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "EduHub API is running" });
 });
 
+// Academic year routes (public course catalog per year)
+app.get("/api/courses/year/:yearId", require("./middleware/authMiddleware").verifyToken, async (req, res) => {
+  try {
+    const Course = require("./models/Course");
+    const courses = await Course.find({
+      yearId: req.params.yearId,
+      status: "Published",
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, data: courses });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use((req, res) => {
   res
     .status(404)

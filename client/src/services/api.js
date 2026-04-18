@@ -177,3 +177,29 @@ export const academicYearsApi = {
   getByCollege: (colId) => api.get(`/academic-years/by-college/${colId}`),
   getColleges: () => api.get("/academic-years/colleges"),
 };
+export const studentMaterialsApi = {
+  getAll:  ()     => api.get("/users/materials"),
+  create:  (data) => api.post("/users/materials", data),
+  remove:  (id)   => api.delete(`/users/materials/${id}`),
+};
+
+export const enrollmentApi2 = {
+  getAll:        ()               => api.get("/users/enrollments"),
+  enroll:        (courseId)       => api.post(`/users/enrollments/${courseId}`),
+  unenroll:      (courseId)       => api.delete(`/users/enrollments/${courseId}`),
+  updateProgress:(courseId, data) => api.patch(`/users/enrollments/${courseId}/progress`, data),
+};
+
+export const profileApi = {
+  update: (data) => api.put("/users/profile", data),
+};
+
+export const courseCatalogApi = {
+  getByYear: (yearId) => api.get(`/courses/year/${yearId}`),
+};
+
+export const mentorReviewApi = {
+  getPending: ()              => api.get("/mentor/materials/review"),
+  approve:    (id, feedback)  => api.patch(`/mentor/materials/${id}/approve`, { feedback }),
+  reject:     (id, feedback)  => api.patch(`/mentor/materials/${id}/reject`, { feedback }),
+};
