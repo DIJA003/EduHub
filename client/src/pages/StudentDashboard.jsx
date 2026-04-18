@@ -493,12 +493,12 @@ export default function StudentDashboard() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <BtnPrimary onClick={openUploadModal}>
+            {/* <BtnPrimary onClick={openUploadModal}>
               <span className="material-symbols-outlined text-[14px]">
                 upload_file
               </span>
               Upload Material
-            </BtnPrimary>
+            </BtnPrimary> */}
             <div
               className="w-px h-[22px]"
               style={{ background: "var(--border)" }}
