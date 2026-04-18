@@ -22,6 +22,10 @@ router.post(
     try {
       const { uid, email } = req.user;
       const nameFromBody = req.body?.name?.trim();
+      const collegeFromBody = req.body?.college?.trim() || "—";
+      const roleFromBody = ["student", "mentor"].includes(req.body?.role)
+        ? req.body.role
+        : "student";
 
       let user = await User.findOne({ firebaseUid: uid });
       if (user) return res.status(200).json(user);
@@ -30,9 +34,8 @@ router.post(
         firebaseUid: uid,
         email: email?.toLowerCase() || "",
         name: nameFromBody || email?.split("@")[0] || "User",
-        role: ["student", "mentor"].includes(req.body?.role)
-          ? req.body.role
-          : "student",
+        role: roleFromBody,
+        college: collegeFromBody,
       });
 
       res.status(201).json(user);

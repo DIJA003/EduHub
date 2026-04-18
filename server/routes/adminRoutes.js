@@ -15,13 +15,19 @@ const material = require("../controllers/MaterialController");
 const adminUser = require("../controllers/adminController");
 const dashboard = require("../controllers/DashboardController");
 const Log = require("../controllers/LogController");
+
+const User = require("../models/User");
+const Enrollment = require("../models/Enrollment");
+const Course = require("../models/Course");
+const { logAction } = require("../utils/Logger");
+
 const authAdmin = [verifyToken, adminOnly];
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 router.get("/dashboard/stats", ...authAdmin, dashboard.getStats);
 router.get("/dashboard/activity", ...authAdmin, dashboard.getActivity);
 
-// ── logs ────────────────────────────────────────────────────────────────
+// ── Logs ──────────────────────────────────────────────────────────────────────
 router.get("/logs", ...authAdmin, Log.getLogs);
 
 // ── Colleges ──────────────────────────────────────────────────────────────────
@@ -93,7 +99,9 @@ router.put("/users/:id", ...authAdmin, adminUser.update);
 router.delete("/users/:id", ...authAdmin, adminUser.remove);
 router.patch("/users/:id/restore", ...authAdmin, adminUser.restore);
 
-// ── Enrollments ─────────────────────────────────────────────────────────────────────
+// ── Enrollments ───────────────────────────────────────────────────────────────
+// IMPORTANT: specific routes must come before param routes
+
 router.get("/enrollments/students", ...authAdmin, async (req, res) => {
   try {
     const students = await User.find({
@@ -101,6 +109,18 @@ router.get("/enrollments/students", ...authAdmin, async (req, res) => {
       isDeleted: { $ne: true },
     }).select("name email college");
     res.json({ success: true, data: students });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/enrollments/all", ...authAdmin, async (req, res) => {
+  try {
+    const data = await Enrollment.find({ status: "active" })
+      .populate("student", "name email")
+      .populate("course", "title code instructor")
+      .sort({ enrolledAt: -1 });
+    res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -121,19 +141,17 @@ router.post("/enrollments", ...authAdmin, async (req, res) => {
       status: "active",
     });
 
-    const Course = require("../models/Course");
     const count = await Enrollment.countDocuments({
       course: courseId,
       status: "active",
     });
     await Course.findByIdAndUpdate(courseId, { students: count });
 
-    const { logAction } = require("../utils/Logger");
     await logAction({
       action: "CREATE",
       entity: "Enrollment",
       entityId: enrollment._id,
-      entityName: `Student enrolled in course`,
+      entityName: "Student enrolled in course",
       performedBy: req.user,
       details: { studentId, courseId },
     });
@@ -156,7 +174,6 @@ router.delete(
         { student: studentId, course: courseId },
         { status: "dropped" },
       );
-      const Course = require("../models/Course");
       const count = await Enrollment.countDocuments({
         course: courseId,
         status: "active",
@@ -168,18 +185,5 @@ router.delete(
     }
   },
 );
-
-router.get("/enrollments/all", ...authAdmin, async (req, res) => {
-  try {
-    const Enrollment = require("../models/Enrollment");
-    const data = await Enrollment.find({ status: "active" })
-      .populate("student", "name email")
-      .populate("course", "title code instructor")
-      .sort({ enrolledAt: -1 });
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
 
 module.exports = router;

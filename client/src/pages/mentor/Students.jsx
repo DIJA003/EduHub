@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Badge,
   PageHeader,
@@ -8,68 +8,10 @@ import {
   BtnPrimary,
   BtnSecondary,
   FormGroup,
-  FormInput,
   FormSelect,
   tw,
 } from "../../components/admin/adminUtils";
-
-import { useEffect } from "react";
-import { enrollmentApi } from "../../services/api";
-
-const MOCK_STUDENTS = [
-  {
-    _id: "1",
-    name: "Ahmed Samy",
-    email: "ahmed@edu.com",
-    course: "Data Structures",
-    enrolledAt: "2025-02-01",
-  },
-  {
-    _id: "2",
-    name: "Nour Tarek",
-    email: "nour@edu.com",
-    course: "Web Dev",
-    enrolledAt: "2025-02-10",
-  },
-  {
-    _id: "3",
-    name: "Omar Khalid",
-    email: "omar@edu.com",
-    course: "Algorithms",
-    enrolledAt: "2025-02-15",
-  },
-  {
-    _id: "4",
-    name: "Layla Hassan",
-    email: "layla@edu.com",
-    course: "Web Dev",
-    enrolledAt: "2025-03-01",
-  },
-  {
-    _id: "5",
-    name: "Karim Ali",
-    email: "karim@edu.com",
-    course: "Databases",
-    enrolledAt: "2025-03-05",
-  },
-  {
-    _id: "6",
-    name: "Sara Mostafa",
-    email: "sara@edu.com",
-    course: "Programming",
-    enrolledAt: "2025-03-08",
-  },
-];
-
-const COURSES = [
-  "Data Structures",
-  "Web Dev",
-  "Algorithms",
-  "Databases",
-  "Programming",
-];
-
-const EMPTY_FORM = { studentEmail: "", course: COURSES[0] };
+import { mentorApi, enrollmentApi } from "../../services/api";
 
 const AVATAR_COLORS = [
   { bg: "var(--accent-glow)", color: "var(--accent-light)" },
@@ -78,48 +20,73 @@ const AVATAR_COLORS = [
   { bg: "rgba(139,92,246,0.15)", color: "#a78bfa" },
 ];
 
+const EMPTY_FORM = { studentId: "", courseId: "" };
+
 function Students() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState([]);
+  const [enrollableStudents, setEnrollableStudents] = useState([]);
+  const [myCourses, setMyCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const filtered = students.filter(
     (s) =>
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.email.toLowerCase().includes(search.toLowerCase()) ||
-      s.course.toLowerCase().includes(search.toLowerCase()),
+      s.name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.email?.toLowerCase().includes(search.toLowerCase()) ||
+      s.course?.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const loadAll = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [studentsRes, enrollableRes, coursesRes] = await Promise.all([
+        mentorApi.getStudents(),
+        enrollmentApi.mentorStudents(),
+        enrollmentApi.mentorCourses(),
+      ]);
+      setStudents(studentsRes.data || []);
+      setEnrollableStudents(enrollableRes.data || []);
+      setMyCourses(coursesRes.data || []);
+    } catch (err) {
+      setError(err.message);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setStudents(MOCK_STUDENTS);
-    setLoading(false);
+    loadAll();
   }, []);
 
   const handleAdd = async () => {
-    if (!form.studentEmail.trim()) return;
+    if (!form.studentId || !form.courseId) return;
     setSaving(true);
     try {
-      // Requires backend: POST /api/mentor/enroll { email, courseName }
-      // For now optimistic UI:
-      setStudents((prev) => [
-        ...prev,
-        {
-          _id: String(Date.now()),
-          name: form.studentEmail.split("@")[0],
-          email: form.studentEmail,
-          course: form.course,
-          enrolledAt: new Date().toISOString().split("T")[0],
-        },
-      ]);
+      await enrollmentApi.mentorEnroll(form.studentId, form.courseId);
       setModal(false);
       setForm(EMPTY_FORM);
+      await loadAll();
     } catch (err) {
-      console.error("Failed to add student:", err.message);
+      setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRemove = async (studentId, courseTitle) => {
+    const course = myCourses.find((c) => c.title === courseTitle);
+    if (!course) return;
+    try {
+      await enrollmentApi.mentorUnenroll(studentId, course._id);
+      await loadAll();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -143,6 +110,18 @@ function Students() {
         }
       />
 
+      {error && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{ background: "var(--danger-bg)", color: "var(--danger)" }}
+        >
+          {error} —{" "}
+          <button className="underline" onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <TableWrap
         toolbar={
           <>
@@ -160,7 +139,17 @@ function Students() {
           </>
         }
       >
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div
+            className="flex items-center justify-center py-16"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <span className="material-symbols-outlined animate-spin mr-2">
+              progress_activity
+            </span>
+            Loading…
+          </div>
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon="🎓"
             title="No students found"
@@ -189,7 +178,7 @@ function Students() {
                 const av = AVATAR_COLORS[i % AVATAR_COLORS.length];
                 return (
                   <tr
-                    key={s._id}
+                    key={s._id + i}
                     className={tw.trHover}
                     style={{ borderBottom: "1px solid var(--border)" }}
                     onMouseEnter={(e) =>
@@ -211,7 +200,7 @@ function Students() {
                           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                           style={{ background: av.bg, color: av.color }}
                         >
-                          {s.name[0].toUpperCase()}
+                          {s.name?.[0]?.toUpperCase() || "?"}
                         </div>
                         <span className="font-medium">{s.name}</span>
                       </div>
@@ -261,11 +250,7 @@ function Students() {
                             e.currentTarget.style.color = "var(--text-muted)";
                             e.currentTarget.style.borderColor = "var(--border)";
                           }}
-                          onClick={() =>
-                            setStudents((prev) =>
-                              prev.filter((x) => x._id !== s._id),
-                            )
-                          }
+                          onClick={() => handleRemove(s._id, s.course)}
                         >
                           <span className="material-symbols-outlined text-[16px]">
                             person_remove
@@ -281,7 +266,6 @@ function Students() {
         )}
       </TableWrap>
 
-      {/* Add Student Modal */}
       {modal && (
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center p-5 backdrop-blur-[4px]"
@@ -308,32 +292,44 @@ function Students() {
               </h3>
               <button
                 onClick={() => setModal(false)}
-                className="text-[20px] cursor-pointer"
-                style={{ color: "var(--text-muted)" }}
+                className="w-8 h-8 flex items-center justify-center rounded-sm text-[18px] cursor-pointer"
+                style={{
+                  color: "var(--text-muted)",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                }}
               >
                 ×
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <FormGroup label="Student Email">
-                <FormInput
-                  type="email"
-                  value={form.studentEmail}
+              <FormGroup label="Student">
+                <FormSelect
+                  value={form.studentId}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, studentEmail: e.target.value }))
+                    setForm((f) => ({ ...f, studentId: e.target.value }))
                   }
-                  placeholder="student@university.edu"
-                />
+                >
+                  <option value="">Select student…</option>
+                  {enrollableStudents.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name} — {s.email}
+                    </option>
+                  ))}
+                </FormSelect>
               </FormGroup>
               <FormGroup label="Course">
                 <FormSelect
-                  value={form.course}
+                  value={form.courseId}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, course: e.target.value }))
+                    setForm((f) => ({ ...f, courseId: e.target.value }))
                   }
                 >
-                  {COURSES.map((c) => (
-                    <option key={c}>{c}</option>
+                  <option value="">Select course…</option>
+                  {myCourses.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.title}
+                    </option>
                   ))}
                 </FormSelect>
               </FormGroup>

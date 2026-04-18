@@ -15,8 +15,6 @@ import {
 import Modal from "../../components/admin/Modal";
 import { enrollmentApi, coursesApi } from "../../services/api";
 
-const api_base = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
-
 export default function EnrollmentManagement() {
   const [enrollments, setEnrollments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -34,10 +32,12 @@ export default function EnrollmentManagement() {
 
   const loadAll = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [sRes, cRes] = await Promise.all([
+      const [sRes, cRes, eRes] = await Promise.all([
         enrollmentApi.getStudents(),
         coursesApi.getAll(),
+        enrollmentApi.getAllEnrollments(),
       ]);
       setStudents(sRes.data || []);
       setCourses(
@@ -45,16 +45,7 @@ export default function EnrollmentManagement() {
           (c) => c.status === "Published" && !c.isDeleted,
         ),
       );
-
-      const { auth } = await import("../../services/firebase");
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch(`${api_base}/admin/enrollments/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setEnrollments(d.data || []);
-      }
+      setEnrollments(eRes.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -68,6 +59,7 @@ export default function EnrollmentManagement() {
     try {
       await enrollmentApi.enroll(form.studentId, form.courseId);
       setModal(false);
+      setForm({ studentId: "", courseId: "" });
       await loadAll();
     } catch (err) {
       setError(err.message);
@@ -101,7 +93,12 @@ export default function EnrollmentManagement() {
         title="Enrollment Management"
         subtitle="Enroll and manage students in courses."
         actions={
-          <BtnPrimary onClick={() => setModal(true)}>
+          <BtnPrimary
+            onClick={() => {
+              setForm({ studentId: "", courseId: "" });
+              setModal(true);
+            }}
+          >
             <span className="material-symbols-outlined text-[14px]">
               person_add
             </span>
@@ -115,7 +112,10 @@ export default function EnrollmentManagement() {
           className="mb-4 rounded-lg px-4 py-3 text-sm"
           style={{ background: "var(--danger-bg)", color: "var(--danger)" }}
         >
-          {error}
+          {error} —{" "}
+          <button className="underline" onClick={() => setError(null)}>
+            Dismiss
+          </button>
         </div>
       )}
 

@@ -13,7 +13,7 @@ import {
   tw,
 } from "../../components/admin/adminUtils";
 import Modal from "../../components/admin/Modal";
-import { enrollmentApi } from "../../services/api";
+import { enrollmentApi, mentorApi } from "../../services/api";
 
 export default function EnrollStudents() {
   const [enrollments, setEnrollments] = useState([]);
@@ -24,6 +24,7 @@ export default function EnrollStudents() {
   const [form, setForm] = useState({ studentId: "", courseId: "" });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadAll();
@@ -31,18 +32,18 @@ export default function EnrollStudents() {
 
   const loadAll = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [sRes, cRes] = await Promise.all([
+      const [sRes, cRes, eRes] = await Promise.all([
         enrollmentApi.mentorStudents(),
         enrollmentApi.mentorCourses(),
+        mentorApi.getStudents(),
       ]);
       setStudents(sRes.data || []);
       setCourses(cRes.data || []);
-      const { mentorApi } = await import("../../services/api");
-      const eRes = await mentorApi.getStudents();
       setEnrollments(eRes.data || []);
     } catch (err) {
-      console.error(err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -54,20 +55,23 @@ export default function EnrollStudents() {
     try {
       await enrollmentApi.mentorEnroll(form.studentId, form.courseId);
       setModal(false);
+      setForm({ studentId: "", courseId: "" });
       await loadAll();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUnenroll = async (studentId, courseId) => {
+  const handleUnenroll = async (studentId, courseTitle) => {
+    const course = courses.find((c) => c.title === courseTitle);
+    if (!course) return;
     try {
-      await enrollmentApi.mentorUnenroll(studentId, courseId);
+      await enrollmentApi.mentorUnenroll(studentId, course._id);
       await loadAll();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 
@@ -97,6 +101,18 @@ export default function EnrollStudents() {
         }
       />
 
+      {error && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{ background: "var(--danger-bg)", color: "var(--danger)" }}
+        >
+          {error} —{" "}
+          <button className="underline" onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <TableWrap
         toolbar={
           <>
@@ -116,9 +132,12 @@ export default function EnrollStudents() {
       >
         {loading ? (
           <div
-            className="py-12 text-center"
+            className="flex items-center justify-center py-16"
             style={{ color: "var(--text-muted)" }}
           >
+            <span className="material-symbols-outlined animate-spin mr-2">
+              progress_activity
+            </span>
             Loading…
           </div>
         ) : filtered.length === 0 ? (
@@ -170,7 +189,7 @@ export default function EnrollStudents() {
                         className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
                         style={{ background: "var(--accent)" }}
                       >
-                        {s.name?.[0]}
+                        {s.name?.[0]?.toUpperCase() || "?"}
                       </div>
                       <span className="font-medium">{s.name}</span>
                     </div>
@@ -206,12 +225,7 @@ export default function EnrollStudents() {
                     <div className="flex justify-end">
                       <BtnDanger
                         className="!py-1 !px-3 !text-[12px]"
-                        onClick={() =>
-                          handleUnenroll(
-                            s._id,
-                            courses.find((c) => c.title === s.course)?._id,
-                          )
-                        }
+                        onClick={() => handleUnenroll(s._id, s.course)}
                       >
                         <span className="material-symbols-outlined text-[13px]">
                           person_remove

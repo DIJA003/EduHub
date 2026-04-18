@@ -12,6 +12,7 @@ export default function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    college: "",
     password: "",
     confirmPassword: "",
   });
@@ -64,7 +65,11 @@ export default function Register() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name: form.name.trim(), role }),
+          body: JSON.stringify({
+            name: form.name.trim(),
+            role,
+            college: form.college.trim(),
+          }),
         });
         const data = await response.json();
         if (!response.ok)
@@ -92,7 +97,6 @@ export default function Register() {
         {/* Left panel */}
         <div className="relative hidden lg:flex flex-col items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700" />
-          {/* decorative grid */}
           <div
             className="absolute inset-0 opacity-10"
             style={{
@@ -229,6 +233,7 @@ export default function Register() {
                     autoComplete="name"
                   />
                 </div>
+
                 <div>
                   <label className="sr-only" htmlFor="email">
                     Email
@@ -245,6 +250,23 @@ export default function Register() {
                     autoComplete="email"
                   />
                 </div>
+
+                <div>
+                  <label className="sr-only" htmlFor="college">
+                    College / Faculty
+                  </label>
+                  <input
+                    id="college"
+                    name="college"
+                    type="text"
+                    placeholder="College / Faculty (e.g. Faculty of Science)"
+                    value={form.college}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none ring-blue-600/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white"
+                    autoComplete="organization"
+                  />
+                </div>
+
                 <div>
                   <label className="sr-only" htmlFor="password">
                     Password
@@ -261,6 +283,7 @@ export default function Register() {
                     autoComplete="new-password"
                   />
                 </div>
+
                 <div>
                   <label className="sr-only" htmlFor="confirmPassword">
                     Confirm Password

@@ -106,7 +106,7 @@ export const dashboardApi = {
   getActivity: () => api.get("/admin/dashboard/activity"),
 };
 
-// ── History logs ──────────────────────────────────────────────────────
+// ── History logs ──────────────────────────────────────────────────────────────
 export const logsApi = {
   getLogs: (params = {}) => {
     const qs = new URLSearchParams(
@@ -147,12 +147,14 @@ export const studentApi = {
 export const enrollmentApi = {
   // admin
   getStudents: () => api.get("/admin/enrollments/students"),
+  getAllEnrollments: () => api.get("/admin/enrollments/all"),
   getCourses: (showDeleted = false) =>
     api.get(`/admin/courses?showDeleted=${showDeleted}`),
   enroll: (studentId, courseId) =>
     api.post("/admin/enrollments", { studentId, courseId }),
   unenroll: (studentId, courseId) =>
     api.delete(`/admin/enrollments/${studentId}/${courseId}`),
+  // mentor
   mentorStudents: () => api.get("/mentor/enrollable-students"),
   mentorCourses: () => api.get("/mentor/my-courses"),
   mentorEnroll: (studentId, courseId) =>
@@ -160,6 +162,7 @@ export const enrollmentApi = {
   mentorUnenroll: (studentId, courseId) =>
     api.delete(`/mentor/enrollments/${studentId}/${courseId}`),
 };
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const notificationsApi = {
   getAll: () => api.get("/notifications"),
@@ -167,7 +170,8 @@ export const notificationsApi = {
   deleteOne: (id) => api.delete(`/notifications/${id}`),
   deleteAll: () => api.delete("/notifications/delete-all"),
 };
-// ── Academic Years ─────────────────────────────────────────────────────────────
+
+// ── Academic Years ────────────────────────────────────────────────────────────
 export const academicYearsApi = {
   getAll: () => api.get("/academic-years"),
   getByCollege: (colId) => api.get(`/academic-years/by-college/${colId}`),

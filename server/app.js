@@ -45,10 +45,10 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/uploads", express.static("uploads"));
 
-app.use("/api/", apiLimiter);
-app.use("/api/auth/", authLimiter);
-app.use("/api/users/login", authLimiter);
-app.use("/api/users/register", authLimiter);
+//app.use("/api/", apiLimiter);
+//app.use("/api/auth/", authLimiter);
+//app.use("/api/users/login", authLimiter);
+//app.use("/api/users/register", authLimiter);
 
 app.use("/api/academic-years", academicYearRoutes);
 app.use("/api/auth", authRoutes);
