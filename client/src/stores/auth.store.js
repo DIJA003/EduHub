@@ -1,9 +1,32 @@
+// stores/auth.store.js
+// Zustand store for Firebase auth state.
+// Fully CRA-compatible — no import.meta.env anywhere.
+
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { auth } from "../lib/firebase";
-import { authApi } from "../lib/api/auth.api";
+import apiClient from "../lib/api/client";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { queryClient } from "../lib/queryClient";
+
+const fetchDbUser = async (retries = 2) => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await apiClient.get("/auth/me");
+      return response.data?.data || response.data;
+    } catch (err) {
+      if (err.status === 403 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      if (attempt === retries) {
+        console.warn("[AuthStore] Could not fetch dbUser:", err.message);
+      }
+      return null;
+    }
+  }
+  return null;
+};
 
 const useAuthStore = create(
   devtools(
@@ -12,88 +35,64 @@ const useAuthStore = create(
       dbUser: null,
       loading: true,
       error: null,
-
-      setFirebaseUser: (firebaseUser) => set({ firebaseUser }),
-      setDbUser: (dbUser) => set({ dbUser }),
-      setLoading: (loading) => set({ loading }),
-      setError: (error) => set({ error }),
-
-      fetchDbUser: async (firebaseUser, retries = 2) => {
-        if (!firebaseUser) return null;
-
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            const { data } = await authApi.getMe();
-            return data;
-          } catch (err) {
-            if (err.status === 403 && attempt < retries) {
-              await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-              continue;
-            }
-            if (attempt === retries)
-              console.warn("[AuthStore] Could not fetch dbUser:", err.message);
-            return null;
-          }
-        }
-        return null;
-      },
-
+      _setFirebaseUser: (firebaseUser) => set({ firebaseUser }),
+      _setDbUser: (dbUser) => set({ dbUser }),
+      _setLoading: (loading) => set({ loading }),
+      _setError: (error) => set({ error }),
       refreshDbUser: async () => {
-        const firebaseUser = auth.currentUser;
-        if (!firebaseUser) return;
-        const dbUser = await get().fetchDbUser(firebaseUser);
+        const dbUser = await fetchDbUser();
         set({ dbUser });
+        return dbUser;
       },
 
       logout: async () => {
-        await signOut(auth);
+        try {
+          await signOut(auth);
+        } catch (err) {
+          console.warn("[AuthStore] Sign-out error:", err.message);
+        }
         queryClient.clear();
-        set({ firebaseUser: null, dbUser: null });
+        set({ firebaseUser: null, dbUser: null, error: null });
       },
-
       get isAuthenticated() {
-        return !!get().firebaseUser && !!get().dbUser;
+        const s = get();
+        return !!s.firebaseUser && !!s.dbUser;
       },
-
       get role() {
         return get().dbUser?.role || null;
       },
-
       get isAdmin() {
         return get().dbUser?.role === "admin";
       },
-
       get isMentor() {
         return get().dbUser?.role === "mentor";
       },
-
       get isStudent() {
         return get().dbUser?.role === "student";
       },
     }),
-    { name: "auth-store" },
+    { name: "eduhub-auth-store" },
   ),
 );
 
-let listenerInitialized = false;
+let _listenerInitialised = false;
 
 export const initAuthListener = () => {
-  if (listenerInitialized) return;
-  listenerInitialized = true;
+  if (_listenerInitialised) return;
+  _listenerInitialised = true;
 
-  const { setFirebaseUser, setDbUser, setLoading, fetchDbUser } =
-    useAuthStore.getState();
+  const { _setFirebaseUser, _setDbUser, _setLoading } = useAuthStore.getState();
 
   onAuthStateChanged(auth, async (firebaseUser) => {
-    setFirebaseUser(firebaseUser ?? null);
-    setDbUser(null);
+    _setFirebaseUser(firebaseUser ?? null);
+    _setDbUser(null);
 
     if (firebaseUser) {
-      const dbUser = await fetchDbUser(firebaseUser);
-      setDbUser(dbUser);
+      const dbUser = await fetchDbUser();
+      _setDbUser(dbUser);
     }
 
-    setLoading(false);
+    _setLoading(false);
   });
 };
 

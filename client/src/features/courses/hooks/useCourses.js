@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { coursesApi } from "../../../lib/api/courses.api";
-import { toast } from "../../../hooks/useToast";
+import { toast } from "../../../hooks/useToasts";
 
 export const COURSE_KEYS = {
   all: ["courses"],

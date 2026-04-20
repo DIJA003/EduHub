@@ -1,4 +1,4 @@
-import { useToasts } from "../../hooks/useToast";
+import { useToasts } from "../../hooks/useToasts";
 import { cn } from "../../lib/utils";
 
 const typeStyles = {

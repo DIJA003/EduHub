@@ -1,0 +1,91 @@
+/* index.css — Global styles for EduHub CRA app */
+
+/* Tailwind v3 directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base reset ──────────────────────────────────────────────────────────── */
+@layer base {
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        @apply bg-slate-50 text-slate-900 font-sans;
+        margin: 0;
+    }
+
+    /* Focus ring — visible for keyboard users, hidden for mouse */
+    :focus-visible {
+        @apply outline-2 outline-blue-500 outline-offset-2;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        @apply w-1.5 h-1.5;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply rounded-full bg-slate-300 hover:bg-slate-400;
+    }
+}
+
+/* ── Utility layer ───────────────────────────────────────────────────────── */
+@layer utilities {
+
+    /* Animate in — used by Modal, Toast, Dropdowns */
+    .animate-in {
+        animation: animateIn 0.15s ease-out both;
+    }
+
+    @keyframes animateIn {
+        from {
+            opacity: 0;
+            transform: scale(0.96) translateY(4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    /* Slide in from right — used by toasts */
+    .slide-in-from-right-5 {
+        animation: slideInRight 0.2s ease-out both;
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Truncate with tooltip support */
+    .truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}

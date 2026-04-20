@@ -4,15 +4,14 @@ import {
   Navigate,
 } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { useAuth } from "../hooks/useAuth";
+import useAuthStore from "../stores/auth.store";
 
 const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center">
+  <div className="flex min-h-screen items-center justify-center bg-slate-50">
     <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
-const Home = lazy(() => import("../features/home/pages/Home"));
 const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
 const ForgotPassword = lazy(
@@ -27,7 +26,8 @@ const ChangePassword = lazy(
 const FirebaseActionHandler = lazy(
   () => import("../features/auth/pages/FirebaseActionHandler"),
 );
-
+const Home = lazy(() => import("../features/home/pages/Home"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 const AcademicYear = lazy(
   () => import("../features/courses/pages/AcademicYear"),
 );
@@ -41,24 +41,23 @@ const StudentDashboard = lazy(
 const StudentProfile = lazy(
   () => import("../features/student/pages/StudentProfile"),
 );
-
 const AdminDashboard = lazy(
   () => import("../features/admin/pages/AdminDashboard"),
 );
 const MentorDashboard = lazy(
   () => import("../features/mentor/pages/MentorDashboard"),
 );
-const NotFound = lazy(() => import("../pages/NotFound"));
 
 function RequireAuth({ children, roles = [], requireVerified = false }) {
-  const { user, firebaseUser, loading, role } = useAuth();
+  const { firebaseUser, dbUser, loading, role } = useAuthStore();
 
-  if (loading) return <PageLoader />;
+  if (loading || firebaseUser === undefined) return <PageLoader />;
   if (!firebaseUser) return <Navigate to="/login" replace />;
-  if (requireVerified && !firebaseUser.emailVerified)
+  if (requireVerified && !firebaseUser.emailVerified) {
     return <Navigate to="/verify-email" replace />;
+  }
 
-  if (!user) return <PageLoader />; // Waiting for dbUser
+  if (!dbUser) return <PageLoader />;
 
   if (roles.length > 0 && !roles.includes(role)) {
     if (role === "admin") return <Navigate to="/admin" replace />;
@@ -70,15 +69,14 @@ function RequireAuth({ children, roles = [], requireVerified = false }) {
 }
 
 function RoleRedirect() {
-  const { user, firebaseUser, loading, role } = useAuth();
-  if (loading) return <PageLoader />;
+  const { firebaseUser, dbUser, loading, role } = useAuthStore();
+  if (loading || firebaseUser === undefined) return <PageLoader />;
   if (!firebaseUser) return <Navigate to="/home" replace />;
-  if (!user) return <PageLoader />;
+  if (!dbUser) return <PageLoader />;
   if (role === "admin") return <Navigate to="/admin" replace />;
   if (role === "mentor") return <Navigate to="/mentor" replace />;
   return <Navigate to="/home" replace />;
 }
-
 const router = createBrowserRouter([
   { path: "/", element: <RoleRedirect /> },
 
@@ -87,6 +85,7 @@ const router = createBrowserRouter([
   { path: "/forgotpassword", element: <ForgotPassword /> },
   { path: "/verify-email", element: <EmailVerification /> },
   { path: "/auth/action", element: <FirebaseActionHandler /> },
+
   {
     path: "/change-password",
     element: (
@@ -95,11 +94,7 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
-
-  // Public
   { path: "/home", element: <Home /> },
-
-  // Student
   {
     path: "/academic-year",
     element: (
@@ -127,7 +122,7 @@ const router = createBrowserRouter([
   {
     path: "/std-dashboard",
     element: (
-      <RequireAuth requireVerified>
+      <RequireAuth requireVerified roles={["student"]}>
         <StudentDashboard />
       </RequireAuth>
     ),
@@ -140,8 +135,6 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
-
-  // Admin
   {
     path: "/admin/*",
     element: (
@@ -150,8 +143,6 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
-
-  // Mentor
   {
     path: "/mentor/*",
     element: (

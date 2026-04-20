@@ -9,7 +9,7 @@ export const queryClient = new QueryClient({
         if (error?.status === 401 || error?.status === 403) return false;
         return failureCount < 2;
       },
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: process.env.NODE_ENV === "production",
     },
     mutations: {
       onError: (error) => {
