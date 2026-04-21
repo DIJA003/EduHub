@@ -3,7 +3,7 @@ const {
   confirmUpload,
   approveMaterial,
   rejectMaterial,
-} = require("./material.service");
+} = require("./materials.service");
 const { logAction } = require("../../shared/logger");
 const { paginate } = require("../../shared/pagination");
 const {
@@ -12,6 +12,7 @@ const {
   notFound,
   badRequest,
 } = require("../../shared/response");
+const Course = require("../courses/course.model");
 
 const getAll = async (req, res, next) => {
   try {
@@ -29,11 +30,11 @@ const getAll = async (req, res, next) => {
 
     if (req.user.role === "student") {
       filter.uploadedBy = req.user.id;
-    }
-
-    if (req.user.role === "mentor") {
-      const Course = require("../courses/course.model");
-      const myCourses = await Course.find({ instructorRef: req.user.id })
+    } else if (req.user.role === "mentor") {
+      const myCourses = await Course.find({
+        instructorRef: req.user.id,
+        isDeleted: { $ne: true },
+      })
         .select("_id")
         .lean();
       filter.courseRef = { $in: myCourses.map((c) => c._id) };
@@ -45,12 +46,11 @@ const getAll = async (req, res, next) => {
 
     const result = await paginate(Material, filter, {
       page,
-      limit,
+      limit: Math.min(100, limit),
       sort: { createdAt: -1 },
       populate: [
         { path: "uploadedBy", select: "name role" },
         { path: "courseRef", select: "title code" },
-        { path: "reviewedBy", select: "name" },
       ],
     });
 
@@ -67,7 +67,7 @@ const getMyMaterials = async (req, res, next) => {
 
     const result = await paginate(Material, filter, {
       page,
-      limit,
+      limit: Math.min(50, limit),
       sort: { createdAt: -1 },
       populate: [{ path: "courseRef", select: "title code" }],
     });
@@ -80,7 +80,6 @@ const getMyMaterials = async (req, res, next) => {
 
 const getPending = async (req, res, next) => {
   try {
-    const Course = require("../courses/course.model");
     const filter = {
       status: "pending",
       isDeleted: { $ne: true },
@@ -88,7 +87,10 @@ const getPending = async (req, res, next) => {
     };
 
     if (req.user.role === "mentor") {
-      const myCourses = await Course.find({ instructorRef: req.user.id })
+      const myCourses = await Course.find({
+        instructorRef: req.user.id,
+        isDeleted: { $ne: true },
+      })
         .select("_id")
         .lean();
       filter.courseRef = { $in: myCourses.map((c) => c._id) };
@@ -96,8 +98,8 @@ const getPending = async (req, res, next) => {
 
     const result = await paginate(Material, filter, {
       page: req.query.page || 1,
-      limit: req.query.limit || 20,
-      sort: { createdAt: -1 },
+      limit: Math.min(50, req.query.limit || 20),
+      sort: { createdAt: 1 },
       populate: [
         { path: "uploadedBy", select: "name email" },
         { path: "courseRef", select: "title code" },
@@ -109,7 +111,6 @@ const getPending = async (req, res, next) => {
     next(err);
   }
 };
-
 const approve = async (req, res, next) => {
   try {
     const material = await approveMaterial({
@@ -126,6 +127,7 @@ const approve = async (req, res, next) => {
       entityName: material.title,
       performedBy: req.user,
       req,
+      details: { feedback: req.body?.feedback },
     });
 
     return success(res, material);
@@ -150,6 +152,7 @@ const reject = async (req, res, next) => {
       entityName: material.title,
       performedBy: req.user,
       req,
+      details: { feedback: req.body?.feedback },
     });
 
     return success(res, material);
@@ -161,14 +164,17 @@ const reject = async (req, res, next) => {
 const remove = async (req, res, next) => {
   try {
     const filter = { _id: req.params.id };
-    if (req.user.role === "student") filter.uploadedBy = req.user.id;
+    if (req.user.role === "student") {
+      filter.uploadedBy = req.user.id;
+    }
 
     const material = await Material.findOneAndUpdate(
       filter,
       { isDeleted: true, deletedAt: new Date(), deletedBy: req.user.id },
       { new: true },
     );
-    if (!material) return notFound(res, "Material not found");
+
+    if (!material) return notFound(res, "Material not found or access denied");
 
     await logAction({
       action: "DELETE",
