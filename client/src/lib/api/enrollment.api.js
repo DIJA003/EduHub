@@ -9,7 +9,6 @@ export const enrollmentsApi = {
 
   updateProgress: (courseId, data) =>
     api.patch(`/enrollments/${courseId}/progress`, data),
-
   getAll: (params) => api.get("/enrollments", { params }),
 
   adminEnroll: (data) => api.post("/enrollments/admin", data),

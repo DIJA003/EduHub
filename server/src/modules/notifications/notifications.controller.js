@@ -1,4 +1,4 @@
-const notifService = require("./notification.service");
+const notifService = require("./notifications.service");
 const { success } = require("../../shared/response");
 
 const getAll = async (req, res, next) => {
@@ -51,4 +51,10 @@ const deleteAll = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, markRead, markAllRead, deleteOne, deleteAll };
+module.exports = {
+  getAll,
+  markRead,
+  markAllRead,
+  deleteOne,
+  deleteAll,
+};

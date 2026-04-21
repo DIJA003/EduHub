@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyToken } = require("../../middleware/auth.middleware");
 const { confirmUpload } = require("../materials/materials.service");
 const uploadsController = require("./uploads.controller");
+const uploadsService = require("./uploads.service");
 const { logAction } = require("../../shared/logger");
 const { success, badRequest, created } = require("../../shared/response");
 
@@ -12,7 +13,7 @@ router.post("/signed-url", uploadsController.getSignedUrl);
 
 router.post("/confirm", async (req, res, next) => {
   try {
-    const { storagePath, fileName, mimeType, fileSize, fileUrl } = req.body;
+    const { storagePath, fileName, mimeType } = req.body;
 
     if (!storagePath || !fileName || !mimeType) {
       return badRequest(
@@ -21,17 +22,22 @@ router.post("/confirm", async (req, res, next) => {
       );
     }
 
+    let fileUrl = req.body.fileUrl;
+    if (!fileUrl && storagePath) {
+      fileUrl = await uploadsService.getPublicUrl(storagePath);
+    }
+
     if (!fileUrl) {
       return badRequest(
         res,
-        "fileUrl is required. Upload must complete before confirming.",
+        "fileUrl is required. Ensure the file was uploaded successfully.",
       );
     }
 
     const material = await confirmUpload({
       uploadedBy: req.user.id,
       uploaderRole: req.user.role,
-      body: req.body,
+      body: { ...req.body, fileUrl },
     });
 
     await logAction({
@@ -42,7 +48,7 @@ router.post("/confirm", async (req, res, next) => {
       performedBy: req.user,
       req,
       details: {
-        fileSize,
+        fileSize: req.body.fileSize,
         mimeType,
         storagePath,
         courseId: req.body.courseId,

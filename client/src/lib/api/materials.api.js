@@ -7,8 +7,6 @@ export const materialsApi = {
 
   getPending: (params) => api.get("/materials/pending", { params }),
 
-  create: (data) => api.post("/materials", data),
-
   approve: (id, feedback = "") =>
     api.patch(`/materials/${id}/approve`, { feedback }),
 
@@ -22,4 +20,7 @@ export const uploadsApi = {
   getSignedUrl: (data) => api.post("/uploads/signed-url", data),
 
   confirm: (data) => api.post("/uploads/confirm", data),
+
+  deleteFile: (storagePath) =>
+    api.delete("/uploads/file", { data: { storagePath } }),
 };

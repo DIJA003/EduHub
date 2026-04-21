@@ -1,6 +1,9 @@
 const Material = require("./material.model");
 const Course = require("../courses/course.model");
-const { notify, notifyMany } = require("../notifications/notification.service");
+const {
+  notify,
+  notifyMany,
+} = require("../notifications/notifications.service");
 const User = require("../users/user.model");
 
 const confirmUpload = async ({ uploadedBy, uploaderRole, body }) => {

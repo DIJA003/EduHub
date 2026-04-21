@@ -3,7 +3,7 @@ const {
   dropStudent,
   getStudentEnrollments,
   updateProgress,
-} = require("./enrollment.service");
+} = require("./enrollments.service");
 const Enrollment = require("./enrollment.model");
 const User = require("../users/user.model");
 const Course = require("../courses/course.model");

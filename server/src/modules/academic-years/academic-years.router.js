@@ -17,10 +17,7 @@ router.get("/", verifyToken, async (req, res, next) => {
     const result = await paginate(
       AcademicYear,
       {},
-      {
-        sort: { year: 1 },
-        limit: 10,
-      },
+      { sort: { year: 1 }, limit: 10 },
     );
     return success(res, result.data, 200, result.meta);
   } catch (err) {
