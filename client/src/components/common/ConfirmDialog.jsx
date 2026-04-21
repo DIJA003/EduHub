@@ -7,11 +7,16 @@ export default function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
-  confirmVariant = "danger",
+  variant,
+  confirmVariant,
   onConfirm,
   onCancel,
   loading = false,
 }) {
+  const btnVariant = variant || confirmVariant || "danger";
+
+  if (!open) return null;
+
   return (
     <Modal
       open={open}
@@ -23,17 +28,15 @@ export default function ConfirmDialog({
           <Button variant="secondary" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button
-            variant={confirmVariant}
-            onClick={onConfirm}
-            loading={loading}
-          >
+          <Button variant={btnVariant} onClick={onConfirm} loading={loading}>
             {confirmLabel}
           </Button>
         </>
       }
     >
-      {message && <p className="text-sm text-slate-600">{message}</p>}
+      {message && (
+        <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
+      )}
     </Modal>
   );
 }

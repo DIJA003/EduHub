@@ -1,51 +1,83 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import { cn } from "../../lib/utils";
-import { useAuth } from "../../hooks/useAuth";
+import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 
-export default function DashboardShell({
-  navItems = [],
-  portalTitle,
-  children,
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+const STUDENT_NAV = [
+  { to: "/std-dashboard", label: "Dashboard", icon: "📊", end: true },
+  { to: "/academic-year", label: "Academic Years", icon: "🎓" },
+  { to: "/profile", label: "Profile", icon: "👤" },
+];
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "?";
+const MENTOR_NAV = [
+  { to: "/mentor/queue", label: "Review Queue", icon: "📥", end: false },
+  { to: "/mentor/courses", label: "My Courses", icon: "📚", end: false },
+  { to: "/mentor/reviewed", label: "Reviewed", icon: "✅", end: false },
+];
+
+const ADMIN_NAV = [
+  { to: "/admin/overview", label: "Overview", icon: "📊", end: false },
+  { to: "/admin/users", label: "Users", icon: "👥", end: false },
+  { to: "/admin/materials", label: "Materials", icon: "📄", end: false },
+  { to: "/admin/logs", label: "Audit Logs", icon: "📋", end: false },
+];
+
+function getNavForRole(role) {
+  if (role === "admin") return ADMIN_NAV;
+  if (role === "mentor") return MENTOR_NAV;
+  return STUDENT_NAV;
+}
+
+const toInitials = (name = "") =>
+  name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
+
+export default function DashboardShell({ title, navItems, children }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+  const dbUser = useAuthStore((s) => s.dbUser);
+  const logout = useAuthStore((s) => s.logout);
+  const role = useAuthStore((s) => s.dbUser?.role);
+
+  const nav = navItems || getNavForRole(role);
+  const initials = toInitials(dbUser?.name);
+
+  const portalLabels = {
+    admin: "Admin Portal",
+    mentor: "Mentor Portal",
+    student: "Student Portal",
+  };
+  const portalLabel = portalLabels[role] || "Portal";
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      {/* Sidebar */}
       <aside
         className={cn(
           "flex flex-col flex-shrink-0 bg-white border-r border-slate-200 transition-all duration-200",
-          collapsed ? "w-16" : "w-60",
+          collapsed ? "w-14" : "w-56",
         )}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-200">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+        <div className="flex items-center gap-2.5 px-3 py-4 border-b border-slate-100">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-black shrink-0">
             E
           </div>
           {!collapsed && (
-            <div>
-              <p className="text-sm font-bold text-slate-900">EduHub</p>
-              <p className="text-xs text-slate-400">{portalTitle}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-slate-900 leading-tight">
+                EduHub
+              </p>
+              <p className="text-xs text-slate-400 truncate">{portalLabel}</p>
             </div>
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="ml-auto text-slate-400 hover:text-slate-600"
-            aria-label="Toggle sidebar"
+            className="ml-auto text-slate-300 hover:text-slate-600 transition-colors shrink-0"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <svg
               className="w-4 h-4"
@@ -63,48 +95,50 @@ export default function DashboardShell({
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ to, icon, label, end }) => (
+          {nav.map(({ to, icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive
                     ? "bg-blue-50 text-blue-700"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                 )
               }
             >
-              <span className="shrink-0 text-lg">{icon}</span>
+              <span className="shrink-0 text-base w-5 text-center">{icon}</span>
               {!collapsed && <span className="truncate">{label}</span>}
             </NavLink>
           ))}
         </nav>
 
-        {/* User footer */}
-        <div className="p-3 border-t border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+        <div className="p-2 border-t border-slate-100">
+          <div
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer"
+            onClick={() => navigate("/profile")}
+          >
+            <div className="h-8 w-8 shrink-0 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
               {initials}
             </div>
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {user?.name}
+                  <p className="text-xs font-semibold text-slate-900 truncate">
+                    {dbUser?.name}
                   </p>
-                  <p className="text-xs text-slate-400 capitalize">
-                    {user?.role}
-                  </p>
+                  <p className="text-xs text-slate-400 capitalize">{role}</p>
                 </div>
                 <button
-                  onClick={logout}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    logout();
+                  }}
                   title="Log out"
-                  className="text-slate-400 hover:text-red-500 transition-colors"
+                  className="shrink-0 text-slate-300 hover:text-red-500 transition-colors"
                 >
                   <svg
                     className="w-4 h-4"
@@ -126,44 +160,28 @@ export default function DashboardShell({
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        {/* Top bar */}
-        <header className="h-14 flex items-center justify-between px-6 bg-white border-b border-slate-200 shrink-0">
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
-              />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search..."
-              className="pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
+        <header className="h-14 flex items-center justify-between px-6 bg-white border-b border-slate-200 shrink-0 gap-4">
+          {title && (
+            <h1 className="text-base font-bold text-slate-900 truncate">
+              {title}
+            </h1>
+          )}
+          <div className="flex items-center gap-3 ml-auto">
             <NotificationBell />
             <div
-              className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center cursor-pointer"
+              className="h-8 w-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
               onClick={() => navigate("/profile")}
+              title={dbUser?.name}
             >
               {initials}
             </div>
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

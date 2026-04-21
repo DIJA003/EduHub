@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardShell from "../../../components/layout/DashboardShell";
-import { Button } from "../../../components/ui/Button";
+import Button from "../../../components/ui/Button";
 import useAuthStore from "../../../stores/auth.store";
 import apiClient from "../../../lib/api/client";
-import { useToast } from "../../../hooks/useToast";
+import { useToast } from "../../../hooks/useToasts";
 
 export default function StudentProfile() {
   const dbUser = useAuthStore((s) => s.dbUser);

@@ -9,8 +9,9 @@ if (!admin.apps.length) {
     !privateKey
   ) {
     throw new Error(
-      "Missing Firebase Admin SDK environment variables. " +
-        "Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.",
+      "Missing Firebase Admin environment variables.\n" +
+        "Required: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY\n" +
+        "Optional: FIREBASE_STORAGE_BUCKET",
     );
   }
 
@@ -26,4 +27,8 @@ if (!admin.apps.length) {
 
 const bucket = admin.storage().bucket();
 
-module.exports = { admin, bucket };
+module.exports = {
+  admin,
+  bucket,
+  firebaseAdmin: admin,
+};
