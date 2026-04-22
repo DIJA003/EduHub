@@ -19,13 +19,16 @@ const uploadsRouter = require("./modules/uploads/uploads.router");
 const notificationsRouter = require("./modules/notifications/notifications.router");
 const logsRouter = require("./modules/logs/log.router");
 const academicYearsRouter = require("./modules/academic-years/academic-years.router");
+const collegesRouter = require("./modules/college/college.router");
+const dashboardRouter = require("./modules/dashboard/dashboard.router");
+const mentorRouter = require("./modules/mentor/mentor.router");
 
 const app = express();
 
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false, // API server — CSP applied at frontend
+    contentSecurityPolicy: false,
   }),
 );
 
@@ -88,6 +91,10 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/academic-years", academicYearsRouter);
+
+app.use("/api/colleges", collegesRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/mentor", mentorRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

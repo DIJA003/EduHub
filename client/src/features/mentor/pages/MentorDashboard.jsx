@@ -8,8 +8,10 @@ import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
 import { useToast } from "../../../hooks/useToasts";
 import useAuthStore from "../../../stores/auth.store";
-import apiClient from "../../../lib/api/client";
+import { materialsApi } from "../../../lib/api/materials.api";
+import { mentorApi } from "../../../lib/api/mentor.api";
 
+// ─── Stat card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon }) {
   return (
     <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 flex items-center justify-between">
@@ -24,37 +26,36 @@ function StatCard({ label, value, icon }) {
   );
 }
 
+// ─── Review Queue tab ─────────────────────────────────────────────────────────
 function ReviewQueue() {
   const qc = useQueryClient();
   const { addToast } = useToast();
   const [feedback, setFeedback] = useState({});
 
-  const { data: pending = [], isLoading } = useQuery({
+  const { data: pendingData, isLoading } = useQuery({
     queryKey: ["mentor", "pending"],
-    queryFn: async () => {
-      const res = await apiClient.get("/materials/pending");
-      return res.data?.data || [];
-    },
-    staleTime: 15000,
+    queryFn: () =>
+      materialsApi.getPending().then((r) => r.data?.data ?? r.data ?? []),
+    staleTime: 15_000,
   });
 
+  const pending = Array.isArray(pendingData) ? pendingData : [];
+
   const approveMut = useMutation({
-    mutationFn: ({ id, fb }) =>
-      apiClient.patch(`/materials/${id}/approve`, { feedback: fb }),
+    mutationFn: ({ id, fb }) => materialsApi.approve(id, fb),
     onSuccess: () => {
-      qc.invalidateQueries(["mentor", "pending"]);
-      qc.invalidateQueries(["mentor", "stats"]);
+      qc.invalidateQueries({ queryKey: ["mentor", "pending"] });
+      qc.invalidateQueries({ queryKey: ["mentor", "stats"] });
       addToast("Material approved!", "success");
     },
     onError: (err) => addToast(err.message, "error"),
   });
 
   const rejectMut = useMutation({
-    mutationFn: ({ id, fb }) =>
-      apiClient.patch(`/materials/${id}/reject`, { feedback: fb }),
+    mutationFn: ({ id, fb }) => materialsApi.reject(id, fb),
     onSuccess: () => {
-      qc.invalidateQueries(["mentor", "pending"]);
-      qc.invalidateQueries(["mentor", "stats"]);
+      qc.invalidateQueries({ queryKey: ["mentor", "pending"] });
+      qc.invalidateQueries({ queryKey: ["mentor", "stats"] });
       addToast("Material rejected.", "info");
     },
     onError: (err) => addToast(err.message, "error"),
@@ -82,19 +83,19 @@ function ReviewQueue() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-bold text-slate-800 truncate">{m.title}</h3>
-                <Badge variant="warning">Pending</Badge>
+                <Badge variant="yellow">Pending</Badge>
                 <span className="text-xs text-slate-400">{m.type}</span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 Course:{" "}
-                <span className="font-medium">{m.courseName || "Unknown"}</span>
-                {" · "}
-                By:{" "}
                 <span className="font-medium">
-                  {m.uploaderName || m.uploadedByRef?.name || "Unknown"}
-                </span>
-                {" · "}
-                {new Date(m.createdAt).toLocaleDateString()}
+                  {m.courseRef?.title || m.courseName || "Unknown"}
+                </span>{" "}
+                · By:{" "}
+                <span className="font-medium">
+                  {m.uploadedBy?.name || m.uploaderName || "Unknown"}
+                </span>{" "}
+                · {new Date(m.createdAt).toLocaleDateString()}
               </p>
               {m.sectionLabel && (
                 <p className="mt-0.5 text-xs text-slate-400">
@@ -113,6 +114,7 @@ function ReviewQueue() {
               </a>
             )}
           </div>
+
           <div className="mt-4 flex flex-wrap gap-3 items-center">
             <input
               placeholder="Add feedback (optional)"
@@ -147,17 +149,20 @@ function ReviewQueue() {
     </div>
   );
 }
+
+// ─── My Courses tab ───────────────────────────────────────────────────────────
 function MyCourses() {
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: courses, isLoading } = useQuery({
     queryKey: ["mentor", "courses"],
-    queryFn: async () => {
-      const res = await apiClient.get("/courses?instructorSelf=true");
-      return res.data?.data || [];
-    },
+    queryFn: () =>
+      mentorApi.getMyCourses().then((r) => r.data?.data ?? r.data ?? []),
+    staleTime: 60_000,
   });
 
+  const list = Array.isArray(courses) ? courses : [];
+
   if (isLoading) return <LoadingSkeleton rows={3} />;
-  if (!courses.length) {
+  if (!list.length) {
     return (
       <EmptyState
         icon="📚"
@@ -169,7 +174,7 @@ function MyCourses() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {courses.map((c) => (
+      {list.map((c) => (
         <div
           key={c._id}
           className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
@@ -178,35 +183,39 @@ function MyCourses() {
             <span className="text-xs font-bold text-slate-400 uppercase">
               {c.code}
             </span>
-            <Badge variant="info">{c.creditHours || 3} cr</Badge>
+            <Badge variant="blue">{c.creditHours || 3} cr</Badge>
           </div>
           <h3 className="font-bold text-slate-900 leading-snug">{c.title}</h3>
-          {c.studentCount !== undefined && (
+          {c.students !== undefined && (
             <p className="mt-2 text-xs text-slate-500">
-              👥 {c.studentCount} enrolled students
+              👥 {c.students} enrolled students
             </p>
           )}
-          <Badge
-            variant={c.status === "published" ? "success" : "default"}
-            className="mt-2"
-          >
-            {c.status}
-          </Badge>
+          <div className="mt-2">
+            <Badge variant={c.status === "Published" ? "green" : "yellow"}>
+              {c.status || "Draft"}
+            </Badge>
+          </div>
         </div>
       ))}
     </div>
   );
 }
+
+// ─── Reviewed Materials tab ───────────────────────────────────────────────────
 function ReviewedMaterials() {
   const [filter, setFilter] = useState("approved");
 
-  const { data = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["mentor", "reviewed", filter],
-    queryFn: async () => {
-      const res = await apiClient.get(`/materials?status=${filter}`);
-      return res.data?.data || [];
-    },
+    queryFn: () =>
+      materialsApi
+        .getAll({ status: filter })
+        .then((r) => r.data?.data ?? r.data ?? []),
+    staleTime: 30_000,
   });
+
+  const list = Array.isArray(data) ? data : [];
 
   return (
     <div>
@@ -215,15 +224,20 @@ function ReviewedMaterials() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize ${filter === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize ${
+              filter === s
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
           >
             {s}
           </button>
         ))}
       </div>
+
       {isLoading ? (
         <LoadingSkeleton rows={3} />
-      ) : !data.length ? (
+      ) : !list.length ? (
         <EmptyState icon="📄" title={`No ${filter} materials`} />
       ) : (
         <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -241,21 +255,19 @@ function ReviewedMaterials() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {data.map((m) => (
+              {list.map((m) => (
                 <tr key={m._id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-800 max-w-[180px] truncate">
                     {m.title}
                   </td>
                   <td className="hidden px-4 py-3 text-slate-500 sm:table-cell max-w-[140px] truncate">
-                    {m.courseName || "—"}
+                    {m.courseRef?.title || "—"}
                   </td>
                   <td className="hidden px-4 py-3 text-slate-500 md:table-cell">
-                    {m.uploaderName || "—"}
+                    {m.uploadedBy?.name || "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge
-                      variant={m.status === "approved" ? "success" : "danger"}
-                    >
+                    <Badge variant={m.status === "approved" ? "green" : "red"}>
                       {m.status}
                     </Badge>
                   </td>
@@ -268,12 +280,15 @@ function ReviewedMaterials() {
     </div>
   );
 }
+
+// ─── Tabs config ──────────────────────────────────────────────────────────────
 const TABS = [
   { key: "queue", label: "Review Queue", icon: "📥" },
   { key: "courses", label: "My Courses", icon: "📚" },
   { key: "reviewed", label: "Reviewed", icon: "✅" },
 ];
 
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function MentorDashboard() {
   const dbUser = useAuthStore((s) => s.dbUser);
   const location = useLocation();
@@ -283,20 +298,14 @@ export default function MentorDashboard() {
     location.pathname.split("/mentor/")[1]?.split("/")[0] || "queue";
   const setTab = (key) => navigate(`/mentor/${key}`, { replace: true });
 
-  const { data: stats } = useQuery({
+  const { data: statsData } = useQuery({
     queryKey: ["mentor", "stats"],
-    queryFn: async () => {
-      const [pending, courses] = await Promise.all([
-        apiClient.get("/materials/pending"),
-        apiClient.get("/courses?instructorSelf=true"),
-      ]);
-      return {
-        pending: pending.data?.data?.length || 0,
-        courses: courses.data?.data?.length || 0,
-      };
-    },
-    staleTime: 30000,
+    queryFn: () =>
+      mentorApi.getDashboardStats().then((r) => r.data?.data ?? r.data),
+    staleTime: 30_000,
   });
+
+  const stats = statsData || {};
 
   return (
     <DashboardShell title="Mentor Dashboard" user={dbUser}>
@@ -306,15 +315,21 @@ export default function MentorDashboard() {
           Welcome, {dbUser?.name?.split(" ")[0] || "Mentor"} 👋
         </h2>
         <p className="mt-1 text-sm text-indigo-100">
-          {stats?.pending ?? 0} submission{stats?.pending !== 1 ? "s" : ""}{" "}
-          awaiting review
+          {stats.pendingReviews ?? 0} submission
+          {stats.pendingReviews !== 1 ? "s" : ""} awaiting review
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <StatCard label="Pending Review" value={stats?.pending} icon="📥" />
-        <StatCard label="My Courses" value={stats?.courses} icon="📚" />
+      {/* Stats row */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Pending Review"
+          value={stats.pendingReviews}
+          icon="📥"
+        />
+        <StatCard label="Approved" value={stats.approved} icon="✅" />
+        <StatCard label="Rejected" value={stats.rejected} icon="❌" />
+        <StatCard label="My Students" value={stats.students} icon="🎓" />
       </div>
 
       {/* Tab bar */}
@@ -330,15 +345,17 @@ export default function MentorDashboard() {
             }`}
           >
             {t.icon} {t.label}
-            {t.key === "queue" && stats?.pending > 0 && (
+            {t.key === "queue" && (stats.pendingReviews ?? 0) > 0 && (
               <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
-                {stats.pending > 9 ? "9+" : stats.pending}
+                {stats.pendingReviews > 9 ? "9+" : stats.pendingReviews}
               </span>
             )}
           </button>
         ))}
       </div>
 
+      {/* Tab content */}
+      {activeTab === "queue" && <ReviewQueue />}
       {activeTab === "courses" && <MyCourses />}
       {activeTab === "reviewed" && <ReviewedMaterials />}
     </DashboardShell>
