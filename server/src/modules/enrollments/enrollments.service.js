@@ -101,4 +101,9 @@ const updateProgress = async ({
   return enrollment;
 };
 
-module.exports = require("./enrollments.service");
+module.exports = {
+  enrollStudent,
+  dropStudent,
+  getStudentEnrollments,
+  updateProgress,
+};

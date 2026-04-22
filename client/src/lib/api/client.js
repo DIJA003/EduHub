@@ -27,12 +27,16 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/me")
+    ) {
       originalRequest._retry = true;
       try {
         const user = auth.currentUser;
         if (user) {
-          const token = await user.getIdToken(true); // force refresh
+          const token = await user.getIdToken(true);
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return apiClient(originalRequest);
         }

@@ -14,6 +14,7 @@ export const materialsApi = {
     api.patch(`/materials/${id}/reject`, { feedback }),
 
   remove: (id) => api.delete(`/materials/${id}`),
+  create: (data) => api.post("/materials", data),
 };
 
 export const uploadsApi = {

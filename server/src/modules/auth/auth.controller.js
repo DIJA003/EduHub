@@ -23,20 +23,20 @@ const register = async (req, res, next) => {
       college,
     });
 
-    await logAction({
-      action: "REGISTER",
-      entity: "User",
-      entityId: user._id,
-      entityName: user.name,
-      performedBy: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      req,
-      details: { role, college },
-    });
+    // await logAction({
+    //   action: "REGISTER",
+    //   entity: "User",
+    //   entityId: user._id,
+    //   entityName: user.name,
+    //   performedBy: {
+    //     id: user._id,
+    //     name: user.name,
+    //     email: user.email,
+    //     role: user.role,
+    //   },
+    //   req,
+    //   details: { role, college },
+    // });
 
     return success(res, user, 201);
   } catch (err) {
@@ -52,20 +52,20 @@ const getMe = async (req, res, next) => {
     const user = await User.findById(req.user.id).lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    await logAction({
-      action: "LOGIN",
-      entity: "Session",
-      entityId: user._id,
-      entityName: user.name,
-      performedBy: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      req,
-      details: { role: user.role },
-    });
+    // await logAction({
+    //   action: "LOGIN",
+    //   entity: "Session",
+    //   entityId: user._id,
+    //   entityName: user.name,
+    //   performedBy: {
+    //     id: user._id,
+    //     name: user.name,
+    //     email: user.email,
+    //     role: user.role,
+    //   },
+    //   req,
+    //   details: { role: user.role },
+    // });
 
     return success(res, user);
   } catch (err) {

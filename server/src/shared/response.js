@@ -25,6 +25,8 @@ const badRequest = (res, message, errors = null) =>
 const unauthorized = (res, message = "Unauthorized") =>
   error(res, message, 401);
 
+const conflict = (res, message = "Conflict") => error(res, message, 409);
+
 module.exports = {
   success,
   created,
@@ -34,4 +36,5 @@ module.exports = {
   forbidden,
   badRequest,
   unauthorized,
+  conflict,
 };

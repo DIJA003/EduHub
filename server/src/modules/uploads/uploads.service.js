@@ -22,7 +22,15 @@ const ALLOWED_MIMES = new Set([
 ]);
 
 const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
-
+const detectFileType = (mimeType) => {
+  if (mimeType === "application/pdf") return "PDF";
+  if (mimeType.startsWith("video/")) return "Video";
+  if (mimeType.startsWith("image/")) return "Image";
+  if (mimeType.includes("presentation") || mimeType.includes("powerpoint"))
+    return "Slides";
+  if (mimeType.includes("zip")) return "ZIP";
+  return "Other";
+};
 const uploadsService = {
   async getSignedUploadUrl({ fileName, mimeType, courseId, userId }) {
     if (!ALLOWED_MIMES.has(mimeType)) {
@@ -42,7 +50,7 @@ const uploadsService = {
     });
 
     return {
-      uploadUrl: signedUrl,
+      signedUrl,
       storagePath,
       publicUrl: `https://storage.googleapis.com/${bucket.name}/${storagePath}`,
     };

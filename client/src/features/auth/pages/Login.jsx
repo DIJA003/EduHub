@@ -38,7 +38,14 @@ export default function Login() {
     setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, form.email, form.password);
+      const cred = await signInWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password,
+      );
+
+      await cred.user.getIdToken(true);
+
       const dbUser = await refreshDbUser();
 
       if (dbUser?.role === "admin") return navigate("/admin");

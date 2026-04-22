@@ -5,13 +5,20 @@ import apiClient from "../lib/api/client";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { queryClient } from "../lib/queryClient";
 
-const fetchDbUser = async (retries = 3) => {
+const fetchDbUser = async (retries = 2) => {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await apiClient.get("/auth/me");
       return response.data?.data || response.data;
     } catch (err) {
       const status = err?.status || err?.response?.status;
+
+      if (status === 401) {
+        console.warn("[AuthStore] /auth/me returned 401 — token not ready");
+        return null;
+      }
+
+      if (status === 404) return null;
 
       if (status === 403 && attempt < retries) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -20,8 +27,6 @@ const fetchDbUser = async (retries = 3) => {
         }
         continue;
       }
-
-      if (status === 404) return null;
 
       if (attempt === retries) {
         console.warn("[AuthStore] Could not fetch dbUser:", err.message);
@@ -46,6 +51,13 @@ const useAuthStore = create(
       _setError: (error) => set({ error }),
 
       refreshDbUser: async () => {
+        try {
+          if (auth.currentUser) {
+            await auth.currentUser.getIdToken(true);
+          }
+        } catch (e) {
+          console.warn("[AuthStore] Token refresh failed:", e.message);
+        }
         const dbUser = await fetchDbUser();
         set({ dbUser });
         return dbUser;
@@ -93,6 +105,11 @@ export const initAuthListener = () => {
     _setDbUser(null);
 
     if (firebaseUser) {
+      try {
+        await firebaseUser.getIdToken(true);
+      } catch (e) {
+        console.warn("[AuthStore] Token refresh failed:", e.message);
+      }
       const dbUser = await fetchDbUser();
       _setDbUser(dbUser);
     }

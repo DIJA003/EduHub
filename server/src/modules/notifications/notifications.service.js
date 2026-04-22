@@ -96,4 +96,12 @@ const deleteAll = async (userId) => {
   );
 };
 
-module.exports = require("./notifications.service");
+module.exports = {
+  notify,
+  notifyMany,
+  getForUser,
+  markRead,
+  markAllRead,
+  deleteOne,
+  deleteAll,
+};
