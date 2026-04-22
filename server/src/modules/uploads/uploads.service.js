@@ -22,6 +22,7 @@ const ALLOWED_MIMES = new Set([
 ]);
 
 const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
+
 const detectFileType = (mimeType) => {
   if (mimeType === "application/pdf") return "PDF";
   if (mimeType.startsWith("video/")) return "Video";
@@ -31,10 +32,18 @@ const detectFileType = (mimeType) => {
   if (mimeType.includes("zip")) return "ZIP";
   return "Other";
 };
+
 const uploadsService = {
-  async getSignedUploadUrl({ fileName, mimeType, courseId, userId }) {
+  async getSignedUploadUrl({ fileName, mimeType, fileSize, courseId, userId }) {
     if (!ALLOWED_MIMES.has(mimeType)) {
       throw new AppError(`File type "${mimeType}" is not allowed.`, 400);
+    }
+
+    if (fileSize && fileSize > MAX_FILE_BYTES) {
+      throw new AppError(
+        `File exceeds the maximum allowed size of ${MAX_FILE_BYTES / 1024 / 1024} MB.`,
+        400,
+      );
     }
 
     const ext = path.extname(fileName).toLowerCase() || ".bin";
@@ -49,12 +58,36 @@ const uploadsService = {
       contentType: mimeType,
     });
 
+    const fileType = detectFileType(mimeType);
+
     return {
       signedUrl,
       storagePath,
+      fileType,
       publicUrl: `https://storage.googleapis.com/${bucket.name}/${storagePath}`,
     };
   },
+  async getPublicUrl(storagePath) {
+    if (!storagePath) return null;
+    try {
+      const file = bucket.file(storagePath);
+      await file.makePublic();
+      return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+    } catch (err) {
+      console.warn("[Uploads] getPublicUrl failed:", err.message);
+      try {
+        const [url] = await bucket.file(storagePath).getSignedUrl({
+          version: "v4",
+          action: "read",
+          expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        });
+        return url;
+      } catch {
+        return null;
+      }
+    }
+  },
+
   async deleteFile(storagePath) {
     if (!storagePath) return;
     try {

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsApi } from "../../lib/api/notifications.api";
 import { cn } from "../../lib/utils";
-import { format } from "../../lib/utils";
 
 const TYPE_ICON = {
   material_submitted: "📤",
@@ -19,7 +18,7 @@ export default function NotificationBell() {
   const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => notificationsApi.getAll({ limit: 20 }).then((r) => r.data),
-    refetchInterval: 30000, // Poll every 30s
+    refetchInterval: 30_000,
   });
 
   const notifications = Array.isArray(data) ? data : data?.data || [];
@@ -46,7 +45,7 @@ export default function NotificationBell() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  // Close on outside click
+  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);

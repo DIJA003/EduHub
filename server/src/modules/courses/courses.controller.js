@@ -8,6 +8,7 @@ const {
   conflict,
   badRequest,
 } = require("../../shared/response");
+const mongoose = require("mongoose");
 
 const getAll = async (req, res, next) => {
   try {
@@ -44,14 +45,22 @@ const getAll = async (req, res, next) => {
 
 const getByYear = async (req, res, next) => {
   try {
-    const yearId = parseInt(req.params.yearId, 10);
-    const courses = await Course.find({
-      yearId,
-      status: "Published",
-      isDeleted: { $ne: true },
-    })
-      .sort({ createdAt: -1 })
-      .lean();
+    const param = req.params.yearId;
+    let filter = { status: "Published", isDeleted: { $ne: true } };
+
+    if (mongoose.Types.ObjectId.isValid(param)) {
+      filter.academicYearRef = param;
+    } else {
+      const numericYear = parseInt(param, 10);
+      if (!isNaN(numericYear)) {
+        filter.yearId = numericYear;
+      } else {
+        return badRequest(res, "Invalid yearId parameter");
+      }
+    }
+
+    const courses = await Course.find(filter).sort({ createdAt: -1 }).lean();
+
     return success(res, courses);
   } catch (err) {
     next(err);

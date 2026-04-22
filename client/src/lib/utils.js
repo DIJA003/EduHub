@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge";
 
 export const cn = (...inputs) => twMerge(clsx(inputs));
 
-export const formatDate = (date, options = {}) => {
+export const format = (date, options = {}) => {
   if (!date) return "—";
   return new Date(date).toLocaleDateString(undefined, {
     year: "numeric",
@@ -12,6 +12,8 @@ export const formatDate = (date, options = {}) => {
     ...options,
   });
 };
+
+export const formatDate = format;
 
 export const formatDateTime = (date) => {
   if (!date) return "—";

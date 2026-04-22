@@ -21,12 +21,14 @@ const getAll = async (req, res, next) => {
       limit = 20,
       search = "",
       status = "",
+      courseId = "",
       showDeleted = "false",
     } = req.query;
 
     const filter = {};
     if (showDeleted !== "true") filter.isDeleted = { $ne: true };
     if (status && status !== "all") filter.status = status;
+    if (courseId) filter.courseRef = courseId;
 
     if (req.user.role === "student") {
       filter.uploadedBy = req.user.id;
@@ -72,7 +74,12 @@ const getMyMaterials = async (req, res, next) => {
       populate: [{ path: "courseRef", select: "title code" }],
     });
 
-    return success(res, result.data, 200, result.meta);
+    const data = result.data.map((m) => ({
+      ...m,
+      courseName: m.courseRef?.title || "",
+    }));
+
+    return success(res, data, 200, result.meta);
   } catch (err) {
     next(err);
   }
@@ -111,6 +118,56 @@ const getPending = async (req, res, next) => {
     next(err);
   }
 };
+
+const createMaterial = async (req, res, next) => {
+  try {
+    const {
+      title,
+      courseId,
+      yearId,
+      sectionLabel,
+      type,
+      fileUrl,
+      storagePath,
+      size,
+      mimeType,
+    } = req.body;
+
+    if (!title?.trim()) return badRequest(res, "title is required");
+    if (!fileUrl) return badRequest(res, "fileUrl is required");
+
+    const status = req.user.role === "student" ? "pending" : "approved";
+
+    const material = await Material.create({
+      title: title.trim(),
+      type: type || "Other",
+      size: size || "",
+      fileUrl,
+      storagePath: storagePath || "",
+      courseRef: courseId || null,
+      uploadedBy: req.user.id,
+      uploaderRole: req.user.role,
+      status,
+      sectionLabel: sectionLabel || "",
+      yearId: yearId || "",
+    });
+
+    await logAction({
+      action: "UPLOAD",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      req,
+      details: { courseId, status, type },
+    });
+
+    return created(res, material);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const approve = async (req, res, next) => {
   try {
     const material = await approveMaterial({
@@ -195,6 +252,7 @@ module.exports = {
   getAll,
   getMyMaterials,
   getPending,
+  createMaterial,
   approve,
   reject,
   remove,

@@ -49,10 +49,14 @@ const MentorDashboard = lazy(
 );
 
 function RequireAuth({ children, roles = [], requireVerified = false }) {
-  const { firebaseUser, dbUser, loading, role } = useAuthStore();
+  const { firebaseUser, dbUser, loading } = useAuthStore();
+
+  const role = dbUser?.role || null;
 
   if (loading || firebaseUser === undefined) return <PageLoader />;
+
   if (!firebaseUser) return <Navigate to="/login" replace />;
+
   if (requireVerified && !firebaseUser.emailVerified) {
     return <Navigate to="/verify-email" replace />;
   }
@@ -69,12 +73,19 @@ function RequireAuth({ children, roles = [], requireVerified = false }) {
 }
 
 function RoleRedirect() {
-  const { firebaseUser, dbUser, loading, role } = useAuthStore();
+  const { firebaseUser, dbUser, loading } = useAuthStore();
+
+  const role = dbUser?.role || null;
+
   if (loading || firebaseUser === undefined) return <PageLoader />;
+
   if (!firebaseUser) return <Navigate to="/home" replace />;
+
   if (!dbUser) return <PageLoader />;
+
   if (role === "admin") return <Navigate to="/admin" replace />;
   if (role === "mentor") return <Navigate to="/mentor" replace />;
+
   return <Navigate to="/home" replace />;
 }
 const router = createBrowserRouter([
