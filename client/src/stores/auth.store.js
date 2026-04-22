@@ -5,36 +5,34 @@ import apiClient from "../lib/api/client";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { queryClient } from "../lib/queryClient";
 
-const fetchDbUser = async (retries = 2) => {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const response = await apiClient.get("/auth/me");
-      return response.data?.data || response.data;
-    } catch (err) {
-      const status = err?.status || err?.response?.status;
+const fetchDbUser = async () => {
+  try {
+    if (!auth.currentUser) return null;
+    const token = await auth.currentUser.getIdToken(true);
 
-      if (status === 401) {
-        console.warn("[AuthStore] /auth/me returned 401 — token not ready");
+    const response = await apiClient.get("/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data?.data || response.data;
+  } catch (err) {
+    const status = err?.status || err?.response?.status;
+    if (status === 401 || status === 404) return null;
+    if (status === 403) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        const token2 = await auth.currentUser?.getIdToken(true);
+        if (!token2) return null;
+        const retry = await apiClient.get("/auth/me", {
+          headers: { Authorization: `Bearer ${token2}` },
+        });
+        return retry.data?.data || retry.data;
+      } catch {
         return null;
       }
-
-      if (status === 404) return null;
-
-      if (status === 403 && attempt < retries) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-        if (auth.currentUser) {
-          await auth.currentUser.getIdToken(true).catch(() => {});
-        }
-        continue;
-      }
-
-      if (attempt === retries) {
-        console.warn("[AuthStore] Could not fetch dbUser:", err.message);
-      }
-      return null;
     }
+    console.warn("[AuthStore] fetchDbUser error:", err.message);
+    return null;
   }
-  return null;
 };
 
 const useAuthStore = create(
@@ -51,13 +49,6 @@ const useAuthStore = create(
       _setError: (error) => set({ error }),
 
       refreshDbUser: async () => {
-        try {
-          if (auth.currentUser) {
-            await auth.currentUser.getIdToken(true);
-          }
-        } catch (e) {
-          console.warn("[AuthStore] Token refresh failed:", e.message);
-        }
         const dbUser = await fetchDbUser();
         set({ dbUser });
         return dbUser;
@@ -72,6 +63,7 @@ const useAuthStore = create(
         queryClient.clear();
         set({ firebaseUser: null, dbUser: null, error: null });
       },
+
       get isAuthenticated() {
         const s = get();
         return !!s.firebaseUser && !!s.dbUser;
@@ -92,6 +84,7 @@ const useAuthStore = create(
     { name: "eduhub-auth-store" },
   ),
 );
+
 let _listenerInitialised = false;
 
 export const initAuthListener = () => {
@@ -105,11 +98,6 @@ export const initAuthListener = () => {
     _setDbUser(null);
 
     if (firebaseUser) {
-      try {
-        await firebaseUser.getIdToken(true);
-      } catch (e) {
-        console.warn("[AuthStore] Token refresh failed:", e.message);
-      }
       const dbUser = await fetchDbUser();
       _setDbUser(dbUser);
     }

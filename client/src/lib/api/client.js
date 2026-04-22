@@ -9,13 +9,15 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   async (config) => {
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const token = await user.getIdToken();
-        config.headers.Authorization = `Bearer ${token}`;
-      } catch (err) {
-        console.warn("[API] Could not get Firebase token:", err.message);
+    if (!config.headers.Authorization) {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          config.headers.Authorization = `Bearer ${token}`;
+        } catch (err) {
+          console.warn("[API] Could not get Firebase token:", err.message);
+        }
       }
     }
     return config;

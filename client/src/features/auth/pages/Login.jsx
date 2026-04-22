@@ -38,18 +38,18 @@ export default function Login() {
     setError("");
 
     try {
-      const cred = await signInWithEmailAndPassword(
-        auth,
-        form.email,
-        form.password,
-      );
-
-      await cred.user.getIdToken(true);
-
+      await signInWithEmailAndPassword(auth, form.email, form.password);
       const dbUser = await refreshDbUser();
 
-      if (dbUser?.role === "admin") return navigate("/admin");
-      if (dbUser?.role === "mentor") return navigate("/mentor");
+      if (!dbUser) {
+        setError(
+          "Account setup incomplete. Please register or contact support.",
+        );
+        return;
+      }
+
+      if (dbUser.role === "admin") return navigate("/admin");
+      if (dbUser.role === "mentor") return navigate("/mentor");
       navigate(from, { replace: true });
     } catch (err) {
       setError(FIREBASE_ERRORS[err.code] || err.message);

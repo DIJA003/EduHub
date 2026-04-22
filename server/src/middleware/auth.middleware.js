@@ -18,7 +18,7 @@ const verifyToken = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = await admin.auth().verifyIdToken(token, true);
+      decoded = await admin.auth().verifyIdToken(token);
     } catch (firebaseErr) {
       if (
         firebaseErr.code === "auth/id-token-expired" ||
