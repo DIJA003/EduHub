@@ -40,8 +40,11 @@ export function Login() {
         formData.password,
       );
 
+      // Wait a brief moment for Firebase auth state to propagate
+      await new Promise((r) => setTimeout(r, 300));
+
       try {
-        const token = await userCredential.user.getIdToken();
+        const token = await userCredential.user.getIdToken(true); // force refresh
 
         const response = await fetch(`${API_URL}/users/login`, {
           method: "GET",
@@ -60,9 +63,15 @@ export function Login() {
             navigate("/mentor");
             return;
           }
+        } else {
+          console.warn("[Login] Backend login returned:", response.status);
         }
       } catch (backendErr) {
-        console.error("Backend login fetch failed:", backendErr.message);
+        console.error(
+          "[Login] Backend login fetch failed:",
+          backendErr.message,
+        );
+        // Don't block the user — still navigate to home
       }
 
       navigate("/home");

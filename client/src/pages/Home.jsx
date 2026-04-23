@@ -13,7 +13,7 @@ export function Home() {
   const { user, dbUser } = useAuth();
 
   useEffect(() => {
-    if (!user) navigate("/login");
+    // if (!user) navigate("/login");
   }, [user, navigate]);
 
   const handleLogout = async () => {
@@ -21,7 +21,7 @@ export function Home() {
     navigate("/login");
   };
 
-  if (!user) return null;
+  //if (!user) return null;
 
   return (
     <>
@@ -311,13 +311,10 @@ export function Home() {
             </p>
             <div className="relative z-10 flex flex-col justify-center gap-4 sm:flex-row">
               <button
-                onClick={() => navigate("/academic-year")}
+                onClick={() => navigate("/register")}
                 className="rounded-2xl bg-white px-10 py-4 text-lg font-black text-blue-700 transition-transform hover:scale-105"
               >
                 Get Started Now
-              </button>
-              <button className="rounded-2xl border-2 border-white/30 bg-transparent px-10 py-4 text-lg font-black text-white transition-colors hover:bg-white/10">
-                Contact Support
               </button>
             </div>
           </div>
@@ -343,58 +340,7 @@ export function Home() {
                   Empowering the next generation of professionals through
                   seamless mentorship and collaborative learning.
                 </p>
-                <div className="flex gap-4">
-                  {[
-                    { icon: "public", label: "Website" },
-                    { icon: "share", label: "Share" },
-                    { icon: "mail", label: "Email" },
-                  ].map((x) => (
-                    <a
-                      key={x.label}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-all hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:text-slate-400"
-                      href="#"
-                      aria-label={x.label}
-                    >
-                      <Icon name={x.icon} className="text-xl" />
-                    </a>
-                  ))}
-                </div>
               </div>
-              {[
-                {
-                  title: "Platform",
-                  links: ["Browse Mentors", "Colleges", "Resources", "Pricing"],
-                },
-                {
-                  title: "Company",
-                  links: ["About Us", "Careers", "Blog", "Contact"],
-                },
-                {
-                  title: "Support",
-                  links: [
-                    "Help Center",
-                    "Privacy Policy",
-                    "Terms of Service",
-                    "Cookie Policy",
-                  ],
-                },
-              ].map((c) => (
-                <div key={c.title}>
-                  <h5 className="mb-6 font-bold">{c.title}</h5>
-                  <ul className="space-y-4 text-slate-500">
-                    {c.links.map((l) => (
-                      <li key={l}>
-                        <a
-                          className="transition-colors hover:text-blue-600"
-                          href="#"
-                        >
-                          {l}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
             </div>
             <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-8 md:flex-row dark:border-slate-800">
               <p className="text-sm text-slate-500">

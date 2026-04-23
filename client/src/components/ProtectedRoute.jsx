@@ -9,7 +9,12 @@ function ProtectedRoute({
   const { user, dbUser, loading } = useAuth();
   const location = useLocation();
 
-  if (loading || user === undefined) return null;
+  if (loading || user === undefined)
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <span className="text-slate-400 text-sm">Loading…</span>
+      </div>
+    );
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -20,7 +25,13 @@ function ProtectedRoute({
   }
 
   if (allowedRoles.length > 0) {
-    if (!dbUser) return null;
+    if (!dbUser) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="text-slate-400 text-sm">Loading…</span>
+        </div>
+      );
+    }
 
     const role = dbUser.role;
     if (!allowedRoles.includes(role)) {

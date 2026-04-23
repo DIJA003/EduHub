@@ -9,6 +9,9 @@ const NAV_ITEMS = [
   { to: "/admin/courses", icon: "menu_book", label: "Courses" },
   { to: "/admin/materials", icon: "description", label: "Materials" },
   { to: "/admin/users", icon: "group", label: "Users" },
+  { to: "/admin/enrollments", icon: "how_to_reg", label: "Enrollments" },
+  { to: "/admin/history", icon: "history", label: "History Logs" },
+  // { to: "/change-password", icon: "lock", label: "Change Password" },
 ];
 
 function Sidebar() {

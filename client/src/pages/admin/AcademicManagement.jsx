@@ -32,6 +32,7 @@ function AcademicManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
@@ -39,13 +40,13 @@ function AcademicManagement() {
 
   useEffect(() => {
     loadColleges();
-  }, []);
+  }, [showDeleted]);
 
   const loadColleges = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await collegesApi.getAll();
+      const res = await collegesApi.getAll(showDeleted);
       setColleges(res.data || []);
     } catch (err) {
       setError(err.message);
@@ -57,6 +58,7 @@ function AcademicManagement() {
   const filtered = colleges.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
   );
+
   const openAdd = () => {
     setForm(EMPTY);
     setEditId(null);
@@ -94,13 +96,38 @@ function AcademicManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Delete this college?",
+      "This will mark the college as deleted. You can restore it later.",
       "Delete College",
     );
     if (!ok) return;
     try {
       await collegesApi.remove(id);
-      setColleges((p) => p.filter((c) => c._id !== id));
+      setColleges((p) =>
+        showDeleted
+          ? p.map((c) =>
+              c._id === id
+                ? { ...c, isDeleted: true, deletedAt: new Date() }
+                : c,
+            )
+          : p.filter((c) => c._id !== id),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      const res = await collegesApi.restore(id);
+      if (showDeleted) {
+        setColleges((p) =>
+          p.map((c) =>
+            c._id === id ? { ...c, isDeleted: false, deletedAt: null } : c,
+          ),
+        );
+      } else {
+        setColleges((p) => [...p, res.data]);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -140,12 +167,44 @@ function AcademicManagement() {
               style={{ color: "var(--text-primary)" }}
             >
               Colleges ({filtered.length})
+              {showDeleted && (
+                <span
+                  className="ml-2 text-[11px] font-normal"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  — showing deleted records
+                </span>
+              )}
             </span>
-            <TableSearch
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search colleges..."
-            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDeleted((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3 py-[6px] rounded-sm text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
+                style={
+                  showDeleted
+                    ? {
+                        background: "var(--danger-bg)",
+                        borderColor: "var(--danger)",
+                        color: "var(--danger)",
+                      }
+                    : {
+                        background: "var(--bg-card)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-secondary)",
+                      }
+                }
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {showDeleted ? "visibility_off" : "visibility"}
+                </span>
+                {showDeleted ? "Hide Deleted" : "Show Deleted"}
+              </button>
+              <TableSearch
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search colleges..."
+              />
+            </div>
           </>
         }
       >
@@ -191,96 +250,138 @@ function AcademicManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((col) => (
-                <tr
-                  key={col._id}
-                  className={tw.trHover}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "var(--bg-hover)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  <td
-                    className={tw.td}
+              {filtered.map((col) => {
+                const deleted = col.isDeleted;
+                return (
+                  <tr
+                    key={col._id}
+                    className={tw.trHover}
                     style={{
-                      borderBottomColor: "var(--border-light)",
-                      color: "var(--text-primary)",
+                      opacity: deleted ? 0.6 : 1,
+                      background: deleted ? "var(--danger-bg)" : "transparent",
                     }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "transparent")
+                    }
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-sm flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{
-                          background: "var(--accent-glow)",
-                          color: "var(--accent-light)",
-                          border: "1px solid var(--border-focus)",
-                        }}
-                      >
-                        {col.name[0]}
-                      </div>
-                      <span className="font-medium">{col.name}</span>
-                    </div>
-                  </td>
-                  <td
-                    className={tw.td}
-                    style={{
-                      borderBottomColor: "var(--border-light)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {col.years} years
-                  </td>
-                  <td
-                    className={tw.td}
-                    style={{
-                      borderBottomColor: "var(--border-light)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {col.semesters}
-                  </td>
-                  <td
-                    className={tw.td}
-                    style={{
-                      borderBottomColor: "var(--border-light)",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {col.programs}
-                  </td>
-                  <td
-                    className={tw.td}
-                    style={{ borderBottomColor: "var(--border-light)" }}
-                  >
-                    <Badge
-                      variant={col.status === "Active" ? "success" : "default"}
+                    <td
+                      className={tw.td}
+                      style={{
+                        borderBottomColor: "var(--border-light)",
+                        color: "var(--text-primary)",
+                      }}
                     >
-                      {col.status}
-                    </Badge>
-                  </td>
-                  <td
-                    className={tw.td}
-                    style={{ borderBottomColor: "var(--border-light)" }}
-                  >
-                    <div className="flex items-center gap-2 justify-end">
-                      <BtnSecondary
-                        className={tw.btnSm}
-                        onClick={() => openEdit(col)}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-sm flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{
+                            background: "var(--accent-glow)",
+                            color: "var(--accent-light)",
+                            border: "1px solid var(--border-focus)",
+                          }}
+                        >
+                          {col.name[0]}
+                        </div>
+                        <span className="font-medium">{col.name}</span>
+                        {deleted && (
+                          <span
+                            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                            style={{
+                              background: "var(--danger-bg)",
+                              color: "var(--danger)",
+                              border: "1px solid var(--danger)",
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-[10px]">
+                              delete
+                            </span>
+                            Deleted
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td
+                      className={tw.td}
+                      style={{
+                        borderBottomColor: "var(--border-light)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {col.years} years
+                    </td>
+                    <td
+                      className={tw.td}
+                      style={{
+                        borderBottomColor: "var(--border-light)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {col.semesters}
+                    </td>
+                    <td
+                      className={tw.td}
+                      style={{
+                        borderBottomColor: "var(--border-light)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {col.programs}
+                    </td>
+                    <td
+                      className={tw.td}
+                      style={{ borderBottomColor: "var(--border-light)" }}
+                    >
+                      <Badge
+                        variant={
+                          col.status === "Active" ? "success" : "default"
+                        }
                       >
-                        Edit
-                      </BtnSecondary>
-                      <BtnDanger
-                        className={tw.btnSm}
-                        onClick={() => handleDelete(col._id)}
-                      >
-                        Delete
-                      </BtnDanger>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {col.status}
+                      </Badge>
+                    </td>
+                    <td
+                      className={tw.td}
+                      style={{ borderBottomColor: "var(--border-light)" }}
+                    >
+                      <div className="flex items-center gap-2 justify-end">
+                        {deleted ? (
+                          <BtnSecondary
+                            className={tw.btnSm}
+                            onClick={() => handleRestore(col._id)}
+                          >
+                            <span className="material-symbols-outlined text-[13px]">
+                              restore
+                            </span>
+                            Restore
+                          </BtnSecondary>
+                        ) : (
+                          <>
+                            <BtnSecondary
+                              className={tw.btnSm}
+                              onClick={() => openEdit(col)}
+                            >
+                              Edit
+                            </BtnSecondary>
+                            <BtnDanger
+                              className={tw.btnSm}
+                              onClick={() => handleDelete(col._id)}
+                            >
+                              Delete
+                            </BtnDanger>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

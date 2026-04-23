@@ -11,15 +11,19 @@ export default function ConfirmDialog({
   onCancel,
 }) {
   useEffect(() => {
-    if (!open) return;
+    if (!open || !showCancel) return;
     const onKeyDown = (e) => {
       if (e.key === "Escape") onCancel?.();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onCancel]);
+  }, [open, onCancel, showCancel]);
 
   if (!open) return null;
+
+  const handleBackdrop = () => {
+    if (showCancel) onCancel?.();
+  };
 
   return (
     <div
@@ -31,8 +35,9 @@ export default function ConfirmDialog({
       <button
         type="button"
         className="absolute inset-0 cursor-default bg-slate-900/40"
-        onClick={onCancel}
+        onClick={handleBackdrop}
         aria-label="Close dialog"
+        tabIndex={showCancel ? 0 : -1}
       />
 
       <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
@@ -61,4 +66,3 @@ export default function ConfirmDialog({
     </div>
   );
 }
-
