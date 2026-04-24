@@ -6,19 +6,14 @@ export const useAuth = () => {
     initAuthListener();
   }, []);
 
-  const {
-    firebaseUser,
-    dbUser,
-    loading,
-    error,
-    logout,
-    refreshDbUser,
-    isAuthenticated,
-    role,
-    isAdmin,
-    isMentor,
-    isStudent,
-  } = useAuthStore();
+  const { firebaseUser, dbUser, loading, error, logout, refreshDbUser } =
+    useAuthStore();
+
+  const isAuthenticated = !!firebaseUser && !!dbUser;
+  const role = dbUser?.role || null;
+  const isAdmin = role === "admin";
+  const isMentor = role === "mentor";
+  const isStudent = role === "student";
 
   return {
     user: dbUser,

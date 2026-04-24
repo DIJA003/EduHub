@@ -1,9 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { useMyEnrollments } from "../../enrollment/hooks/useEnrollments";
 import { useAuth } from "../../../hooks/useAuth";
-import { academicYear } from "../../../lib/api/academic-year.api";
-import { CardSkeleton } from "../../../components/common/LoadingSkeleton";
 import Button from "../../../components/ui/Button";
 
 const YEAR_COPY = {

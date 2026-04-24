@@ -8,16 +8,7 @@ import { formatDate, initials } from "../../../lib/utils";
 export default function MentorStudents() {
   const { data, isLoading } = useQuery({
     queryKey: ["mentor-students"],
-    queryFn: () =>
-      api.get("/mentor/students").then((r) =>
-        (r.data?.data || []).map((e) => ({
-          _id: e.student?._id,
-          name: e.student?.name || "—",
-          email: e.student?.email || "—",
-          course: e.course?.title || "—",
-          enrolledAt: e.enrolledAt,
-        })),
-      ),
+    queryFn: () => api.get("/mentor/students").then((r) => r.data?.data || []),
   });
 
   const students = data || [];
