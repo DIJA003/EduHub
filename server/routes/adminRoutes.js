@@ -1,5 +1,19 @@
 const express = require('express');
 const router  = express.Router();
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 const { verifyToken } = require('../middleware/authMiddleware');
 
@@ -26,9 +40,10 @@ router.delete('/courses/:id', verifyToken, course.remove);
 
 router.get   ('/materials',     verifyToken, material.getAll);
 router.get   ('/materials/:id', verifyToken, material.getById);
-router.post  ('/materials',     verifyToken, material.create);
+router.post  ('/materials',     verifyToken, upload.single('file'), material.create);
 router.put   ('/materials/:id', verifyToken, material.update);
 router.delete('/materials/:id', verifyToken, material.remove);
+router.put   ('/materials/:id/approve', verifyToken, material.approveMaterial);
 
 router.get   ('/users',     verifyToken, adminUser.getAll);
 router.put   ('/users/:id', verifyToken, adminUser.update);
