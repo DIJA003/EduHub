@@ -1,39 +1,41 @@
 import axios from "axios";
 import { auth } from "../firebase";
 
+const BASE_URL =
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
+  "http://localhost:8000/api";
+
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000/api",
+  baseURL: BASE_URL,
   timeout: 30000,
   headers: { "Content-Type": "application/json" },
 });
 
+// Attach Firebase token to every request
 apiClient.interceptors.request.use(
   async (config) => {
-    if (!config.headers.Authorization) {
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const token = await user.getIdToken();
-          config.headers.Authorization = `Bearer ${token}`;
-        } catch (err) {
-          console.warn("[API] Could not get Firebase token:", err.message);
-        }
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const token = await user.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch (err) {
+        console.warn("[API] Could not get token:", err.message);
       }
     }
     return config;
   },
   (error) => Promise.reject(error),
 );
+
+// Normalize error responses + token refresh
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url?.includes("/auth/me")
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const user = auth.currentUser;
@@ -42,7 +44,9 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return apiClient(originalRequest);
         }
-      } catch {}
+      } catch {
+        // Fall through
+      }
     }
 
     const apiError = new Error(

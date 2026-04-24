@@ -1,11 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const c = require("./enrollments.controller");
+const c = require("./enrollments.controller"); // was: ./enrollment.controller
 const { verifyToken } = require("../../middleware/auth.middleware");
-const {
-  adminOnly,
-  mentorOrAdmin,
-} = require("../../middleware/role.middleware");
+const { adminOnly } = require("../../middleware/role.middleware");
 const {
   validate,
   validators,
@@ -17,7 +14,7 @@ router.post("/:courseId", verifyToken, c.enroll);
 router.delete("/:courseId", verifyToken, c.unenroll);
 router.patch("/:courseId/progress", verifyToken, c.updateCourseProgress);
 
-// Admin routes
+// Admin routes — must be BEFORE /:courseId to avoid route conflicts
 router.get("/", verifyToken, adminOnly, c.getAllEnrollments);
 router.post(
   "/admin",

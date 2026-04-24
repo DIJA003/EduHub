@@ -10,12 +10,14 @@ const academicYearSchema = new mongoose.Schema(
     },
     name: { type: String, trim: true, default: "" },
     description: { type: String, trim: true, default: "" },
-    isActive: { type: Boolean, default: true },
+    collegeRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      default: null,
+    },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },
 );
 
-academicYearSchema.index({ year: 1 });
-
-module.exports = mongoose.model("AcademicYear", academicYearSchema);
+module.exports = mongoose.model("Academic-year", academicYearSchema);

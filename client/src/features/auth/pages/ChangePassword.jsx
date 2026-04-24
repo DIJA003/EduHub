@@ -1,114 +1,193 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  EmailAuthProvider,
   reauthenticateWithCredential,
+  EmailAuthProvider,
   updatePassword,
 } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
-import useAuthStore from "../../../stores/auth.store";
+import { authApi } from "../../../lib/api/auth.api";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 
 export default function ChangePassword() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const dbUser = useAuthStore((s) => s.dbUser);
+  const [form, setForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [status, setStatus] = useState("idle");
+  const [errMsg, setErrMsg] = useState("");
 
-  const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    setError("");
+  const set = (key) => (e) => {
+    setForm((p) => ({ ...p, [key]: e.target.value }));
+    setErrMsg("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.next !== form.confirm)
-      return setError("New passwords do not match.");
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.next)) {
-      return setError(
-        "Password must be 8+ chars with uppercase, lowercase, and a number.",
+    const user = auth.currentUser;
+    if (!user) return navigate("/login");
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.newPassword)) {
+      return setErrMsg(
+        "Password must be at least 8 chars with uppercase, lowercase, and a number.",
       );
     }
-    setLoading(true);
+    if (form.newPassword !== form.confirmPassword)
+      return setErrMsg("New passwords do not match.");
+    if (form.newPassword === form.currentPassword)
+      return setErrMsg("New password must differ from current.");
+
+    setStatus("loading");
     try {
-      const user = auth.currentUser;
-      const cred = EmailAuthProvider.credential(user.email, form.current);
-      await reauthenticateWithCredential(user, cred);
-      await updatePassword(user, form.next);
-      setSuccess(true);
-      setTimeout(() => navigate(-1), 2000);
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        form.currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, form.newPassword);
+      await authApi.logPasswordChange().catch(() => {});
+      setStatus("success");
     } catch (err) {
-      const msgs = {
+      const messages = {
         "auth/wrong-password": "Current password is incorrect.",
         "auth/invalid-credential": "Current password is incorrect.",
         "auth/too-many-requests": "Too many attempts. Try again later.",
+        "auth/requires-recent-login":
+          "Session expired. Please log out and log back in.",
       };
-      setError(msgs[err.code] || err.message);
-    } finally {
-      setLoading(false);
+      setErrMsg(
+        messages[err.code] || "Something went wrong. Please try again.",
+      );
+      setStatus("error");
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-xl ring-1 ring-slate-200">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-6 text-sm font-semibold text-slate-600 hover:text-blue-600"
-        >
-          ← Back
-        </button>
-        <h1 className="text-2xl font-black text-slate-900">Change password</h1>
-        {success ? (
-          <div className="mt-6 rounded-lg bg-green-50 px-4 py-4 text-sm font-medium text-green-700">
-            ✅ Password changed successfully. Redirecting…
+  if (status === "success") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-emerald-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
           </div>
-        ) : (
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            {error && (
-              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
+          <h1 className="text-xl font-black text-slate-900">
+            Password updated!
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Your password has been changed successfully.
+          </p>
+          <Button
+            className="mt-6 w-full"
+            onClick={() => navigate("/home")}
+            size="lg"
+          >
+            Go to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-6">
+          <Link
+            to="/home"
+            className="text-sm font-semibold text-slate-600 hover:text-blue-600"
+          >
+            ← Back to Home
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <h1 className="text-xl font-black text-slate-900 mb-1">
+            Change password
+          </h1>
+          <p className="text-sm text-slate-500 mb-6">
+            Enter your current password, then choose a new one.
+          </p>
+
+          {errMsg && (
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {errMsg}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Current password"
+              type="password"
+              value={form.currentPassword}
+              onChange={set("currentPassword")}
+              required
+            />
+            <div className="h-px bg-slate-100" />
+            <Input
+              label="New password"
+              type="password"
+              placeholder="Min 8 chars"
+              value={form.newPassword}
+              onChange={set("newPassword")}
+              required
+            />
+            <Input
+              label="Confirm new password"
+              type="password"
+              placeholder="Repeat new password"
+              value={form.confirmPassword}
+              onChange={set("confirmPassword")}
+              required
+            />
+
+            {/* Strength indicator */}
+            {form.newPassword.length > 0 && (
+              <div className="flex gap-1">
+                {[...Array(4)].map((_, i) => {
+                  const strength = Math.min(
+                    Math.floor(form.newPassword.length / 3),
+                    4,
+                  );
+                  const color =
+                    form.newPassword.length < 6
+                      ? "bg-red-400"
+                      : form.newPassword.length < 10
+                        ? "bg-amber-400"
+                        : "bg-emerald-500";
+                  return (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-colors ${i < strength ? color : "bg-slate-200"}`}
+                    />
+                  );
+                })}
               </div>
             )}
-            {[
-              {
-                name: "current",
-                placeholder: "Current password",
-                autoComplete: "current-password",
-              },
-              {
-                name: "next",
-                placeholder: "New password",
-                autoComplete: "new-password",
-              },
-              {
-                name: "confirm",
-                placeholder: "Confirm new password",
-                autoComplete: "new-password",
-              },
-            ].map((f) => (
-              <input
-                key={f.name}
-                name={f.name}
-                type="password"
-                placeholder={f.placeholder}
-                autoComplete={f.autoComplete}
-                value={form[f.name]}
-                onChange={handleChange}
-                required
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            ))}
-            <button
+
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+              loading={status === "loading"}
+              className="w-full"
+              size="lg"
             >
-              {loading ? "Updating…" : "Update password"}
-            </button>
+              Update Password
+            </Button>
           </form>
-        )}
+        </div>
       </div>
     </div>
   );

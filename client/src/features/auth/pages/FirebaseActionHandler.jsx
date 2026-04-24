@@ -1,160 +1,144 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   applyActionCode,
-  confirmPasswordReset,
   verifyPasswordResetCode,
+  confirmPasswordReset,
 } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 
 export default function FirebaseActionHandler() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
-
+  const [params] = useSearchParams();
+  const mode = params.get("mode");
+  const oobCode = params.get("oobCode");
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!mode || !oobCode) {
-      setStatus("error");
-      setMessage("Invalid action link. Please request a new one.");
-      return;
-    }
-
-    if (mode === "verifyEmail") {
+    if (mode === "verifyEmail" && oobCode) {
       applyActionCode(auth, oobCode)
-        .then(() => {
-          setStatus("verified");
-          setMessage("Email verified! You can now sign in.");
-          setTimeout(() => navigate("/login"), 3000);
-        })
-        .catch((err) => {
+        .then(() => setStatus("verified"))
+        .catch(() => {
           setStatus("error");
-          setMessage(
-            err.code === "auth/invalid-action-code"
-              ? "This link has expired or already been used. Please request a new one."
-              : err.message,
-          );
+          setError("Link expired or already used.");
         });
-    } else if (mode === "resetPassword") {
+    } else if (mode === "resetPassword" && oobCode) {
       verifyPasswordResetCode(auth, oobCode)
-        .then((email) => {
-          setResetEmail(email);
-          setStatus("resetForm");
-        })
-        .catch((err) => {
+        .then(() => setStatus("resetReady"))
+        .catch(() => {
           setStatus("error");
-          setMessage(
-            err.code === "auth/invalid-action-code"
-              ? "This reset link has expired. Please request a new one."
-              : err.message,
-          );
+          setError("Reset link expired or already used.");
         });
     } else {
       setStatus("error");
-      setMessage("Unknown action type.");
+      setError("Invalid or missing action parameters.");
     }
-  }, [mode, oobCode, navigate]);
+  }, [mode, oobCode]);
 
-  const handleResetSubmit = async (e) => {
+  const handleReset = async (e) => {
     e.preventDefault();
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(newPassword)) {
-      return setPasswordError(
-        "Must be 8+ chars with upper, lower, and number.",
-      );
-    }
+    if (newPassword.length < 8)
+      return setError("Password must be at least 8 characters.");
     try {
       await confirmPasswordReset(auth, oobCode, newPassword);
-      setStatus("success");
-      setMessage("Password reset! Redirecting to login…");
-      setTimeout(() => navigate("/login"), 2500);
-    } catch (err) {
-      setPasswordError(err.message);
+      setStatus("resetDone");
+    } catch {
+      setError("Failed to reset password. The link may have expired.");
     }
-  };
-
-  const icons = {
-    loading: "⏳",
-    verified: "✅",
-    success: "✅",
-    error: "❌",
-    resetForm: "🔑",
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-xl ring-1 ring-slate-200 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-3xl">
-          {icons[status]}
-        </div>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+        {status === "loading" && <p className="text-slate-500">Processing…</p>}
 
-        {status === "loading" && (
+        {status === "verified" && (
           <>
-            <h2 className="text-xl font-bold text-slate-900">Processing…</h2>
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h1 className="text-xl font-black text-slate-900">
+              Email Confirmed!
+            </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Please wait while we verify your request.
+              Your email has been verified successfully.
             </p>
+            <Link to="/home">
+              <Button className="mt-6 w-full" size="lg">
+                Continue to Home
+              </Button>
+            </Link>
           </>
         )}
 
-        {(status === "verified" || status === "success") && (
+        {status === "resetReady" && (
           <>
-            <h2 className="text-xl font-bold text-green-700">
-              {status === "verified" ? "Email Verified!" : "Password Reset!"}
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">{message}</p>
+            <h1 className="text-xl font-black text-slate-900 mb-4">
+              Set New Password
+            </h1>
+            {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+            <form onSubmit={handleReset} className="text-left space-y-4">
+              <Input
+                label="New password"
+                type="password"
+                placeholder="Min 8 characters"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setError("");
+                }}
+                required
+              />
+              <Button type="submit" className="w-full" size="lg">
+                Reset Password
+              </Button>
+            </form>
+          </>
+        )}
+
+        {status === "resetDone" && (
+          <>
+            <h1 className="text-xl font-black text-slate-900">
+              Password Changed!
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Your password has been reset successfully.
+            </p>
+            <Link to="/login">
+              <Button className="mt-6 w-full" size="lg">
+                Back to Login
+              </Button>
+            </Link>
           </>
         )}
 
         {status === "error" && (
           <>
-            <h2 className="text-xl font-bold text-red-600">Link Invalid</h2>
-            <p className="mt-2 text-sm text-slate-500">{message}</p>
-            <button
-              onClick={() => navigate("/login")}
-              className="mt-6 text-sm font-semibold text-blue-600 hover:underline"
-            >
-              Return to login
-            </button>
+            <h1 className="text-xl font-black text-slate-900">
+              Something went wrong
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">{error}</p>
+            <Link to="/login">
+              <Button variant="secondary" className="mt-6 w-full" size="lg">
+                Back to Login
+              </Button>
+            </Link>
           </>
-        )}
-
-        {status === "resetForm" && (
-          <form onSubmit={handleResetSubmit} className="text-left">
-            <h2 className="text-xl font-bold text-slate-900 text-center">
-              Set new password
-            </h2>
-            <p className="mt-1 text-center text-sm text-slate-500">
-              For <strong>{resetEmail}</strong>
-            </p>
-            {passwordError && (
-              <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-                {passwordError}
-              </div>
-            )}
-            <input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value);
-                setPasswordError("");
-              }}
-              required
-              className="mt-4 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="mt-4 w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700"
-            >
-              Set password
-            </button>
-          </form>
         )}
       </div>
     </div>

@@ -1,91 +1,67 @@
-/* index.css — Global styles for EduHub CRA app */
-
-/* Tailwind v3 directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Base reset ──────────────────────────────────────────────────────────── */
-@layer base {
-
-    *,
-    *::before,
-    *::after {
-        box-sizing: border-box;
-    }
-
-    html {
-        scroll-behavior: smooth;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
-    body {
-        @apply bg-slate-50 text-slate-900 font-sans;
-        margin: 0;
-    }
-
-    /* Focus ring — visible for keyboard users, hidden for mouse */
-    :focus-visible {
-        @apply outline-2 outline-blue-500 outline-offset-2;
-    }
-
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-        @apply w-1.5 h-1.5;
-    }
-
-    ::-webkit-scrollbar-track {
-        @apply bg-transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        @apply rounded-full bg-slate-300 hover:bg-slate-400;
-    }
+/* Base resets */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
-/* ── Utility layer ───────────────────────────────────────────────────────── */
-@layer utilities {
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
 
-    /* Animate in — used by Modal, Toast, Dropdowns */
-    .animate-in {
-        animation: animateIn 0.15s ease-out both;
-    }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+        "Oxygen", "Ubuntu", sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+}
 
-    @keyframes animateIn {
-        from {
-            opacity: 0;
-            transform: scale(0.96) translateY(4px);
-        }
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
 
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-    }
+/* Focus ring only on keyboard nav */
+:focus:not(:focus-visible) {
+    outline: none;
+}
 
-    /* Slide in from right — used by toasts */
-    .slide-in-from-right-5 {
-        animation: slideInRight 0.2s ease-out both;
-    }
+:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
 
-    @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
 
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
+::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-    /* Truncate with tooltip support */
-    .truncate-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Utility: hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

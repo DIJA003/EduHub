@@ -12,23 +12,19 @@ const getAll = async (req, res, next) => {
   try {
     const {
       page = 1,
-      limit = 50,
+      limit = 20,
       search = "",
       showDeleted = "false",
     } = req.query;
-
     const filter = {};
     if (showDeleted !== "true") filter.isDeleted = { $ne: true };
-    if (search.trim()) {
-      filter.name = { $regex: search.trim(), $options: "i" };
-    }
+    if (search.trim()) filter.name = { $regex: search.trim(), $options: "i" };
 
     const result = await paginate(College, filter, {
       page,
       limit,
       sort: { createdAt: -1 },
     });
-
     return success(res, result.data, 200, result.meta);
   } catch (err) {
     next(err);
@@ -47,28 +43,10 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const { name, years, semesters, programs, status } = req.body;
-    if (!name?.trim()) {
-      return res
-        .status(400)
-        .json({ success: false, message: "College name is required" });
-    }
-
-    const exists = await College.findOne({
-      name: { $regex: `^${name.trim()}$`, $options: "i" },
-      isDeleted: { $ne: true },
-    });
-    if (exists) return conflict(res, "A college with this name already exists");
-
     const college = await College.create({
-      name: name.trim(),
-      years: years || 4,
-      semesters: semesters || 2,
-      programs: programs || 0,
-      status: status || "Active",
+      ...req.body,
       createdBy: req.user.id,
     });
-
     await logAction({
       action: "CREATE",
       entity: "College",
@@ -76,36 +54,22 @@ const create = async (req, res, next) => {
       entityName: college.name,
       performedBy: req.user,
       req,
-      details: { status: college.status, years: college.years },
+      details: { status: college.status },
     });
-
     return created(res, college);
   } catch (err) {
+    if (err.code === 11000) return conflict(res, "College name already exists");
     next(err);
   }
 };
 
 const update = async (req, res, next) => {
   try {
-    const college = await College.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          ...(req.body.name && { name: req.body.name.trim() }),
-          ...(req.body.years !== undefined && { years: req.body.years }),
-          ...(req.body.semesters !== undefined && {
-            semesters: req.body.semesters,
-          }),
-          ...(req.body.programs !== undefined && {
-            programs: req.body.programs,
-          }),
-          ...(req.body.status && { status: req.body.status }),
-        },
-      },
-      { new: true, runValidators: true },
-    );
+    const college = await College.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
     if (!college) return notFound(res, "College not found");
-
     await logAction({
       action: "UPDATE",
       entity: "College",
@@ -115,7 +79,6 @@ const update = async (req, res, next) => {
       req,
       details: { changes: req.body },
     });
-
     return success(res, college);
   } catch (err) {
     next(err);
@@ -130,7 +93,6 @@ const remove = async (req, res, next) => {
       { new: true },
     );
     if (!college) return notFound(res, "College not found");
-
     await logAction({
       action: "DELETE",
       entity: "College",
@@ -138,9 +100,7 @@ const remove = async (req, res, next) => {
       entityName: college.name,
       performedBy: req.user,
       req,
-      details: { softDeleted: true },
     });
-
     return success(res, { deleted: true });
   } catch (err) {
     next(err);
@@ -155,7 +115,6 @@ const restore = async (req, res, next) => {
       { new: true },
     );
     if (!college) return notFound(res, "College not found");
-
     await logAction({
       action: "RESTORE",
       entity: "College",
@@ -164,7 +123,6 @@ const restore = async (req, res, next) => {
       performedBy: req.user,
       req,
     });
-
     return success(res, college);
   } catch (err) {
     next(err);

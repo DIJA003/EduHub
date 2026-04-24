@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const LOG_ACTIONS = [
+const ACTIONS = [
   "CREATE",
   "UPDATE",
   "DELETE",
@@ -18,7 +18,7 @@ const LOG_ACTIONS = [
   "ERROR",
 ];
 
-const LOG_ENTITIES = [
+const ENTITIES = [
   "College",
   "Course",
   "Material",
@@ -32,26 +32,10 @@ const LOG_ENTITIES = [
 
 const logSchema = new mongoose.Schema(
   {
-    action: {
-      type: String,
-      enum: LOG_ACTIONS,
-      required: true,
-      index: true,
-    },
-    entity: {
-      type: String,
-      enum: LOG_ENTITIES,
-      required: true,
-      index: true,
-    },
-    entityId: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: null,
-    },
-    entityName: {
-      type: String,
-      default: "",
-    },
+    action: { type: String, enum: ACTIONS, required: true, index: true },
+    entity: { type: String, enum: ENTITIES, required: true, index: true },
+    entityId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    entityName: { type: String, default: "" },
     performedBy: {
       userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -64,20 +48,15 @@ const logSchema = new mongoose.Schema(
     },
     ip: { type: String, default: "" },
     userAgent: { type: String, default: "" },
-    details: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
-    success: { type: Boolean, default: true },
+    details: { type: mongoose.Schema.Types.Mixed, default: {} },
+    success: { type: Boolean, default: true, index: true },
     errorMessage: { type: String, default: "" },
   },
   { timestamps: true },
 );
 
-logSchema.index({ entity: 1, createdAt: -1 });
-logSchema.index({ action: 1, createdAt: -1 });
-logSchema.index({ "performedBy.userId": 1, createdAt: -1 });
 logSchema.index({ createdAt: -1 });
-logSchema.index({ success: 1, createdAt: -1 });
+logSchema.index({ action: 1, entity: 1, createdAt: -1 });
+logSchema.index({ "performedBy.userId": 1, createdAt: -1 });
 
 module.exports = mongoose.model("Log", logSchema);

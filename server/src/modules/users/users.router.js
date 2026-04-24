@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const c = require("./users.controller"); // ← fixed (was user.controller)
+const c = require("./users.controller"); // was: ./user.controller
 const { verifyToken } = require("../../middleware/auth.middleware");
 const { adminOnly } = require("../../middleware/role.middleware");
 const {
   validate,
   validators,
 } = require("../../middleware/validate.middleware");
+
 router.put("/profile", verifyToken, c.updateProfile);
 
 router.get("/", verifyToken, adminOnly, c.getAll);
@@ -16,7 +17,7 @@ router.post(
   verifyToken,
   adminOnly,
   validate({
-    name: [validators.required, validators.string, validators.minLength(2)],
+    name: [validators.required, validators.string],
     email: [validators.required, validators.email],
     password: [validators.required, validators.minLength(8)],
   }),

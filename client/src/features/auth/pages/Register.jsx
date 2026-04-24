@@ -5,13 +5,14 @@ import {
   sendEmailVerification,
 } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
-import apiClient from "../../../lib/api/client";
+import { authApi } from "../../../lib/api/auth.api";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
 
-const FIREBASE_ERRORS = {
-  "auth/email-already-in-use": "This email is already registered.",
-  "auth/invalid-email": "Please enter a valid email address.",
-  "auth/weak-password": "Password is too weak.",
-};
+const ROLES = [
+  { value: "student", label: "Student", emoji: "🎓", desc: "Learn & grow" },
+  { value: "mentor", label: "Mentor", emoji: "👨‍🏫", desc: "Teach & guide" },
+];
 
 export default function Register() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
     setError("");
   };
 
@@ -51,28 +52,27 @@ export default function Register() {
         form.email,
         form.password,
       );
-      await sendEmailVerification(cred.user, {
-        url: `${window.location.origin}/email-confirmed`,
-      });
+      const continueUrl = `${window.location.origin}/auth/action`;
+      await sendEmailVerification(cred.user, { url: continueUrl });
 
       try {
-        const token = await cred.user.getIdToken();
-        await apiClient.post(
-          "/auth/register",
-          {
-            name: form.name.trim(),
-            role,
-            college: form.college.trim(),
-          },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        await authApi.register({
+          name: form.name.trim(),
+          role,
+          college: form.college.trim(),
+        });
       } catch (backendErr) {
         console.error("Backend registration error:", backendErr.message);
       }
 
       navigate("/verify-email");
     } catch (err) {
-      setError(FIREBASE_ERRORS[err.code] || err.message);
+      const messages = {
+        "auth/email-already-in-use": "This email is already registered.",
+        "auth/invalid-email": "Please enter a valid email address.",
+        "auth/weak-password": "Password is too weak.",
+      };
+      setError(messages[err.code] || err.message);
     } finally {
       setLoading(false);
     }
@@ -81,137 +81,115 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-6">
-          <Link
-            to="/home"
-            className="text-sm font-semibold text-slate-600 hover:text-blue-600"
-          >
-            ← Back to Home
-          </Link>
-        </div>
-        <div className="rounded-2xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
-          <h1 className="text-3xl font-black text-slate-900">Create account</h1>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-black mb-4">
+            E
+          </div>
+          <h1 className="text-2xl font-black text-slate-900">
+            Create your account
+          </h1>
           <p className="mt-1 text-sm text-slate-500">Join EduHub — it's free</p>
+        </div>
 
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
           {/* Role selector */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            {[
-              {
-                value: "student",
-                label: "Student",
-                emoji: "🎓",
-                desc: "Learn & grow",
-              },
-              {
-                value: "mentor",
-                label: "Mentor",
-                emoji: "👨‍🏫",
-                desc: "Teach & guide",
-              },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setRole(opt.value)}
-                className={`flex flex-col items-center rounded-xl border-2 p-4 transition-all ${
-                  role === opt.value
-                    ? "border-blue-600 bg-blue-50"
-                    : "border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <span className="text-2xl mb-1">{opt.emoji}</span>
-                <span
-                  className={`text-sm font-bold ${role === opt.value ? "text-blue-600" : "text-slate-800"}`}
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">
+              I am joining as a…
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {ROLES.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  className={`flex flex-col items-center rounded-xl border-2 p-4 text-center transition-all duration-150 ${
+                    role === opt.value
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
                 >
-                  {opt.label}
-                </span>
-                <span className="text-xs text-slate-500">{opt.desc}</span>
-              </button>
-            ))}
+                  <span className="text-2xl mb-1">{opt.emoji}</span>
+                  <span
+                    className={`text-sm font-bold ${role === opt.value ? "text-blue-700" : "text-slate-800"}`}
+                  >
+                    {opt.label}
+                  </span>
+                  <span className="text-xs text-slate-500">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (
-            <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            {[
-              {
-                name: "name",
-                label: "Full name",
-                type: "text",
-                placeholder: "Full name",
-                autocomplete: "name",
-              },
-              {
-                name: "email",
-                label: "Email",
-                type: "email",
-                placeholder: "Email address",
-                autocomplete: "email",
-              },
-              {
-                name: "college",
-                label: "College",
-                type: "text",
-                placeholder: "College / Faculty (optional)",
-                autocomplete: "organization",
-              },
-              {
-                name: "password",
-                label: "Password",
-                type: "password",
-                placeholder: "Password (min 8 chars)",
-                autocomplete: "new-password",
-              },
-              {
-                name: "confirmPassword",
-                label: "Confirm password",
-                type: "password",
-                placeholder: "Confirm password",
-                autocomplete: "new-password",
-              },
-            ].map((field) => (
-              <div key={field.name}>
-                <label className="sr-only" htmlFor={field.name}>
-                  {field.label}
-                </label>
-                <input
-                  id={field.name}
-                  name={field.name}
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  autoComplete={field.autocomplete}
-                  value={form[field.name]}
-                  onChange={handleChange}
-                  required={field.name !== "college"}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            ))}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Full name"
+              name="name"
+              placeholder="Jane Smith"
+              value={form.name}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Email address"
+              name="email"
+              type="email"
+              placeholder="you@university.edu"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="College / Faculty"
+              name="college"
+              placeholder="Faculty of Science"
+              value={form.college}
+              onChange={handleChange}
+            />
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              placeholder="Min 8 chars, upper + lower + number"
+              value={form.password}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Confirm password"
+              name="confirmPassword"
+              type="password"
+              placeholder="Repeat password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+            />
 
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              loading={loading}
+              className="w-full"
+              size="lg"
             >
-              {loading
-                ? "Creating account…"
-                : `Create ${role === "mentor" ? "Mentor" : "Student"} Account`}
-            </button>
-
-            <p className="text-center text-xs text-slate-600">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="font-semibold text-blue-600 hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
+              Create {role === "mentor" ? "Mentor" : "Student"} Account
+            </Button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-semibold text-blue-600 hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -1,122 +1,125 @@
-import { Link } from "react-router-dom";
-import useAuthStore from "../../../stores/auth.store";
-
-const FEATURES = [
-  {
-    icon: "📚",
-    title: "Structured curriculum",
-    desc: "Year-by-year academic progression with organised course material.",
-  },
-  {
-    icon: "🎓",
-    title: "Expert mentors",
-    desc: "Work directly with qualified mentors who review your submitted work.",
-  },
-  {
-    icon: "📊",
-    title: "Track progress",
-    desc: "Monitor your completion rate and materials across every enrolled course.",
-  },
-  {
-    icon: "🔔",
-    title: "Real-time notifications",
-    desc: "Instant alerts when your submissions are reviewed or approved.",
-  },
-];
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
+import Button from "../../../components/ui/Button";
 
 export default function Home() {
-  const { firebaseUser, role } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, role } = useAuth();
 
-  const getDashboardLink = () => {
-    if (!firebaseUser) return null;
-    if (role === "admin")
-      return { to: "/admin", label: "Go to Admin Dashboard" };
-    if (role === "mentor")
-      return { to: "/mentor", label: "Go to Mentor Dashboard" };
-    return { to: "/std-dashboard", label: "Go to Dashboard" };
+  const handleGetStarted = () => {
+    if (!isAuthenticated) return navigate("/register");
+    if (role === "admin") return navigate("/admin");
+    if (role === "mentor") return navigate("/mentor");
+    return navigate("/academic-year");
   };
-
-  const dashLink = getDashboardLink();
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <span className="text-lg font-black tracking-tight text-blue-600">
-            EduHub
-          </span>
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 bg-white border-b border-slate-100 backdrop-blur">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black">
+              E
+            </div>
+            <span className="text-lg font-black text-blue-600">EduHub</span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-8">
+            <a
+              href="#features"
+              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#roles"
+              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+            >
+              How it works
+            </a>
+          </div>
+
           <div className="flex items-center gap-3">
-            {dashLink ? (
-              <Link
-                to={dashLink.to}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
-              >
-                {dashLink.label}
-              </Link>
-            ) : (
+            {!isAuthenticated ? (
               <>
-                <Link
-                  to="/login"
-                  className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/login")}
                 >
-                  Sign in
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
-                >
-                  Get started
-                </Link>
+                  Sign In
+                </Button>
+                <Button size="sm" onClick={() => navigate("/register")}>
+                  Get Started
+                </Button>
               </>
+            ) : (
+              <Button size="sm" onClick={handleGetStarted}>
+                {role === "admin"
+                  ? "Admin Dashboard"
+                  : role === "mentor"
+                    ? "Mentor Dashboard"
+                    : "My Courses"}
+              </Button>
             )}
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-24 text-center">
-        <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-600 mb-6">
-          🎓 Academic Learning Management
-        </div>
-        <h1 className="text-5xl font-black tracking-tight text-slate-900 leading-tight">
-          Learn smarter.
-          <br />
-          <span className="text-blue-600">Guided by experts.</span>
-        </h1>
-        <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-500">
-          EduHub connects students with mentors through a structured,
-          year-by-year curriculum. Upload work, get feedback, and track your
-          academic growth.
-        </p>
-        <div className="mt-10 flex flex-wrap gap-4 justify-center">
-          <Link
-            to="/register"
-            className="rounded-xl bg-blue-600 px-8 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
-          >
-            Start for free
-          </Link>
-          <Link
-            to="/login"
-            className="rounded-xl border border-slate-300 bg-white px-8 py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-          >
-            Sign in
-          </Link>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <span className="inline-block mb-4 rounded-full bg-blue-100 px-4 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
+            Academic Learning Platform
+          </span>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+            Empowering Students{" "}
+            <span className="text-blue-600">&amp; Mentors</span>
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+            A unified platform for collaboration, mentorship, and academic
+            growth. Track your 4-year journey, upload materials, and connect
+            with expert mentors.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" onClick={handleGetStarted} className="px-8">
+              {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
+            </Button>
+            {!isAuthenticated && (
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate("/login")}
+                className="px-8"
+              >
+                Sign In
+              </Button>
+            )}
+          </div>
+
+          {isAuthenticated && user && (
+            <p className="mt-6 text-sm text-slate-500">
+              Welcome back, <strong>{user.name}</strong>! 👋
+            </p>
+          )}
         </div>
       </section>
-      <section className="bg-slate-50 py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-center text-3xl font-black text-slate-900">
-            Why EduHub?
-          </h2>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
-              >
-                <div className="mb-3 text-3xl">{f.icon}</div>
-                <h3 className="font-bold text-slate-900">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
-                  {f.desc}
+
+      {/* Stats */}
+      <section className="border-y border-slate-100 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { value: "50K+", label: "Active Students" },
+              { value: "1.2K+", label: "Expert Mentors" },
+              { value: "200+", label: "Partner Colleges" },
+              { value: "98%", label: "Success Rate" },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-4xl font-black text-blue-600">{s.value}</p>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  {s.label}
                 </p>
               </div>
             ))}
@@ -124,25 +127,140 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="mx-auto max-w-2xl px-6 text-center">
-          <h2 className="text-3xl font-black text-slate-900">
-            Ready to start learning?
-          </h2>
-          <p className="mt-3 text-slate-500">
-            Join students and mentors building their academic careers on EduHub.
-          </p>
-          <Link
-            to="/register"
-            className="mt-8 inline-block rounded-xl bg-blue-600 px-8 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
-          >
-            Create free account
-          </Link>
+      {/* Features */}
+      <section id="features" className="py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+              Powerful Features for Everyone
+            </h2>
+            <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
+              Designed to bridge the gap between learning and professional
+              guidance.
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              {
+                icon: "🎯",
+                title: "Smart Academic Paths",
+                desc: "Navigate your 4-year journey with structured year-by-year course progression and milestone tracking.",
+              },
+              {
+                icon: "📤",
+                title: "Material Review System",
+                desc: "Students upload study materials that go through mentor review before being shared, ensuring quality.",
+              },
+              {
+                icon: "📊",
+                title: "Progress Tracking",
+                desc: "Real-time dashboards for students, mentors, and admins with detailed analytics and audit logs.",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
+                  {f.icon}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-3">
+                  {f.title}
+                </h3>
+                <p className="text-slate-500">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 py-8 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} EduHub. All rights reserved.
+      {/* Roles */}
+      <section id="roles" className="bg-slate-50 py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+              Tailored for Your Role
+            </h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                emoji: "🎓",
+                role: "For Students",
+                desc: "Track progress across 4 academic years, enroll in courses, upload study materials, and get mentor feedback.",
+                cta: "Start Learning",
+                path: "/register",
+              },
+              {
+                emoji: "👨‍🏫",
+                role: "For Mentors",
+                desc: "Review student-uploaded materials, manage enrolled students, upload your own resources, and track your impact.",
+                cta: "Become a Mentor",
+                path: "/register",
+              },
+              {
+                emoji: "🏛️",
+                role: "For Admins",
+                desc: "Full platform control: manage users, courses, colleges, academic years, enrollments, and view detailed audit logs.",
+                cta: "Admin Access",
+                path: "/login",
+              },
+            ].map((r) => (
+              <div
+                key={r.role}
+                className="bg-white rounded-2xl border border-slate-200 p-8 text-center hover:border-blue-200 hover:shadow-md transition-all"
+              >
+                <div className="text-5xl mb-4">{r.emoji}</div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">
+                  {r.role}
+                </h3>
+                <p className="text-slate-500 mb-6">{r.desc}</p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate(r.path)}
+                >
+                  {r.cta}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 px-4">
+        <div className="mx-auto max-w-4xl rounded-3xl bg-blue-600 p-12 text-center">
+          <h2 className="text-3xl font-black text-white lg:text-4xl">
+            Ready to start your journey?
+          </h2>
+          <p className="mt-4 text-lg text-blue-100">
+            Join thousands of students and mentors on EduHub today.
+          </p>
+          <Button
+            className="mt-8 bg-white text-blue-700 hover:bg-blue-50 px-10"
+            size="lg"
+            onClick={() => navigate("/register")}
+          >
+            Get Started Now
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-100 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-black">
+              E
+            </div>
+            <span className="font-bold text-slate-700">EduHub</span>
+          </div>
+          <p className="text-sm text-slate-400">
+            © {new Date().getFullYear()} EduHub Inc. All rights reserved.
+          </p>
+        </div>
       </footer>
     </div>
   );
