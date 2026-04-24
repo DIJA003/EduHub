@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require("../models/User");
 const Material = require("../models/Material");
 const Enrollment = require("../models/Enrollment");
+const Section    = require("../models/Section");
 const Course = require("../models/Course");
 const {
   saveCourse,
@@ -184,6 +185,19 @@ router.patch("/enrollments/:courseId/progress", verifyToken, async (req, res) =>
   } catch (error) {
     console.error("Progress update error:", error.message);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── Sections for a course ─────────────────────────────────────────────────────
+router.get("/courses/:courseId/sections", verifyToken, async (req, res) => {
+  try {
+    const sections = await Section.find({
+      courseRef: req.params.courseId,
+      isDeleted: { $ne: true },
+    }).sort({ order: 1, createdAt: 1 }).select("title summary body order");
+    res.json({ success: true, data: sections });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 

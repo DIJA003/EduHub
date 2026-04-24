@@ -3,29 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useCourses } from "../../context/CourseContext";
 import YearCard from "./YearCard";
 
-const YEAR_COPY = {
-  1: {
-    title: "Year One",
-    description:
-      "Foundational Concepts: Principles of computing, mathematics, and logic.",
-  },
-  2: {
-    title: "Year Two",
-    description:
-      "Intermediate Specializations: Data structures, algorithms, and systems.",
-  },
-  3: {
-    title: "Year Three",
-    description:
-      "Advanced Applications: Software engineering, cloud architecture, and AI.",
-  },
-  4: {
-    title: "Year Four",
-    description:
-      "Final Research & Thesis: Industry placements and capstone projects.",
-  },
-};
-
 function displayStatus(meta) {
   if (!meta?.unlocked) return "Locked";
   if (meta.status === "Completed") return "Completed";
@@ -34,9 +11,24 @@ function displayStatus(meta) {
 
 export default function AcademicPathSection() {
   const navigate = useNavigate();
-  const { years } = useCourses();
+  const { years, loading } = useCourses();
 
   const ids = ["1", "2", "3", "4"];
+
+  if (loading) {
+    return (
+      <section>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Your Academic Path
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          {ids.map((id) => (
+            <div key={id} className="h-32 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section>
@@ -46,7 +38,6 @@ export default function AcademicPathSection() {
       <div className="grid gap-4 md:grid-cols-2">
         {ids.map((id) => {
           const meta = years[id]?.meta;
-          const copy = YEAR_COPY[id];
           const locked = meta?.unlocked === false;
           const status = meta ? displayStatus(meta) : "Locked";
           const highlighted = meta?.unlocked && meta?.status === "In Progress";
@@ -55,8 +46,8 @@ export default function AcademicPathSection() {
             <YearCard
               key={id}
               year={id}
-              title={meta?.title?.split(":")[0] || copy.title}
-              description={meta?.description || copy.description}
+              title={meta?.title || `Year ${id}`}
+              description={meta?.description || "Unlocks when the previous year is completed."}
               status={status}
               highlighted={highlighted}
               locked={locked}

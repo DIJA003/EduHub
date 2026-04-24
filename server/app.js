@@ -74,9 +74,11 @@ app.get(
     try {
       const Course = require("./models/Course");
       const courses = await Course.find({
-        yearId: req.params.yearId,
-        status: "Published",
-      }).sort({ createdAt: -1 });
+        yearId:    req.params.yearId,
+        status:    "Published",
+        isDeleted: { $ne: true },
+      }).select("title code creditHours yearId instructor college status students")
+        .sort({ createdAt: -1 });
       res.json({ success: true, data: courses });
     } catch (err) {
       res.status(500).json({ error: err.message });
