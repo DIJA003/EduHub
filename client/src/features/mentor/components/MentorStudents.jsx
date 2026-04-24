@@ -9,7 +9,7 @@ export default function MentorStudents() {
   const { data, isLoading } = useQuery({
     queryKey: ["mentor-students"],
     queryFn: () =>
-      api.get("/enrollments?limit=100").then((r) =>
+      api.get("/mentor/students").then((r) =>
         (r.data?.data || []).map((e) => ({
           _id: e.student?._id,
           name: e.student?.name || "—",

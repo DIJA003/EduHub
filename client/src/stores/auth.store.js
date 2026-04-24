@@ -4,6 +4,7 @@ import { auth } from "../lib/firebase";
 import apiClient from "../lib/api/client";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { queryClient } from "../lib/queryClient";
+import { useEffect } from "react";
 
 const fetchDbUser = async () => {
   try {
@@ -19,6 +20,35 @@ const fetchDbUser = async () => {
   } catch (err) {
     return null;
   }
+};
+
+export const useAuth = () => {
+  useEffect(() => {
+    initAuthListener();
+  }, []);
+
+  const { firebaseUser, dbUser, loading, error, logout, refreshDbUser } =
+    useAuthStore();
+
+  const isAuthenticated = !!firebaseUser && !!dbUser;
+  const role = dbUser?.role || null;
+  const isAdmin = role === "admin";
+  const isMentor = role === "mentor";
+  const isStudent = role === "student";
+
+  return {
+    user: dbUser,
+    firebaseUser,
+    loading,
+    error,
+    logout,
+    refreshDbUser,
+    isAuthenticated,
+    role,
+    isAdmin,
+    isMentor,
+    isStudent,
+  };
 };
 
 const useAuthStore = create(

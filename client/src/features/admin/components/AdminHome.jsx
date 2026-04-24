@@ -34,8 +34,7 @@ const StatCard = ({ title, value, icon, color }) => {
 export default function AdminHome() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["admin-stats"],
-    queryFn: () =>
-      api.get("/admin/dashboard/stats").then((r) => r.data?.data || r.data),
+    queryFn: () => api.get("/admin/stats").then((r) => r.data?.data || r.data),
   });
 
   const { data: logs, isLoading: logsLoading } = useQuery({

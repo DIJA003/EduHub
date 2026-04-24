@@ -30,13 +30,6 @@ export default function DataTable({
     onSearch?.(debouncedSearch);
   }, [debouncedSearch]);
 
-  // Track previous debounced value
-  const [prevSearch, setPrevSearch] = useState("");
-  if (debouncedSearch !== prevSearch) {
-    setPrevSearch(debouncedSearch);
-    onSearch?.(debouncedSearch);
-  }
-
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Toolbar */}
