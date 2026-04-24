@@ -12,7 +12,7 @@ import Button from "../../../components/ui/Button";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import EmptyState from "../../../components/common/EmptyStat";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-import { toast } from "../../../hooks/useToast";
+import { toast } from "../../../hooks/useToasts";
 import { formatDate } from "../../../lib/utils";
 
 export default function MentorUpload() {

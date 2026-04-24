@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TableSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Pagination from "../../../components/common/Pagination";
@@ -6,10 +6,6 @@ import Input from "../../../components/ui/Input";
 import Button from "../../../components/ui/Button";
 import { useDebounce } from "../../../hooks/useDebounce";
 
-/**
- * Generic, reusable data table with search, pagination, add button.
- * Used across all admin CRUD pages.
- */
 export default function DataTable({
   title,
   data = [],
@@ -30,9 +26,9 @@ export default function DataTable({
   const debouncedSearch = useDebounce(searchValue, 400);
 
   // Notify parent when debounced search changes
-  useState(() => {
+  useEffect(() => {
     onSearch?.(debouncedSearch);
-  });
+  }, [debouncedSearch]);
 
   // Track previous debounced value
   const [prevSearch, setPrevSearch] = useState("");

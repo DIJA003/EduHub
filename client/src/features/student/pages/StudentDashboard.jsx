@@ -20,7 +20,7 @@ import {
   TableSkeleton,
 } from "../../../components/common/LoadingSkeleton";
 import { timeAgo, initials } from "../../../lib/utils";
-import { toast } from "../../../hooks/useToast";
+import { toast } from "../../../hooks/useToasts";
 import { useRef } from "react";
 
 const NAV_ITEMS = [

@@ -36,8 +36,7 @@ export const usePendingMaterials = (params) =>
 export const useAllMaterials = (params) =>
   useQuery({
     queryKey: MATERIAL_KEYS.list(params),
-    queryFn: () =>
-      materialsApi.getAll(params).then((r) => r.data?.data ?? r.data ?? []),
+    queryFn: () => materialsApi.getAll(params).then((r) => r.data),
     staleTime: 20_000,
   });
 

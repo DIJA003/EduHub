@@ -5,9 +5,10 @@ import { queryClient } from "./lib/queryClient";
 import App from "./App";
 import ToastContainer from "./components/common/ToastContainer";
 import "./index.css";
+import { initAuthListener } from "./stores/auth.store";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-
+initAuthListener();
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

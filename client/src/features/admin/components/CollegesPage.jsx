@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { collegesApi } from "../../../lib/api/colleges.api";
+import { collegesApi } from "../../../lib/api/college.api";
 import { usePagination } from "../../../hooks/usePagination";
-import { toast } from "../../../hooks/useToast";
+import { toast } from "../../../hooks/useToasts";
 import DataTable from "./DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";

@@ -7,6 +7,7 @@ const { mentorOrAdmin } = require("../../middleware/role.middleware");
 router.use(verifyToken);
 
 router.get("/", c.getAll);
+router.post("/", c.createMaterial);
 router.get("/my", c.getMyMaterials);
 router.get("/pending", mentorOrAdmin, c.getPending);
 router.patch("/:id/approve", mentorOrAdmin, c.approve);

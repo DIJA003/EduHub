@@ -1,4 +1,4 @@
-const AcademicYear = require("./academic-year.model");
+const AcademicYear = require("./academic-years.model");
 const Course = require("../courses/course.model");
 const {
   success,

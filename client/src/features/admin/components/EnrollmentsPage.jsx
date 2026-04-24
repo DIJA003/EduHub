@@ -4,7 +4,7 @@ import { enrollmentsApi } from "../../../lib/api/enrollments.api";
 import { usersApi } from "../../../lib/api/users.api";
 import { coursesApi } from "../../../lib/api/courses.api";
 import { usePagination } from "../../../hooks/usePagination";
-import { toast } from "../../../hooks/useToast";
+import { toast } from "../../../hooks/useToasts";
 import DataTable from "./DataTable";
 import Badge from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";

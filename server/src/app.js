@@ -22,7 +22,7 @@ const academicYearsRouter = require("./modules/academic-years/academic-years.rou
 const collegesRouter = require("./modules/college/college.router");
 const dashboardRouter = require("./modules/dashboard/dashboard.router");
 const mentorRouter = require("./modules/mentor/mentor.router");
-const dashboardRouter = require("./modules/admin/dashboard.router");
+const adminDashboardRouter = require("./modules/admin/dashboard.router");
 
 const app = express();
 
@@ -96,7 +96,7 @@ app.use("/api/academic-years", academicYearsRouter);
 app.use("/api/colleges", collegesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/mentor", mentorRouter);
-app.use("/api/admin", dashboardRouter);
+app.use("/api/admin", adminDashboardRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

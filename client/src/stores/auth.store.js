@@ -59,15 +59,13 @@ const useAuthStore = create(
   ),
 );
 
-let initialized = false;
-
+let unsubscribe = null;
 export const initAuthListener = () => {
-  if (initialized) return;
-  initialized = true;
+  if (unsubscribe) return;
 
   const state = useAuthStore.getState();
 
-  onAuthStateChanged(auth, async (firebaseUser) => {
+  unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
     state.setLoading(true);
     state.setFirebaseUser(firebaseUser ?? null);
     state.setDbUser(null);

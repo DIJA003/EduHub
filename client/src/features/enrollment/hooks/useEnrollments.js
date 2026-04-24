@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { enrollmentsApi } from "../../../lib/api/enrollment.api";
+import { enrollmentsApi } from "../../../lib/api/enrollments.api";
 import { toast } from "../../../hooks/useToasts";
 
 export const ENROLLMENT_KEYS = {

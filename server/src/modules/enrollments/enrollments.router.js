@@ -8,13 +8,8 @@ const {
   validators,
 } = require("../../middleware/validate.middleware");
 
-// Student routes
-router.get("/my", verifyToken, c.getMyEnrollments);
-router.post("/:courseId", verifyToken, c.enroll);
-router.delete("/:courseId", verifyToken, c.unenroll);
-router.patch("/:courseId/progress", verifyToken, c.updateCourseProgress);
+// Admin routes
 
-// Admin routes — must be BEFORE /:courseId to avoid route conflicts
 router.get("/", verifyToken, adminOnly, c.getAllEnrollments);
 router.post(
   "/admin",
@@ -33,4 +28,9 @@ router.delete(
   c.adminUnenroll,
 );
 
+// Student routes
+router.get("/my", verifyToken, c.getMyEnrollments);
+router.post("/:courseId", verifyToken, c.enroll);
+router.delete("/:courseId", verifyToken, c.unenroll);
+router.patch("/:courseId/progress", verifyToken, c.updateCourseProgress);
 module.exports = router;
