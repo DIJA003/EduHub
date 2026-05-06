@@ -19,6 +19,7 @@ export const useCoursesByYear = (yearId) =>
   useQuery({
     queryKey: COURSE_KEYS.byYear(yearId),
     queryFn: () => coursesApi.getByYear(yearId).then((r) => r.data),
+    staleTime: 1000 * 60 * 10,
     enabled: !!yearId,
   });
 

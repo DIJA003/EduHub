@@ -21,14 +21,10 @@ if (!admin.apps.length) {
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
     }),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 
-const bucket = admin.storage().bucket();
-
 module.exports = {
   admin,
-  bucket,
   firebaseAdmin: admin,
 };

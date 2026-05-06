@@ -1,48 +1,25 @@
 import { usePendingMaterials } from "../../materials/hooks/useMaterials";
-import {
-  useApproveMaterial,
-  useRejectMaterial,
-} from "../../materials/hooks/useMaterials";
-import { useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { CardSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
-import Modal from "../../../components/ui/Modal";
 import { timeAgo } from "../../../lib/utils";
+import { useMaterialReview } from "../../../hooks/useMaterialReview";
+import ReviewModal from "../../../components/reviews/ReviewModal";
 
 export default function MentorHome() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] || "Mentor";
 
+  const review = useMaterialReview();
+
   const { data, isLoading } = usePendingMaterials({ limit: 10 });
   const pending = Array.isArray(data) ? data : data?.data || [];
 
-  const approveMutation = useApproveMaterial();
-  const rejectMutation = useRejectMaterial();
-
-  const [reviewTarget, setReviewTarget] = useState(null);
-  const [reviewAction, setReviewAction] = useState("");
-  const [feedback, setFeedback] = useState("");
-
-  const openReview = (m, action) => {
-    setReviewTarget(m);
-    setReviewAction(action);
-    setFeedback("");
-  };
-
-  const handleReview = () => {
-    const mutate =
-      reviewAction === "approve" ? approveMutation : rejectMutation;
-    mutate.mutate(
-      { id: reviewTarget._id, feedback },
-      { onSuccess: () => setReviewTarget(null) },
-    );
-  };
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-black text-slate-900">
           Welcome back, {firstName} 👋
@@ -52,7 +29,7 @@ export default function MentorHome() {
         </p>
       </div>
 
-      {/* Stats row */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
@@ -99,7 +76,7 @@ export default function MentorHome() {
         ))}
       </div>
 
-      {/* Pending reviews */}
+      {/* Pending Reviews Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900">
@@ -142,33 +119,39 @@ export default function MentorHome() {
                 ))}
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100">
               {pending.map((m) => (
                 <tr key={m._id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-5 py-3.5 text-sm font-medium text-slate-900">
                     {m.title}
                   </td>
+
                   <td className="px-5 py-3.5 text-sm text-slate-600">
                     {m.uploadedBy?.name || "—"}
                   </td>
+
                   <td className="px-5 py-3.5">
                     <Badge variant="blue">{m.courseRef?.title || "—"}</Badge>
                   </td>
+
                   <td className="px-5 py-3.5 text-xs text-slate-400">
                     {timeAgo(m.createdAt)}
                   </td>
+
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2 justify-end">
                       <Button
                         size="xs"
-                        onClick={() => openReview(m, "approve")}
+                        onClick={() => review.openReview(m, "approve")}
                       >
                         Approve
                       </Button>
+
                       <Button
                         size="xs"
                         variant="danger"
-                        onClick={() => openReview(m, "reject")}
+                        onClick={() => review.openReview(m, "reject")}
                       >
                         Reject
                       </Button>
@@ -182,54 +165,15 @@ export default function MentorHome() {
       </div>
 
       {/* Review Modal */}
-      <Modal
-        open={!!reviewTarget}
-        onClose={() => setReviewTarget(null)}
-        title={
-          reviewAction === "approve"
-            ? "✅ Approve Material"
-            : "❌ Reject Material"
-        }
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setReviewTarget(null)}>
-              Cancel
-            </Button>
-            {reviewAction === "approve" ? (
-              <Button
-                onClick={handleReview}
-                loading={approveMutation.isPending}
-              >
-                Confirm Approval
-              </Button>
-            ) : (
-              <Button
-                variant="danger"
-                onClick={handleReview}
-                loading={rejectMutation.isPending}
-              >
-                Confirm Rejection
-              </Button>
-            )}
-          </>
-        }
-      >
-        <p className="text-sm text-slate-600 mb-3">
-          Add feedback for the student{" "}
-          <span className="font-semibold">(optional)</span>:
-        </p>
-        <textarea
-          rows={4}
-          className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder={
-            reviewAction === "approve"
-              ? "Great work! Well explained…"
-              : "Please revise and re-upload…"
-          }
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-        />
-      </Modal>
+      <ReviewModal
+        open={!!review.reviewTarget}
+        action={review.reviewAction}
+        feedback={review.feedback}
+        onFeedbackChange={review.setFeedback}
+        onConfirm={review.submitReview}
+        onCancel={review.closeReview}
+        loading={review.isLoading}
+      />
     </div>
   );
 }
