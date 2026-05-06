@@ -43,10 +43,25 @@ router.post(
   },
 );
 
-router.get("/login", verifyToken, async (req, res) => {
+router.get("/login", verifyRegistration, async (req, res) => {
   try {
-    const user = await User.findOne({ firebaseUid: req.user.uid }).select("-__v");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const { uid, email } = req.user;
+
+    // Find existing user
+    let user = await User.findOne({ firebaseUid: uid }).select("-__v");
+
+    // If user logged in via Firebase but has no MongoDB record yet,
+    // auto-create them so they can access the app immediately
+    if (!user) {
+      user = await User.create({
+        firebaseUid: uid,
+        email:       email?.toLowerCase() || "",
+        name:        email?.split("@")[0] || "User",
+        role:        "student",
+        status:      "Active",
+      });
+    }
+
     res.status(200).json(user);
   } catch (error) {
     console.error("Login error:", error.message);

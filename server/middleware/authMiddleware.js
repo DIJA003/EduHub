@@ -19,13 +19,20 @@ exports.verifyToken = async (req, res, next) => {
   const token = authHeader.split("Bearer ")[1];
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    const dbUser = await User.findOne({ firebaseUid: decoded.uid }).select(
+
+    let dbUser = await User.findOne({ firebaseUid: decoded.uid }).select(
       "role status _id name email",
     );
 
+    // Auto-create user if they exist in Firebase but not in MongoDB.
+    // This handles seed users logging in from mobile and new registrations.
     if (!dbUser) {
-      return res.status(403).json({
-        message: "User not registered in system. Please complete registration.",
+      dbUser = await User.create({
+        firebaseUid: decoded.uid,
+        email:       decoded.email?.toLowerCase() || "",
+        name:        decoded.name || decoded.email?.split("@")[0] || "User",
+        role:        "student",
+        status:      "Active",
       });
     }
 
@@ -36,11 +43,11 @@ exports.verifyToken = async (req, res, next) => {
     }
 
     req.user = {
-      uid: decoded.uid,
+      uid:   decoded.uid,
       email: decoded.email,
-      role: dbUser.role,
-      id: dbUser._id.toString(),
-      name: dbUser.name,
+      role:  dbUser.role,
+      id:    dbUser._id.toString(),
+      name:  dbUser.name,
     };
     next();
   } catch (err) {
