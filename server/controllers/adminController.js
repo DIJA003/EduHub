@@ -1,17 +1,61 @@
-const User = require('../models/User');
+const User = require("../models/User");
+const { logAction } = require("../utils/Logger");
+
+exports.create = async (req, res) => {
+  try {
+    const { name, email, role, college, password } = req.body;
+    if (!name || !email || !password)
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
+
+    const admin = require("../config/firebase_admin");
+    let firebaseUser;
+    try {
+      firebaseUser = await admin.auth().createUser({
+        email: email.toLowerCase(),
+        password,
+        displayName: name,
+      });
+    } catch (firebaseErr) {
+      return res.status(400).json({ message: firebaseErr.message });
+    }
+    const User = require("../models/User");
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      role: role?.toLowerCase() || "student",
+      college,
+      firebaseUid: firebaseUser.uid,
+      status: "Active",
+    });
+
+    res.status(201).json({ success: true, data: user });
+  } catch (err) {
+    if (err.code === 11000)
+      return res.status(400).json({ message: "Email already exists" });
+    res.status(400).json({ message: err.message });
+  }
+};
 
 exports.getAll = async (req, res) => {
   try {
-    const users = await User.find().select('-__v').sort({ createdAt: -1 });
-    // Shape to match admin UI expectations
+    const showDeleted = req.query.showDeleted === "true";
+    const filter = showDeleted ? {} : { isDeleted: { $ne: true } };
+
+    const users = await User.find(filter)
+      .select("-__v")
+      .sort({ createdAt: -1 });
     const shaped = users.map((u) => ({
-      _id:     u._id,
-      name:    u.name,
-      email:   u.email,
-      role:    u.role.charAt(0).toUpperCase() + u.role.slice(1), // "student" → "Student"
-      college: u.college || '—',
-      joined:  u.createdAt.toISOString().split('T')[0],
-      status:  u.status || 'Active',
+      _id: u._id,
+      name: u.name,
+      email: u.email,
+      role: u.role.charAt(0).toUpperCase() + u.role.slice(1),
+      college: u.college || "—",
+      joined: u.createdAt.toISOString().split("T")[0],
+      status: u.status || "Active",
+      isDeleted: u.isDeleted || false,
+      deletedAt: u.deletedAt || null,
     }));
     res.json({ success: true, data: shaped });
   } catch (err) {
@@ -22,15 +66,54 @@ exports.getAll = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const { name, email, role, college, status } = req.body;
+
+    const existing = await User.findById(req.params.id);
+    if (!existing)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
     const updatePayload = {
-      ...(name    && { name }),
-      ...(email   && { email: email.toLowerCase() }),
-      ...(role    && { role: role.toLowerCase() }),
+      ...(name && { name }),
+      ...(email && { email: email.toLowerCase() }),
+      ...(role && { role: role.toLowerCase() }),
       ...(college && { college }),
-      ...(status  && { status }),
+      ...(status && { status }),
     };
-    const user = await User.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const user = await User.findByIdAndUpdate(req.params.id, updatePayload, {
+      new: true,
+    });
+
+    const newRole = role?.toLowerCase();
+    if (existing.role === "mentor" && newRole && newRole !== "mentor") {
+      const Course = require("../models/Course");
+      await Course.updateMany(
+        { instructorRef: user._id },
+        { $unset: { instructorRef: "" }, instructor: "Unassigned" },
+      );
+
+      await logAction({
+        action: "UPDATE",
+        entity: "Course",
+        entityId: user._id, // use userId as reference
+        entityName: `Courses unassigned from ${user.name}`,
+        performedBy: req.user,
+        details: { reason: `User role changed from mentor to ${newRole}` },
+      });
+    }
+
+    // If role changed TO mentor from something else — nothing to do automatically
+
+    await logAction({
+      action: "UPDATE",
+      entity: "User",
+      entityId: user._id,
+      entityName: user.name,
+      performedBy: req.user,
+      details: updatePayload,
+    });
+
     res.json({ success: true, data: user });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -39,9 +122,59 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, message: 'User removed successfully' });
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.user?.id || null,
+      },
+      { new: true },
+    );
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
+    await logAction({
+      action: "DELETE",
+      entity: "User",
+      entityId: user._id,
+      entityName: user.name,
+      performedBy: req.user,
+    });
+
+    res.json({ success: true, message: "User removed successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.restore = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false, deletedAt: null, deletedBy: null },
+      { new: true },
+    );
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
+    await logAction({
+      action: "RESTORE",
+      entity: "User",
+      entityId: user._id,
+      entityName: user.name,
+      performedBy: req.user,
+    });
+
+    res.json({
+      success: true,
+      message: "User restored successfully",
+      data: user,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   PageHeader,
   TableWrap,
@@ -26,7 +26,11 @@ export default function EnrollmentManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadAll = useCallback(async () => {
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const loadAll = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -43,60 +47,55 @@ export default function EnrollmentManagement() {
       );
       setEnrollments(eRes.data || []);
     } catch (err) {
-      setError(err.message || "Failed to load data");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  };
 
   const handleEnroll = async () => {
     if (!form.studentId || !form.courseId) return;
     setSaving(true);
-    setError(null);
     try {
       await enrollmentApi.enroll(form.studentId, form.courseId);
       setModal(false);
       setForm({ studentId: "", courseId: "" });
       await loadAll();
     } catch (err) {
-      setError(err.message || "Enrollment failed");
+      setError(err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleUnenroll = async (studentId, courseId) => {
-    setError(null);
     try {
       await enrollmentApi.unenroll(studentId, courseId);
-      // Reload to get accurate state — re-adding this student later will now work
-      await loadAll();
+      setEnrollments((prev) =>
+        prev.filter(
+          (e) => !(e.student?._id === studentId && e.course?._id === courseId),
+        ),
+      );
     } catch (err) {
-      setError(err.message || "Failed to remove enrollment");
+      setError(err.message);
     }
   };
 
   const filtered = enrollments.filter(
     (e) =>
       e.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      e.course?.title?.toLowerCase().includes(search.toLowerCase()) ||
-      e.student?.email?.toLowerCase().includes(search.toLowerCase()),
+      e.course?.title?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div>
       <PageHeader
         title="Enrollment Management"
-        subtitle="Enroll and manage students in courses. Removed students can be re-added at any time."
+        subtitle="Enroll and manage students in courses."
         actions={
           <BtnPrimary
             onClick={() => {
               setForm({ studentId: "", courseId: "" });
-              setError(null);
               setModal(true);
             }}
           >
@@ -132,7 +131,7 @@ export default function EnrollmentManagement() {
             <TableSearch
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email or course…"
+              placeholder="Search…"
             />
           </>
         }
@@ -276,41 +275,19 @@ export default function EnrollmentManagement() {
       {modal && (
         <Modal
           title="Enroll Student"
-          onClose={() => {
-            setModal(false);
-            setError(null);
-          }}
+          onClose={() => setModal(false)}
           footer={
             <>
-              <BtnSecondary
-                onClick={() => {
-                  setModal(false);
-                  setError(null);
-                }}
-              >
+              <BtnSecondary onClick={() => setModal(false)}>
                 Cancel
               </BtnSecondary>
-              <BtnPrimary
-                onClick={handleEnroll}
-                disabled={saving || !form.studentId || !form.courseId}
-              >
+              <BtnPrimary onClick={handleEnroll}>
                 {saving ? "Enrolling…" : "Enroll"}
               </BtnPrimary>
             </>
           }
         >
           <div className="flex flex-col gap-4">
-            {error && (
-              <div
-                className="rounded-lg px-3 py-2 text-sm"
-                style={{
-                  background: "var(--danger-bg)",
-                  color: "var(--danger)",
-                }}
-              >
-                {error}
-              </div>
-            )}
             <FormGroup label="Student">
               <FormSelect
                 value={form.studentId}
@@ -341,10 +318,6 @@ export default function EnrollmentManagement() {
                 ))}
               </FormSelect>
             </FormGroup>
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-              If a student was previously removed from this course, they will be
-              re-enrolled automatically.
-            </p>
           </div>
         </Modal>
       )}

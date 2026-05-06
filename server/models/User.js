@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema(
   {
+    bio: { type: String, trim: true, default: "" },
     name: {
       type: String,
       required: true,
@@ -41,12 +42,18 @@ const UserSchema = new mongoose.Schema(
         ref: "Course",
       },
     ],
+
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
-UserSchema.index({ firebaseUid: 1 });
 UserSchema.index({ role: 1, status: 1 });
-UserSchema.index({ email: 1 });
 
 module.exports = mongoose.model("User", UserSchema);

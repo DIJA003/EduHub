@@ -117,7 +117,6 @@ exports.deleteAll = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 exports.markRead = async (req, res) => {
   try {
     const n = await Notification.findOneAndUpdate(

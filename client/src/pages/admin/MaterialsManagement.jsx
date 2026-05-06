@@ -25,6 +25,7 @@ const EMPTY = {
   uploader: "",
   status: "Draft",
 };
+
 const TYPE_ICON = {
   PDF: "📄",
   Slides: "📊",
@@ -32,15 +33,24 @@ const TYPE_ICON = {
   Video: "🎬",
   Other: "📁",
 };
+
 const statusVariant = (s) =>
-  s === "Active" ? "success" : s === "Draft" ? "warning" : "default";
+  s === "Active"
+    ? "success"
+    : s === "Draft"
+      ? "warning"
+      : s === "Rejected"
+        ? "danger"
+        : "default";
 
 function MaterialsManagement() {
   const { confirmDialog, confirm } = useConfirm();
+
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
@@ -48,13 +58,13 @@ function MaterialsManagement() {
 
   useEffect(() => {
     loadMaterials();
-  }, []);
+  }, [showDeleted]);
 
   const loadMaterials = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await materialsApi.getAll();
+      const res = await materialsApi.getAll(showDeleted);
       setMaterials(res.data || []);
     } catch (err) {
       setError(err.message);
@@ -68,6 +78,7 @@ function MaterialsManagement() {
       m.title?.toLowerCase().includes(search.toLowerCase()) ||
       m.course?.toLowerCase().includes(search.toLowerCase()),
   );
+
   const openAdd = () => {
     setForm(EMPTY);
     setEditId(null);
@@ -105,13 +116,59 @@ function MaterialsManagement() {
 
   const handleDelete = async (id) => {
     const ok = await confirm(
-      "This action cannot be undone. Delete this material?",
+      "This will mark the material as deleted. You can restore it later.",
       "Delete Material",
     );
     if (!ok) return;
     try {
       await materialsApi.remove(id);
-      setMaterials((p) => p.filter((m) => m._id !== id));
+      setMaterials((p) =>
+        showDeleted
+          ? p.map((m) =>
+              m._id === id
+                ? { ...m, isDeleted: true, deletedAt: new Date() }
+                : m,
+            )
+          : p.filter((m) => m._id !== id),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  const handleApprove = async (id) => {
+    try {
+      await materialsApi.approve(id);
+      setMaterials((p) =>
+        p.map((m) => (m._id === id ? { ...m, status: "Active" } : m)),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await materialsApi.reject(id);
+      setMaterials((p) =>
+        p.map((m) => (m._id === id ? { ...m, status: "Rejected" } : m)),
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      const res = await materialsApi.restore(id);
+      if (showDeleted) {
+        setMaterials((p) =>
+          p.map((m) =>
+            m._id === id ? { ...m, isDeleted: false, deletedAt: null } : m,
+          ),
+        );
+      } else {
+        setMaterials((p) => [...p, res.data]);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -130,6 +187,7 @@ function MaterialsManagement() {
       {children}
     </th>
   );
+
   const TD = ({ children, style }) => (
     <td
       className={tw.td}
@@ -179,12 +237,44 @@ function MaterialsManagement() {
               style={{ color: "var(--text-primary)" }}
             >
               All Materials ({filtered.length})
+              {showDeleted && (
+                <span
+                  className="ml-2 text-[11px] font-normal"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  — including deleted
+                </span>
+              )}
             </span>
-            <TableSearch
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search materials..."
-            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDeleted((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3 py-[6px] rounded-sm text-[12.5px] font-semibold border transition-all duration-150 cursor-pointer"
+                style={
+                  showDeleted
+                    ? {
+                        background: "var(--danger-bg)",
+                        borderColor: "var(--danger)",
+                        color: "var(--danger)",
+                      }
+                    : {
+                        background: "var(--bg-card)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-secondary)",
+                      }
+                }
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {showDeleted ? "visibility_off" : "visibility"}
+                </span>
+                {showDeleted ? "Hide Deleted" : "Show Deleted"}
+              </button>
+              <TableSearch
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search materials..."
+              />
+            </div>
           </>
         }
       >
@@ -219,71 +309,157 @@ function MaterialsManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((m) => (
-                <tr
-                  key={m._id}
-                  className={tw.trHover}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "var(--bg-hover)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  <TD>
-                    <span className="font-medium">
-                      <span className="mr-2">{TYPE_ICON[m.type] || "📁"}</span>
-                      {m.title}
-                    </span>
-                  </TD>
-                  <TD>
-                    <Badge variant="blue" mono>
-                      {m.course}
-                    </Badge>
-                  </TD>
-                  <TD style={{ color: "var(--text-secondary)" }}>{m.type}</TD>
-                  <TD>
-                    <span
-                      className="font-mono text-[12px]"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      {m.size || "—"}
-                    </span>
-                  </TD>
-                  <TD
-                    style={{ color: "var(--text-secondary)", fontSize: "13px" }}
+              {filtered.map((m) => {
+                const deleted = m.isDeleted;
+                return (
+                  <tr
+                    key={m._id}
+                    className={tw.trHover}
+                    style={{
+                      opacity: deleted ? 0.6 : 1,
+                      background: deleted ? "var(--danger-bg)" : "transparent",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = deleted
+                        ? "var(--danger-bg)"
+                        : "transparent")
+                    }
                   >
-                    {m.uploader}
-                  </TD>
-                  <TD>
-                    <span
-                      className="font-mono text-[12px]"
-                      style={{ color: "var(--text-muted)" }}
+                    {/* Title */}
+                    <TD>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">
+                          <span className="mr-2">
+                            {TYPE_ICON[m.type] || "📁"}
+                          </span>
+                          {m.title}
+                        </span>
+                        {deleted && (
+                          <span
+                            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                            style={{
+                              background: "var(--danger-bg)",
+                              color: "var(--danger)",
+                              border: "1px solid var(--danger)",
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-[10px]">
+                              delete
+                            </span>
+                            Deleted
+                          </span>
+                        )}
+                      </div>
+                    </TD>
+
+                    {/* Course */}
+                    <TD>
+                      <Badge variant="blue" mono>
+                        {m.course}
+                      </Badge>
+                    </TD>
+
+                    {/* Type */}
+                    <TD style={{ color: "var(--text-secondary)" }}>{m.type}</TD>
+
+                    {/* Size */}
+                    <TD>
+                      <span
+                        className="font-mono text-[12px]"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        {m.size || "—"}
+                      </span>
+                    </TD>
+
+                    {/* Uploader */}
+                    <TD
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontSize: "13px",
+                      }}
                     >
-                      {formatDate(m)}
-                    </span>
-                  </TD>
-                  <TD>
-                    <Badge variant={statusVariant(m.status)}>{m.status}</Badge>
-                  </TD>
-                  <TD>
-                    <div className="flex items-center gap-2 justify-end">
-                      <BtnSecondary
-                        className={tw.btnSm}
-                        onClick={() => openEdit(m)}
+                      {m.uploader}
+                    </TD>
+
+                    {/* Date */}
+                    <TD>
+                      <span
+                        className="font-mono text-[12px]"
+                        style={{ color: "var(--text-muted)" }}
                       >
-                        Edit
-                      </BtnSecondary>
-                      <BtnDanger
-                        className={tw.btnSm}
-                        onClick={() => handleDelete(m._id)}
-                      >
-                        Delete
-                      </BtnDanger>
-                    </div>
-                  </TD>
-                </tr>
-              ))}
+                        {formatDate(m)}
+                      </span>
+                    </TD>
+
+                    {/* Status */}
+                    <TD>
+                      <Badge variant={statusVariant(m.status)}>
+                        {m.status}
+                      </Badge>
+                    </TD>
+
+                    {/* Actions */}
+                    <TD>
+                      <div className="flex items-center gap-2 justify-end flex-wrap">
+                        {deleted ? (
+                          <BtnSecondary
+                            className={tw.btnSm}
+                            onClick={() => handleRestore(m._id)}
+                          >
+                            <span className="material-symbols-outlined text-[13px]">
+                              restore
+                            </span>
+                            Restore
+                          </BtnSecondary>
+                        ) : (
+                          <>
+                            {m.status === "Draft" && (
+                              <>
+                                <BtnPrimary
+                                  className={tw.btnSm}
+                                  onClick={() => handleApprove(m._id)}
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    check_circle
+                                  </span>
+                                  Approve
+                                </BtnPrimary>
+                                <BtnDanger
+                                  className={tw.btnSm}
+                                  onClick={() => handleReject(m._id)}
+                                >
+                                  <span className="material-symbols-outlined text-[13px]">
+                                    cancel
+                                  </span>
+                                  Reject
+                                </BtnDanger>
+                              </>
+                            )}
+                            <BtnSecondary
+                              className={tw.btnSm}
+                              onClick={() => openEdit(m)}
+                            >
+                              Edit
+                            </BtnSecondary>
+                            <BtnDanger
+                              className={tw.btnSm}
+                              onClick={() => handleDelete(m._id)}
+                            >
+                              Delete
+                            </BtnDanger>
+                          </>
+                        )}
+                      </div>
+                    </TD>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

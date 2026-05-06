@@ -22,15 +22,10 @@ const enrollmentSchema = new mongoose.Schema(
       enum: ["active", "dropped", "completed"],
       default: "active",
     },
-    progress:          { type: Number, default: 0, min: 0, max: 100 },
-    sectionsCompleted: { type: Number, default: 0 },
-    nextItem:          { type: String, default: "Getting Started" },
+    enrolledAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 );
 
 enrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
-enrollmentSchema.index({ student: 1, status: 1 });
-enrollmentSchema.index({ course: 1, status: 1 });
-
 module.exports = mongoose.model("Enrollment", enrollmentSchema);

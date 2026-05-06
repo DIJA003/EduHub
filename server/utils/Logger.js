@@ -6,6 +6,7 @@ const logAction = async ({
   entityId,
   entityName,
   performedBy,
+<<<<<<< HEAD
   details = {},
   req = null,
   success = true,
@@ -39,6 +40,25 @@ const logAction = async ({
     });
   } catch (err) {
     console.error("[Logger] Failed to write log entry:", err.message);
+=======
+  details,
+}) => {
+  try {
+    await Log.create({
+      action,
+      entity,
+      entityId,
+      entityName: entityName || "",
+      performedBy: {
+        userId: performedBy?.id || null,
+        name: performedBy?.name || "System",
+        email: performedBy?.email || "",
+      },
+      details: details || {},
+    });
+  } catch (err) {
+    console.error("[Log] Failed to write log entry:", err.message);
+>>>>>>> MustafaBranchNo2
   }
 };
 

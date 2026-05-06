@@ -78,7 +78,7 @@ function AppRoutes() {
         <Route
           path="/academic-year/:yearId"
           element={
-            <ProtectedRoute requireVerified>
+            <ProtectedRoute requireVerified allowedRoles={["student"]}>
               <YearDetail />
             </ProtectedRoute>
           }
@@ -94,7 +94,7 @@ function AppRoutes() {
         <Route
           path="/data-science-courses"
           element={
-            <ProtectedRoute requireVerified>
+            <ProtectedRoute requireVerified allowedRoles={["student"]}>
               <DataScienceCourses />
             </ProtectedRoute>
           }

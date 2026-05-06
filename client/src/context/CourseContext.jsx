@@ -419,6 +419,9 @@ export function CourseProvider({ children }) {
     });
   }, []);
 
+  useEffect(() => {
+    //emptyyy
+  });
   const value = useMemo(
     () => ({
       years,

@@ -43,7 +43,7 @@ exports.courseRules = [
 exports.materialRules = [
   body("title").trim().notEmpty().withMessage("Title is required"),
   body("type").isIn(["PDF", "Slides", "Video", "ZIP", "Other"]),
-  body("status").optional().isIn(["Draft", "Active", "Archived"]),
+  body("status").optional().isIn(["Draft", "Active", "Archived", "Rejected"]),
 ];
 
 exports.registerRules = [

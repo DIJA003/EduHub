@@ -51,28 +51,22 @@ exports.getCourseDetails = async (req, res) => {
 
     const course = await Course.findById(req.params.courseId).populate(
       "instructorRef",
-      "name email"
+      "name email",
     );
 
     if (!course)
-      return res.status(404).json({
-        success: false,
-        message: "Course not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
 
     const materials = await Material.find({
-      courseRef: course._id,
+      courseRef: req.params.courseId,
       status: "Active",
-    }).sort({ createdAt: -1 });
+    })
+      .populate("uploadedByRef", "name role")
+      .sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      data: {
-        ...course.toObject(),
-        materials,
-        enrolledAt: enrollment.enrolledAt,
-      },
-    });
+    res.json({ success: true, data: { course, materials } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -80,12 +74,11 @@ exports.getCourseDetails = async (req, res) => {
 
 exports.uploadMaterial = async (req, res) => {
   try {
-    const { title, type, fileUrl, courseId, sectionId, sectionLabel } = req.body;
+    const { courseRef, title, type, size, fileUrl } = req.body;
 
-    // Verify student is enrolled in the course
     const enrollment = await Enrollment.findOne({
       student: req.user.id,
-      course: courseId,
+      course: courseRef,
       status: "active",
     });
 
@@ -95,35 +88,64 @@ exports.uploadMaterial = async (req, res) => {
         message: "You are not enrolled in this course",
       });
 
+    const course = await Course.findById(courseRef);
+    if (!course)
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found" });
+
     const material = await Material.create({
-      title,
-      type,
-      fileUrl,
-      courseRef: courseId,
-      sectionId,
-      sectionLabel,
+      title: title || "Untitled",
+      course: course.title,
+      type: type || "Other",
+      size: size || "",
+      uploader: req.user.name || req.user.email || "Student",
+      status: "Draft",
+      fileUrl: fileUrl || "",
+      courseRef: courseRef,
       uploadedByRef: req.user.id,
-      status: "Draft", // Student uploads need approval
       uploaded: new Date().toISOString().split("T")[0],
     });
+    const { logAction } = require("../utils/Logger");
+    await logAction({
+      action: "CREATE",
+      entity: "Material",
+      entityId: material._id,
+      entityName: material.title,
+      performedBy: req.user,
+      details: { course: course.title, type: material.type, status: "Draft" },
+    });
 
-    // Notify course instructor about pending material
-    const course = await Course.findById(courseId).populate("instructorRef");
-    if (course && course.instructorRef) {
-      await createNotification(course.instructorRef._id, {
-        title: "New Material Pending Approval",
-        message: `Student ${req.user.name} uploaded "${title}" for ${course.title}`,
-        type: "material_approval",
-        relatedId: material._id,
+    if (course.instructorRef) {
+      await createNotification({
+        recipient: course.instructorRef,
+        sender: req.user.id,
+        type: "material_submitted",
+        message: `${req.user.name || "A student"} submitted "${material.title}" for review in ${course.title}.`,
+        materialRef: material._id,
+        courseRef: course._id,
       });
     }
 
-    res.status(201).json({
-      success: true,
-      data: material,
-      message: "Material uploaded successfully and pending approval",
-    });
+    const admins = await User.find({
+      role: "admin",
+      isDeleted: { $ne: true },
+    }).select("_id");
+    for (const admin of admins) {
+      if (admin._id.toString() !== course.instructorRef?.toString()) {
+        await createNotification({
+          recipient: admin._id,
+          sender: req.user.id,
+          type: "material_submitted",
+          message: `${req.user.name || "A student"} submitted "${material.title}" pending review in ${course.title}.`,
+          materialRef: material._id,
+          courseRef: course._id,
+        });
+      }
+    }
+
+    res.status(201).json({ success: true, data: material });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };

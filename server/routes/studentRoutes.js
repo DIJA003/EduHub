@@ -9,4 +9,8 @@ router.get("/courses", studentController.getMyCourses);
 router.get("/courses/:courseId", studentController.getCourseDetails);
 router.post("/materials/upload", studentController.uploadMaterial);
 
+<<<<<<< HEAD
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> MustafaBranchNo2
