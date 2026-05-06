@@ -1,86 +1,52 @@
-const express = require("express");
-const router = express.Router();
+const express = require('express');
+const router  = express.Router();
+const multer = require('multer');
+const path = require('path');
 
-const { verifyToken, adminOnly } = require("../middleware/authMiddleware");
-const {
-  collegeRules,
-  courseRules,
-  materialRules,
-  handleValidation,
-} = require("../middleware/validate");
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
-const college = require("../controllers/CollegeController");
-const course = require("../controllers/CourseController");
-const material = require("../controllers/MaterialController");
-const adminUser = require("../controllers/adminController");
-const dashboard = require("../controllers/DashboardController");
+const upload = multer({ storage: storage });
 
-const authAdmin = [verifyToken, adminOnly];
+const { verifyToken } = require('../middleware/authMiddleware');
 
-// Dashboard
-router.get("/dashboard/stats", ...authAdmin, dashboard.getStats);
-router.get("/dashboard/activity", ...authAdmin, dashboard.getActivity);
+const college   = require('../controllers/CollegeController');
+const course    = require('../controllers/CourseController');
+const material  = require('../controllers/MaterialController.js');
+const adminUser = require('../controllers/adminController');
+const dashboard = require('../controllers/DashboardController');
 
-// Colleges
-router.get("/colleges", ...authAdmin, college.getAll);
-router.get("/colleges/:id", ...authAdmin, college.getById);
-router.post(
-  "/colleges",
-  ...authAdmin,
-  collegeRules,
-  handleValidation,
-  college.create,
-);
-router.put(
-  "/colleges/:id",
-  ...authAdmin,
-  collegeRules,
-  handleValidation,
-  college.update,
-);
-router.delete("/colleges/:id", ...authAdmin, college.remove);
+router.get('/dashboard/stats',    verifyToken, dashboard.getStats);
+router.get('/dashboard/activity', verifyToken, dashboard.getActivity);
 
-// Courses
-router.get("/courses", ...authAdmin, course.getAll);
-router.get("/courses/:id", ...authAdmin, course.getById);
-router.post(
-  "/courses",
-  ...authAdmin,
-  courseRules,
-  handleValidation,
-  course.create,
-);
-router.put(
-  "/courses/:id",
-  ...authAdmin,
-  courseRules,
-  handleValidation,
-  course.update,
-);
-router.delete("/courses/:id", ...authAdmin, course.remove);
+router.get   ('/colleges',     verifyToken, college.getAll);
+router.get   ('/colleges/:id', verifyToken, college.getById);
+router.post  ('/colleges',     verifyToken, college.create);
+router.put   ('/colleges/:id', verifyToken, college.update);
+router.delete('/colleges/:id', verifyToken, college.remove);
 
-// Materials
-router.get("/materials", ...authAdmin, material.getAll);
-router.get("/materials/:id", ...authAdmin, material.getById);
-router.post(
-  "/materials",
-  ...authAdmin,
-  materialRules,
-  handleValidation,
-  material.create,
-);
-router.put(
-  "/materials/:id",
-  ...authAdmin,
-  materialRules,
-  handleValidation,
-  material.update,
-);
-router.delete("/materials/:id", ...authAdmin, material.remove);
+router.get   ('/courses',     verifyToken, course.getAll);
+router.get   ('/courses/:id', verifyToken, course.getById);
+router.post  ('/courses',     verifyToken, course.create);
+router.put   ('/courses/:id', verifyToken, course.update);
+router.delete('/courses/:id', verifyToken, course.remove);
 
-// Users
-router.get("/users", ...authAdmin, adminUser.getAll);
-router.put("/users/:id", ...authAdmin, adminUser.update);
-router.delete("/users/:id", ...authAdmin, adminUser.remove);
+router.get   ('/materials',     verifyToken, material.getAll);
+router.get   ('/materials/:id', verifyToken, material.getById);
+router.post  ('/materials',     verifyToken, upload.single('file'), material.create);
+router.put   ('/materials/:id', verifyToken, material.update);
+router.delete('/materials/:id', verifyToken, material.remove);
+router.put   ('/materials/:id/approve', verifyToken, material.approveMaterial);
+
+router.get   ('/users',     verifyToken, adminUser.getAll);
+router.put   ('/users/:id', verifyToken, adminUser.update);
+router.delete('/users/:id', verifyToken, adminUser.remove);
 
 module.exports = router;

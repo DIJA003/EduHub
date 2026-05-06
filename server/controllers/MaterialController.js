@@ -28,12 +28,24 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    // For mentor uploads -> auto-approval
+    let fileUrl = "";
+    let fileSize = "";
+    let fileType = req.body.type || "File";
+
+    if (req.file) {
+      fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      fileSize = `${(req.file.size / (1024 * 1024)).toFixed(2)} MB`;
+      fileType = req.file.mimetype;
+    }
+
+    const isAdminRoute = req.baseUrl.includes("admin");
+
     const materialData = {
       ...req.body,
-      uploaded: new Date().toISOString().split("T")[0],
-      status: "Active", // Auto-approve for mentors
-      uploadedByRef: req.user.id, // Track who uploaded
+      fileUrl: fileUrl || req.body.fileUrl,
+      size: fileSize,
+      type: fileType,
+      status: isAdminRoute ? "Active" : "Pending",
     };
 
     const material = await Material.create(materialData);
@@ -380,3 +392,14 @@ exports.getMyCourseMaterials = async (req, res) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
+//     const material = await Material.findByIdAndUpdate(
+//       req.params.id,
+//       { status: 'Active' },
+//       { new: true }
+//     );
+//     if (!material) return res.status(404).json({ success: false, message: 'Material not found' });
+//     res.json({ success: true, message: 'Material approved successfully', data: material });
+//   } catch (err) {
+//     res.status(400).json({ success: false, message: err.message });
+//   }
+// };

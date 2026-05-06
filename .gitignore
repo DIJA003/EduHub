@@ -30,3 +30,5 @@ server/config/serviceAccountKey.json
 
 
 
+server/uploads/*
+!server/uploads/.gitkeep

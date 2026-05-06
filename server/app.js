@@ -1,7 +1,6 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const helmet = require("helmet");
+const path = require("path");
 
 const { authLimiter, apiLimiter } = require("./middleware/rateLimiter");
 
@@ -65,6 +64,11 @@ app.use("/api/upload", uploadRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({ message: "EduHub API is running" });
 });
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "EduHub API is running successfully!" });
+});
 
 // Academic year routes (public course catalog per year)
 app.get(
@@ -74,10 +78,13 @@ app.get(
     try {
       const Course = require("./models/Course");
       const courses = await Course.find({
-        yearId:    req.params.yearId,
-        status:    "Published",
+        yearId: req.params.yearId,
+        status: "Published",
         isDeleted: { $ne: true },
-      }).select("title code creditHours yearId instructor college status students")
+      })
+        .select(
+          "title code creditHours yearId instructor college status students",
+        )
         .sort({ createdAt: -1 });
       res.json({ success: true, data: courses });
     } catch (err) {
