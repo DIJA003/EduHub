@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../../../lib/firebase";
 import DashboardShell from "../../../components/layout/DashboardShell";
-import LoadingSkeleton from "../../../components/common/LoadingSkeleton";
+import { Skeleton } from "../../../components/common/LoadingSkeleton";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
 import { useUpdateProgress } from "../hooks/useEnrollments";
@@ -198,7 +198,7 @@ export default function CoursePlayer() {
   if (isLoading) {
     return (
       <DashboardShell title="Loading…" user={dbUser}>
-        <LoadingSkeleton rows={5} />
+        <Skeleton rows={5} />
       </DashboardShell>
     );
   }

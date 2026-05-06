@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DashboardShell from "../../../components/layout/DashboardShell";
-import StudentStats from "../components/StudentStats";
+import StudentStats from "../components/StudentsStats";
 import EnrolledCourses from "../components/EnrolledCourses";
 import UploadMaterial from "../components/UploadMaterial";
 import MyMaterials from "../components/MyMaterials";

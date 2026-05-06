@@ -6,7 +6,7 @@ import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
 import { timeAgo } from "../../../lib/utils";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
-import ReviewModal from "../../../components/reviews/ReviewModal";
+import ReviewModal from "../../../components/common/ReviewModel";
 
 export default function MentorHome() {
   const { user } = useAuth();
