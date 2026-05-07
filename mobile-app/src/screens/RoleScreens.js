@@ -1,324 +1,332 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Text, View, Image } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button,
-  Card,
-  ConfirmModal,
-  DataTable,
-  Field,
-  FormModal,
-  GhostButton,
-  Row,
-  Screen,
-  Subtitle,
-  Title,
-} from "../components/ui";
+  Alert,
+  Animated,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { api, endpoints } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Design tokens — mirrors web Tailwind palette
+// ─────────────────────────────────────────────────────────────────────────────
+const C = {
+  bg:          "#F8FAFC",
+  white:       "#FFFFFF",
+  border:      "#E2E8F0",
+  borderLight: "#F1F5F9",
+  blue:        "#2563EB",
+  blueMid:     "#3B82F6",
+  blueBg:      "#EFF6FF",
+  emerald:     "#059669",
+  emeraldBg:   "#ECFDF5",
+  emeraldBorder:"#A7F3D0",
+  amber:       "#D97706",
+  amberBg:     "#FFFBEB",
+  rose:        "#DC2626",
+  slate900:    "#0F172A",
+  slate700:    "#334155",
+  slate600:    "#475569",
+  slate500:    "#64748B",
+  slate400:    "#94A3B8",
+  slate200:    "#E2E8F0",
+  slate100:    "#F1F5F9",
+  slate50:     "#F8FAFC",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Base primitives
+// ─────────────────────────────────────────────────────────────────────────────
+function Screen({ children, noPad }) {
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: C.bg }}
+      contentContainerStyle={{ padding: noPad ? 0 : 16, paddingBottom: 40, gap: 12 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
+function Card({ children, style, color }) {
+  return (
+    <View style={[s.card, color ? { backgroundColor: color } : {}, style]}>
+      {children}
+    </View>
+  );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <Text style={{ fontSize: 11, fontWeight: "700", color: C.slate500, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>
+      {children}
+    </Text>
+  );
+}
+
+function Tag({ label, color = C.blue, bg = C.blueBg }) {
+  return (
+    <View style={{ alignSelf: "flex-start", backgroundColor: bg, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+      <Text style={{ fontSize: 10, fontWeight: "700", color }}>{label}</Text>
+    </View>
+  );
+}
+
+function Pill({ label, value, color = C.blue }) {
+  return (
+    <View style={{ alignItems: "center", flex: 1 }}>
+      <Text style={{ fontSize: 20, fontWeight: "800", color }}>{value}</Text>
+      <Text style={{ fontSize: 10, color: C.slate500, marginTop: 2, textAlign: "center" }}>{label}</Text>
+    </View>
+  );
+}
+
+function ProgressBar({ value, color = C.blue, height = 6 }) {
+  const pct = Math.min(100, Math.max(0, value || 0));
+  return (
+    <View style={{ height, backgroundColor: C.slate200, borderRadius: 99, overflow: "hidden" }}>
+      <View style={{ height, width: `${pct}%`, backgroundColor: pct >= 100 ? C.emerald : color, borderRadius: 99 }} />
+    </View>
+  );
+}
+
+function Avatar({ name, size = 44, bg = C.blue }) {
+  const letter = (name || "?")[0].toUpperCase();
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ color: "#fff", fontWeight: "800", fontSize: size * 0.38 }}>{letter}</Text>
+    </View>
+  );
+}
+
+function Btn({ label, onPress, variant = "primary", small, disabled }) {
+  const bg = variant === "primary" ? C.blue : variant === "danger" ? C.rose : variant === "ghost" ? "transparent" : C.white;
+  const tc = variant === "ghost" ? C.blue : variant === "outline" ? C.slate700 : "#fff";
+  const border = variant === "outline" ? { borderWidth: 1, borderColor: C.slate200 } : {};
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[{ backgroundColor: bg, borderRadius: 99, paddingHorizontal: small ? 12 : 16, paddingVertical: small ? 7 : 10, alignItems: "center" }, border, disabled && { opacity: 0.5 }]}
+    >
+      <Text style={{ color: tc, fontWeight: "700", fontSize: small ? 12 : 13 }}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function Field({ label, value, onChangeText, placeholder, secure, multiline, editable = true }) {
+  return (
+    <View style={{ gap: 4 }}>
+      {label ? <Text style={{ fontSize: 12, fontWeight: "600", color: C.slate600 }}>{label}</Text> : null}
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={C.slate400}
+        secureTextEntry={secure}
+        multiline={multiline}
+        editable={editable}
+        autoCapitalize="none"
+        style={[s.input, multiline && { height: 80, textAlignVertical: "top" }, !editable && { backgroundColor: C.slate50, color: C.slate500 }]}
+      />
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={{ height: 1, backgroundColor: C.borderLight, marginVertical: 4 }} />;
+}
+
+function ErrorBox({ message }) {
+  if (!message) return null;
+  return (
+    <Card color="#FEF2F2" style={{ borderColor: "#FECACA" }}>
+      <Text style={{ color: C.rose, fontWeight: "600", fontSize: 13 }}>⚠️ {message}</Text>
+    </Card>
+  );
+}
+
+function EmptyState({ icon = "📭", title, subtitle }) {
+  return (
+    <Card>
+      <View style={{ alignItems: "center", paddingVertical: 20 }}>
+        <Text style={{ fontSize: 36, marginBottom: 8 }}>{icon}</Text>
+        <Text style={{ fontWeight: "700", color: C.slate700, fontSize: 15, textAlign: "center" }}>{title}</Text>
+        {subtitle ? <Text style={{ color: C.slate500, fontSize: 13, marginTop: 4, textAlign: "center" }}>{subtitle}</Text> : null}
+      </View>
+    </Card>
+  );
+}
+
+// Generic CRUD screen (admin panels)
+function CrudScreen({ title, load, columns }) {
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState("");
+  const fields = columns.filter((c) => !["id", "_id", "createdAt", "updatedAt"].includes(c));
+
+  useEffect(() => {
+    load.getAll().then((d) => setRows(safeArray(d))).catch((e) => setError(e.message));
+  }, []);
+
+  return (
+    <Screen>
+      <Text style={s.pageTitle}>{title}</Text>
+      <ErrorBox message={error} />
+      {rows.length === 0 ? (
+        <EmptyState icon="📋" title="No records yet" />
+      ) : (
+        rows.slice(0, 30).map((row, i) => (
+          <Card key={row._id || i}>
+            {fields.slice(0, 4).map((f) => (
+              <View key={f} style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 2 }}>
+                <Text style={{ fontSize: 11, color: C.slate500, fontWeight: "600", textTransform: "uppercase" }}>{f}</Text>
+                <Text style={{ fontSize: 12, color: C.slate700, fontWeight: "500", flexShrink: 1, textAlign: "right", maxWidth: "60%" }}>
+                  {String(row[f] ?? "—")}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        ))
+      )}
+    </Screen>
+  );
+}
+
 function safeArray(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.data)) return data.data;
   return [];
 }
 
-function ErrorBox({ message }) {
-  if (!message) return null;
-  return (
-    <Card>
-      <Text style={{ color: "#dc2626", fontWeight: "600" }}>⚠️ {message}</Text>
-    </Card>
-  );
-}
-
-function EmptyBox({ message }) {
-  return (
-    <Card>
-      <Text style={{ color: "#64748b" }}>{message}</Text>
-    </Card>
-  );
-}
-
-// ── Generic CRUD screen (admin panels) ───────────────────────────────────────
-function CrudScreen({ title, load, columns, makePayload }) {
-  const [rows, setRows] = useState([]);
-  const [modal, setModal] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [form, setForm] = useState({});
-  const [error, setError] = useState("");
-
-  const fields = useMemo(
-    () =>
-      columns.filter(
-        (c) => !["id", "_id", "createdAt", "updatedAt"].includes(c),
-      ),
-    [columns],
-  );
-
-  const fetchRows = async () => {
-    try {
-      const data = await load.getAll();
-      setRows(safeArray(data));
-      setError("");
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchRows();
-  }, []);
-
-  return (
-    <Screen>
-      <Row>
-        <Title>{title}</Title>
-        <Button
-          label="Add New"
-          onPress={() => {
-            setEditing(null);
-            setForm({});
-            setModal(true);
-          }}
-        />
-      </Row>
-      <ErrorBox message={error} />
-      <DataTable
-        columns={columns}
-        rows={rows}
-        actions={(row) => (
-          <Row>
-            <GhostButton
-              label="Edit"
-              onPress={() => {
-                setEditing(row);
-                setForm(row);
-                setModal(true);
-              }}
-            />
-            <GhostButton
-              label="Delete"
-              onPress={() => {
-                setDeleting(row);
-                setConfirmOpen(true);
-              }}
-            />
-          </Row>
-        )}
-      />
-      <FormModal
-        visible={modal}
-        title={editing ? "Edit Record" : "Create Record"}
-        onCancel={() => setModal(false)}
-        onSave={async () => {
-          try {
-            const payload = makePayload ? makePayload(form) : form;
-            if (editing?._id) await load.update(editing._id, payload);
-            else await load.create(payload);
-            setModal(false);
-            fetchRows();
-          } catch (e) {
-            Alert.alert("Save failed", e.message);
-          }
-        }}
-      >
-        {fields.map((f) => (
-          <View key={f} style={{ marginBottom: 10 }}>
-            <Field
-              label={f}
-              value={form[f] === undefined ? "" : String(form[f])}
-              onChangeText={(value) => setForm((p) => ({ ...p, [f]: value }))}
-              placeholder={`Enter ${f}`}
-            />
-          </View>
-        ))}
-      </FormModal>
-      <ConfirmModal
-        visible={confirmOpen}
-        title="Delete record?"
-        description="This action cannot be undone."
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={async () => {
-          try {
-            await load.remove(deleting._id);
-            setConfirmOpen(false);
-            fetchRows();
-          } catch (e) {
-            Alert.alert("Delete failed", e.message);
-          }
-        }}
-      />
-    </Screen>
-  );
-}
-
-// ── Public Home ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC HOME
+// ─────────────────────────────────────────────────────────────────────────────
 export function PublicHomeScreen({ navigation }) {
   return (
     <Screen>
       <Card>
         <Image
-          source={{
-            uri: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800",
-          }}
-          style={{
-            width: "100%",
-            height: 200,
-            borderRadius: 14,
-            marginBottom: 12,
-          }}
+          source={{ uri: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800" }}
+          style={{ width: "100%", height: 180, borderRadius: 12, marginBottom: 14 }}
           resizeMode="cover"
         />
-        <Text style={{ color: "#2563EB", fontWeight: "700", fontSize: 12 }}>
-          CONNECTING MINDS
-        </Text>
-        <Title>Empowering Students & Mentors</Title>
-        <Subtitle>
+        <Tag label="CONNECTING MINDS" />
+        <Text style={[s.pageTitle, { marginTop: 8 }]}>Empowering Students{"\n"}& Mentors</Text>
+        <Text style={{ color: C.slate600, fontSize: 14, lineHeight: 20, marginTop: 4 }}>
           A unified platform for collaboration and academic growth.
-        </Subtitle>
-        <Row>
-          <Button label="Login" onPress={() => navigation.navigate("Login")} />
-          <GhostButton
-            label="Register"
-            onPress={() => navigation.navigate("Register")}
-          />
-        </Row>
+        </Text>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Btn label="Login" onPress={() => navigation.navigate("Login")} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Btn label="Register" variant="outline" onPress={() => navigation.navigate("Register")} />
+          </View>
+        </View>
       </Card>
     </Screen>
   );
 }
 
-// ── Student Home ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDENT HOME — mirrors web Home.jsx
+// ─────────────────────────────────────────────────────────────────────────────
 export function StudentHomeScreen() {
   const { dbUser } = useAuth();
   const [enrollments, setEnrollments] = useState([]);
-  const [years, setYears] = useState([]);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([api.get("/users/enrollments"), api.get("/academic-years")])
-      .then(([enrRes, yrRes]) => {
-        setEnrollments(safeArray(enrRes));
-        setYears(safeArray(yrRes));
-        setError("");
-      })
+    api.get("/users/enrollments")
+      .then((r) => { setEnrollments(safeArray(r)); setError(""); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const inProgress = enrollments.filter(
-    (e) => e.progress > 0 && e.progress < 100,
-  );
-  const completed = enrollments.filter((e) => e.progress >= 100);
-  const firstName = dbUser?.name?.split(" ")[0] || "Student";
+  const firstName  = dbUser?.name?.split(" ")[0] || "Student";
+  const inProgress = enrollments.filter((e) => e.progress > 0 && e.progress < 100);
+  const completed  = enrollments.filter((e) => e.progress >= 100);
+  const totalCredits = completed.reduce((s, c) => s + (c.credits || 0), 0);
 
   return (
     <Screen>
-      <Title>Welcome back, {firstName}! 👋</Title>
+      {/* Hero banner */}
+      <Card color={C.blueBg} style={{ borderColor: "#BFDBFE" }}>
+        <Tag label="WELCOME BACK" />
+        <Text style={[s.pageTitle, { marginTop: 6, color: C.slate900 }]}>
+          Hello, {firstName}! 👋
+        </Text>
+        <Text style={{ color: C.slate600, fontSize: 13, marginTop: 4 }}>
+          {dbUser?.college && dbUser.college !== "—" ? dbUser.college + " • " : ""}
+          <Text style={{ fontWeight: "700", color: C.blue, textTransform: "capitalize" }}>{dbUser?.role || "Student"}</Text>
+        </Text>
+        <Divider />
+        {/* Quick stat pills */}
+        <View style={{ flexDirection: "row", marginTop: 4 }}>
+          <Pill label="Enrolled"    value={enrollments.length} color={C.blue} />
+          <Pill label="In Progress" value={inProgress.length}  color={C.amber} />
+          <Pill label="Completed"   value={completed.length}   color={C.emerald} />
+          <Pill label="Credits"     value={totalCredits}       color={C.blue} />
+        </View>
+      </Card>
+
       <ErrorBox message={error} />
+
       {loading ? (
-        <Card>
-          <Text>Loading your data…</Text>
-        </Card>
+        <Card><Text style={{ color: C.slate500, textAlign: "center" }}>Loading your data…</Text></Card>
       ) : (
         <>
-          {/* Academic Path Overview */}
-          <Card>
-            <Text style={{ fontWeight: "800", fontSize: 16, marginBottom: 12 }}>
-              Your Academic Path
-            </Text>
-            <Text style={{ color: "#475569", marginBottom: 8 }}>
-              Track your progress through academic years
-            </Text>
-            <Text style={{ fontSize: 14, marginBottom: 4 }}>
-              Years Available: {years.length} | Total Credits:{" "}
-              {completed.reduce((sum, c) => sum + (c.credits || 0), 0)}
-            </Text>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card>
-            <Text style={{ fontWeight: "800", fontSize: 16 }}>Quick Stats</Text>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginTop: 8,
-              }}
-            >
-              <View>
-                <Text style={{ color: "#059669", fontWeight: "700" }}>
-                  {enrollments.length}
-                </Text>
-                <Text style={{ fontSize: 12, color: "#475569" }}>Enrolled</Text>
-              </View>
-              <View>
-                <Text style={{ color: "#059669", fontWeight: "700" }}>
-                  {inProgress.length}
-                </Text>
-                <Text style={{ fontSize: 12, color: "#475569" }}>
-                  In Progress
-                </Text>
-              </View>
-              <View>
-                <Text style={{ color: "#059669", fontWeight: "700" }}>
-                  {completed.length}
-                </Text>
-                <Text style={{ fontSize: 12, color: "#475569" }}>
-                  Completed
-                </Text>
-              </View>
-            </View>
-          </Card>
-
-          {/* Continue Learning */}
+          {/* Continue learning */}
           {inProgress.length > 0 && (
             <Card>
-              <Text style={{ fontWeight: "800", fontSize: 16 }}>
-                Continue Learning
-              </Text>
-              <Text style={{ color: "#475569", marginBottom: 8 }}>
-                Pick up where you left off
-              </Text>
+              <SectionLabel>Continue Learning</SectionLabel>
               {inProgress.slice(0, 3).map((course, i) => (
-                <View key={course.courseId || i} style={{ marginTop: 10 }}>
-                  <Text style={{ fontWeight: "600" }}>{course.name}</Text>
-                  <Text style={{ color: "#64748b", fontSize: 12 }}>
-                    {course.code} · Year {course.yearId}
-                  </Text>
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: "#e2e8f0",
-                      borderRadius: 3,
-                      marginTop: 4,
-                    }}
-                  >
-                    <View
-                      style={{
-                        height: 6,
-                        backgroundColor: "#2563EB",
-                        borderRadius: 3,
-                        width: `${course.progress || 0}%`,
-                      }}
-                    />
+                <View key={course.courseId || i} style={{ marginTop: i > 0 ? 12 : 4 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 4 }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }} numberOfLines={1}>{course.name}</Text>
+                      <Text style={{ fontSize: 11, color: C.slate500, marginTop: 1 }}>{course.code} · Year {course.yearId}</Text>
+                    </View>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: C.blue }}>{course.progress}%</Text>
                   </View>
-                  <Text
-                    style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
-                  >
-                    {course.progress}% · Next: {course.nextItem}
-                  </Text>
+                  <ProgressBar value={course.progress} />
+                  <Text style={{ fontSize: 11, color: C.slate500, marginTop: 3 }}>Next: {course.nextItem}</Text>
                 </View>
               ))}
             </Card>
           )}
 
+          {/* Completed courses */}
+          {completed.length > 0 && (
+            <Card>
+              <SectionLabel>Completed Courses</SectionLabel>
+              {completed.slice(0, 4).map((course, i) => (
+                <View key={course.courseId || i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: i > 0 ? 8 : 4 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "600", color: C.slate900, fontSize: 13 }} numberOfLines={1}>{course.name}</Text>
+                    <Text style={{ fontSize: 11, color: C.slate500 }}>{course.code} · {course.credits || 0} credits</Text>
+                  </View>
+                  <Tag label="✓ Done" color={C.emerald} bg={C.emeraldBg} />
+                </View>
+              ))}
+              {completed.length > 4 && (
+                <Text style={{ fontSize: 12, color: C.slate400, marginTop: 8 }}>+{completed.length - 4} more completed</Text>
+              )}
+            </Card>
+          )}
+
           {enrollments.length === 0 && (
-            <EmptyBox message="No courses enrolled yet. Go to Courses tab to enroll." />
+            <EmptyState icon="📚" title="No courses yet" subtitle="Go to the Academic Years tab to enroll in courses." />
           )}
         </>
       )}
@@ -326,38 +334,38 @@ export function StudentHomeScreen() {
   );
 }
 
-// ── Academic Years ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ACADEMIC YEARS — mirrors web AcademicYear + YearDetail
+// ─────────────────────────────────────────────────────────────────────────────
+const YEAR_META = {
+  1: { title: "Year One — Foundations",             desc: "Foundational concepts: computing, mathematics, and logic."            },
+  2: { title: "Year Two — Core Specializations",    desc: "Core engineering principles and advanced programming foundations."    },
+  3: { title: "Year Three — Advanced Applications", desc: "Advanced applications: software engineering, cloud, and AI."          },
+  4: { title: "Year Four — Research & Thesis",      desc: "Capstone, research, and industry placement."                          },
+};
+
 export function AcademicYearsScreen() {
-  const [years, setYears] = useState([]);
+  const [years,       setYears]       = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
-  const [yearCourses, setYearCourses] = useState([]);
-  const [loadingYears, setLoadingYears] = useState(true);
+  const [yearCourses,  setYearCourses]  = useState([]);
+  const [loadingInit,  setLoadingInit]  = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([api.get("/academic-years"), api.get("/users/enrollments")])
       .then(([yrRes, enrRes]) => {
-        setYears(safeArray(yrRes));
+        setYears(safeArray(yrRes).sort((a, b) => a.year - b.year));
         setEnrollments(safeArray(enrRes));
-        setError("");
       })
       .catch((e) => setError(e.message))
-      .finally(() => setLoadingYears(false));
+      .finally(() => setLoadingInit(false));
   }, []);
 
-  // Calculate total earned credits across all years
-  const totalEarnedCredits = enrollments.reduce((total, e) => {
-    return total + (e.progress >= 100 ? e.credits || 0 : 0);
-  }, 0);
+  const enrolledIds = useMemo(() => new Set(enrollments.map((e) => String(e.courseId))), [enrollments]);
 
-  const creditRequirements = {
-    1: 0,
-    2: 39,
-    3: 78,
-    4: 117,
-  };
+  const totalEarned = enrollments.reduce((s, e) => s + (e.progress >= 100 ? e.credits || 0 : 0), 0);
 
   const selectYear = async (y) => {
     setSelectedYear(y);
@@ -367,208 +375,210 @@ export function AcademicYearsScreen() {
       const r = await api.get(`/courses/year/${y.year}`);
       setYearCourses(safeArray(r));
     } catch (e) {
-      Alert.alert("Error loading courses", e.message);
+      Alert.alert("Error", e.message);
     } finally {
       setLoadingCourses(false);
     }
   };
 
-  const enrolledIds = new Set(enrollments.map((e) => String(e.courseId)));
-
   const handleEnroll = async (course) => {
     try {
       await api.post(`/users/enrollments/${course._id}`);
-      setEnrollments((prev) => [
-        ...prev,
-        {
-          courseId: String(course._id),
-          name: course.title,
-          code: course.code,
-          yearId: String(course.yearId),
-          progress: 0,
-          nextItem: "Getting Started",
-        },
-      ]);
+      setEnrollments((prev) => [...prev, {
+        courseId: String(course._id),
+        name: course.title, code: course.code,
+        yearId: String(course.yearId), credits: course.creditHours || 3,
+        progress: 0, nextItem: "Getting Started",
+      }]);
       Alert.alert("Enrolled!", `You joined ${course.title}`);
     } catch (e) {
       Alert.alert("Enroll failed", e.message);
     }
   };
 
-  return (
-    <Screen>
-      <Title>Academic Years</Title>
-      <Subtitle>Track your progress through academic years</Subtitle>
-      <ErrorBox message={error} />
+  if (selectedYear) {
+    const yid = String(selectedYear.year);
+    const meta = YEAR_META[selectedYear.year] || {};
+    const yearEnrollments = enrollments.filter((e) => String(e.yearId) === yid);
+    const yearCompleted   = yearEnrollments.filter((e) => e.progress >= 100);
+    const yearEarned      = yearCompleted.reduce((s, e) => s + (e.credits || 0), 0);
+    const allDone = yearEnrollments.length > 0 && yearEnrollments.every((e) => e.progress >= 100);
 
-      {loadingYears ? (
+    return (
+      <Screen>
+        {/* Back */}
+        <TouchableOpacity onPress={() => { setSelectedYear(null); setYearCourses([]); }} style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+          <Text style={{ fontSize: 13, color: C.blue, fontWeight: "600" }}>← Back to Years</Text>
+        </TouchableOpacity>
+
+        {/* Year header */}
         <Card>
-          <Text>Loading years…</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <SectionLabel>Year {selectedYear.year}</SectionLabel>
+              <Text style={s.pageTitle}>{meta.title || selectedYear.name}</Text>
+              <Text style={{ fontSize: 13, color: C.slate600, marginTop: 4, lineHeight: 18 }}>{meta.desc}</Text>
+            </View>
+            <Tag
+              label={allDone ? "Completed" : yearEnrollments.length > 0 ? "In Progress" : "Available"}
+              color={allDone ? C.emerald : yearEnrollments.length > 0 ? C.amber : C.blue}
+              bg={allDone ? C.emeraldBg : yearEnrollments.length > 0 ? C.amberBg : C.blueBg}
+            />
+          </View>
+          <Divider />
+          <Text style={{ fontSize: 13, color: C.slate500 }}>
+            Credits earned: <Text style={{ fontWeight: "700", color: C.slate900 }}>{yearEarned}</Text>
+          </Text>
         </Card>
-      ) : years.length === 0 ? (
-        <EmptyBox message="No academic years found. Run: seed script on the server." />
-      ) : (
-        <>
-          {/* Credits Overview */}
-          <Card>
-            <Text style={{ fontWeight: "800", fontSize: 16, marginBottom: 12 }}>
-              Credits Overview
-            </Text>
-            <Text style={{ color: "#475569", marginBottom: 8 }}>
-              Total Earned: {totalEarnedCredits} credits
-            </Text>
-            <Text style={{ fontSize: 14, marginBottom: 4 }}>
-              Years unlock as you earn credits
+
+        {/* Year completed banner */}
+        {allDone && (
+          <Card color={C.emeraldBg} style={{ borderColor: C.emeraldBorder }}>
+            <Text style={{ fontSize: 22, marginBottom: 6 }}>🎉</Text>
+            <Text style={{ fontWeight: "800", color: "#065F46", fontSize: 15 }}>Year {selectedYear.year} Complete!</Text>
+            <Text style={{ color: "#047857", fontSize: 13, marginTop: 4 }}>
+              You earned {yearEarned} credits. You can revisit any course below to review materials.
             </Text>
           </Card>
+        )}
 
-          {/* Year Cards */}
-          {years
-            .sort((a, b) => a.year - b.year)
-            .map((y) => {
-              const yearEnrollments = enrollments.filter(
-                (e) => String(e.yearId) === String(y.year),
-              );
-              const completedCourses = yearEnrollments.filter(
-                (e) => e.progress >= 100,
-              );
-              const isUnlocked =
-                totalEarnedCredits >= (creditRequirements[y.year] || 0);
-              const status =
-                completedCourses.length > 0
-                  ? "Completed"
-                  : yearEnrollments.length > 0
-                    ? "In Progress"
-                    : isUnlocked
-                      ? "Available"
-                      : "Locked";
-
-              return (
-                <Card key={y._id}>
-                  <Row>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: "700", fontSize: 15 }}>
-                        {y.name || `Year ${y.year}`}
-                      </Text>
-                      <Text
-                        style={{
-                          color: isUnlocked ? "#059669" : "#dc2626",
-                          fontSize: 12,
-                          marginTop: 2,
-                        }}
-                      >
-                        {status}
-                      </Text>
-                      {!isUnlocked && (
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: "#64748b",
-                            marginTop: 2,
-                          }}
-                        >
-                          Requires {creditRequirements[y.year]} credits to
-                          unlock
-                        </Text>
-                      )}
-                    </View>
-                    <GhostButton
-                      label={isUnlocked ? "View Courses →" : "Locked"}
-                      onPress={() => isUnlocked && selectYear(y)}
-                    />
-                  </Row>
-                </Card>
-              );
-            })}
-        </>
-      )}
-      {selectedYear && (
-        <Card>
-          <Text style={{ fontWeight: "800", fontSize: 16, marginBottom: 8 }}>
-            {selectedYear.name || `Year ${selectedYear.year}`}
-          </Text>
-          {loadingCourses ? (
-            <Text style={{ color: "#64748b" }}>Loading courses…</Text>
-          ) : yearCourses.length === 0 ? (
-            <Text style={{ color: "#64748b" }}>
-              No published courses for this year Yet.
-            </Text>
-          ) : (
-            yearCourses.map((c) => {
-              const enrolled = enrolledIds.has(String(c._id));
-              const enrollment = enrollments.find(
-                (e) => String(e.courseId) === String(c._id),
-              );
-              return (
-                <View
-                  key={c._id}
-                  style={{
-                    marginBottom: 14,
-                    borderBottomWidth: 1,
-                    borderBottomColor: "#f1f5f9",
-                    paddingBottom: 10,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>{c.title}</Text>
-                  <Text style={{ fontSize: 12, color: "#64748b" }}>
-                    {c.code} · {c.creditHours} cr · {c.instructor || "TBA"}
-                  </Text>
-                  {enrolled && enrollment && (
-                    <View style={{ marginTop: 4 }}>
-                      <View
-                        style={{
-                          height: 4,
-                          backgroundColor: "#e2e8f0",
-                          borderRadius: 2,
-                        }}
-                      >
-                        <View
-                          style={{
-                            height: 4,
-                            backgroundColor: "#2563EB",
-                            borderRadius: 2,
-                            width: `${enrollment.progress || 0}%`,
-                          }}
-                        />
-                      </View>
-                      <Text
-                        style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
-                      >
-                        {enrollment.progress}% · Next: {enrollment.nextItem}
-                      </Text>
-                    </View>
-                  )}
-                  {enrolled ? (
-                    <Text
-                      style={{
-                        color: "#16a34a",
-                        fontSize: 12,
-                        marginTop: 4,
-                        fontWeight: "600",
-                      }}
-                    >
-                      ✓ Enrolled
-                    </Text>
+        {/* Enrolled courses */}
+        {yearEnrollments.length > 0 && (
+          <>
+            <SectionLabel>Your Courses</SectionLabel>
+            {yearEnrollments.map((e, i) => (
+              <Card key={e.courseId || i}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{e.name}</Text>
+                    <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{e.code} · {e.credits || 0} credits</Text>
+                  </View>
+                  {e.progress >= 100 ? (
+                    <Tag label="Passed ✓" color={C.emerald} bg={C.emeraldBg} />
                   ) : (
-                    <Button label="Enroll" onPress={() => handleEnroll(c)} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: C.blue }}>{e.progress}%</Text>
                   )}
                 </View>
-              );
-            })
-          )}
-        </Card>
+                <ProgressBar value={e.progress} height={6} />
+                <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>
+                  {e.progress >= 100 ? "✓ Finished — open to review" : `Next: ${e.nextItem}`}
+                </Text>
+              </Card>
+            ))}
+          </>
+        )}
+
+        {/* Available to enroll */}
+        <SectionLabel>Available Courses</SectionLabel>
+        {loadingCourses ? (
+          <Card><Text style={{ color: C.slate500 }}>Loading courses…</Text></Card>
+        ) : yearCourses.length === 0 ? (
+          <EmptyState icon="📭" title="No courses yet" subtitle="The instructor hasn't published courses for this year yet." />
+        ) : (
+          yearCourses
+            .filter((c) => !enrolledIds.has(String(c._id)))
+            .map((c) => (
+              <Card key={c._id}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{c.title}</Text>
+                    <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>
+                      {c.code} · {c.creditHours} cr · {c.instructor || "TBA"}
+                    </Text>
+                  </View>
+                  <Btn label="Enroll" small onPress={() => handleEnroll(c)} />
+                </View>
+              </Card>
+            ))
+        )}
+
+        {/* All already enrolled in this year */}
+        {!loadingCourses && yearCourses.filter((c) => !enrolledIds.has(String(c._id))).length === 0 && yearEnrollments.length > 0 && (
+          <Card color={C.slate50}>
+            <Text style={{ color: C.slate500, fontSize: 13 }}>You are enrolled in all available courses for this year.</Text>
+          </Card>
+        )}
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen>
+      <Text style={s.pageTitle}>Academic Years</Text>
+      <Text style={{ fontSize: 13, color: C.slate600 }}>
+        Select any year to view and enroll in courses.
+      </Text>
+
+      <ErrorBox message={error} />
+
+      {/* Credits summary */}
+      <Card color={C.blueBg} style={{ borderColor: "#BFDBFE" }}>
+        <SectionLabel>Degree Progress</SectionLabel>
+        <View style={{ flexDirection: "row" }}>
+          <Pill label="Total Credits Earned" value={totalEarned} color={C.blue} />
+          <Pill label="Courses Completed" value={enrollments.filter((e) => e.progress >= 100).length} color={C.emerald} />
+        </View>
+      </Card>
+
+      {loadingInit ? (
+        <Card><Text style={{ color: C.slate500 }}>Loading…</Text></Card>
+      ) : years.length === 0 ? (
+        <EmptyState icon="📅" title="No academic years" subtitle="Run the seed script on the server." />
+      ) : (
+        years.map((y) => {
+          const meta = YEAR_META[y.year] || {};
+          const yearEnrollments = enrollments.filter((e) => String(e.yearId) === String(y.year));
+          const allDone  = yearEnrollments.length > 0 && yearEnrollments.every((e) => e.progress >= 100);
+          const inProg   = yearEnrollments.some((e) => e.progress > 0 && e.progress < 100);
+          const statusLabel = allDone ? "Completed" : inProg || yearEnrollments.length > 0 ? "In Progress" : "Available";
+          const statusColor = allDone ? C.emerald : inProg || yearEnrollments.length > 0 ? C.amber : C.blue;
+          const statusBg    = allDone ? C.emeraldBg : inProg || yearEnrollments.length > 0 ? C.amberBg : C.blueBg;
+          const yearCredits = yearEnrollments.filter((e) => e.progress >= 100).reduce((s, e) => s + (e.credits || 0), 0);
+
+          return (
+            <TouchableOpacity key={y._id} onPress={() => selectYear(y)} activeOpacity={0.85}>
+              <Card style={{ borderWidth: allDone ? 1.5 : 1, borderColor: allDone ? C.emeraldBorder : C.border }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.blueBg, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontWeight: "800", fontSize: 18, color: C.blue }}>{y.year}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 15 }}>{meta.title || y.name}</Text>
+                    <Text style={{ fontSize: 12, color: C.slate600, marginTop: 2 }} numberOfLines={2}>{meta.desc}</Text>
+                  </View>
+                </View>
+                <Divider />
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Tag label={statusLabel} color={statusColor} bg={statusBg} />
+                  <Text style={{ fontSize: 12, color: C.slate500 }}>
+                    {yearCredits} credits · View courses →
+                  </Text>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          );
+        })
       )}
     </Screen>
   );
 }
 
-// ── Student Dashboard ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDENT DASHBOARD — mirrors web StudentDashboard
+// ─────────────────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: "dashboard",  label: "Dashboard"  },
+  { id: "courses",    label: "My Courses" },
+  { id: "materials",  label: "Materials"  },
+];
+
 export function StudentDashboardScreen() {
-  const [enrollments, setEnrollments] = useState([]);
-  const [myMaterials, setMyMaterials] = useState([]);
-  const [selectedTab, setSelectedTab] = useState("dashboard");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { dbUser } = useAuth();
+  const [enrollments,  setEnrollments]  = useState([]);
+  const [myMaterials,  setMyMaterials]  = useState([]);
+  const [activeTab,    setActiveTab]    = useState("dashboard");
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState("");
 
   useEffect(() => {
     Promise.all([api.get("/users/enrollments"), api.get("/users/materials")])
@@ -581,100 +591,151 @@ export function StudentDashboardScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const inProgress = enrollments.filter(
-    (e) => e.progress > 0 && e.progress < 100,
-  );
-  const completed = enrollments.filter((e) => e.progress >= 100);
-  const tabs = ["dashboard", "my-courses", "materials"];
+  const inProgress   = enrollments.filter((e) => e.progress > 0 && e.progress < 100);
+  const completed    = enrollments.filter((e) => e.progress >= 100);
+  const totalCredits = completed.reduce((s, e) => s + (e.credits || 0), 0);
+  const firstName    = dbUser?.name?.split(" ")[0] || "Student";
+
+  const STATUS_COLOR = { pending: C.amber,   approved: C.emerald, rejected: C.rose };
+  const STATUS_LABEL = { pending: "⏳ Pending", approved: "✅ Approved", rejected: "❌ Rejected" };
 
   return (
     <Screen>
-      <Title>Student Dashboard</Title>
+      {/* Header */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }}>
+        <Avatar name={dbUser?.name || "S"} />
+        <View>
+          <Text style={{ fontWeight: "800", fontSize: 16, color: C.slate900 }}>Welcome, {firstName} 👋</Text>
+          <Text style={{ fontSize: 12, color: C.slate500, marginTop: 1, textTransform: "capitalize" }}>{dbUser?.role || "student"}</Text>
+        </View>
+      </View>
+
+      {/* Tab bar */}
+      <View style={{ flexDirection: "row", backgroundColor: C.white, borderRadius: 12, borderWidth: 1, borderColor: C.border, overflow: "hidden" }}>
+        {TABS.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            onPress={() => setActiveTab(tab.id)}
+            style={{ flex: 1, paddingVertical: 10, alignItems: "center", backgroundColor: activeTab === tab.id ? C.blue : "transparent" }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: activeTab === tab.id ? "#fff" : C.slate500 }}>{tab.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <ErrorBox message={error} />
-      <Card>
-        <Row>
-          {tabs.map((tab) => (
-            <GhostButton
-              key={tab}
-              label={tab}
-              onPress={() => setSelectedTab(tab)}
-            />
-          ))}
-        </Row>
-      </Card>
 
-      {loading && (
-        <Card>
-          <Text>Loading…</Text>
-        </Card>
+      {loading ? (
+        <Card><Text style={{ color: C.slate500, textAlign: "center" }}>Loading…</Text></Card>
+      ) : (
+        <>
+          {/* ── Dashboard tab ── */}
+          {activeTab === "dashboard" && (
+            <>
+              {/* Stats row */}
+              <Card>
+                <SectionLabel>Overview</SectionLabel>
+                <View style={{ flexDirection: "row" }}>
+                  <Pill label="Enrolled"   value={enrollments.length}  color={C.blue}    />
+                  <Pill label="In Progress" value={inProgress.length}  color={C.amber}   />
+                  <Pill label="Completed"  value={completed.length}    color={C.emerald} />
+                  <Pill label="Credits"    value={totalCredits}        color={C.blue}    />
+                </View>
+              </Card>
+
+              {/* In progress preview */}
+              {inProgress.length > 0 && (
+                <Card>
+                  <SectionLabel>Continue Learning</SectionLabel>
+                  {inProgress.slice(0, 3).map((e, i) => (
+                    <View key={e.courseId || i} style={{ marginTop: i > 0 ? 12 : 4 }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                        <Text style={{ fontWeight: "700", color: C.slate900, flex: 1, marginRight: 8 }} numberOfLines={1}>{e.name}</Text>
+                        <Text style={{ fontWeight: "700", color: C.blue, fontSize: 12 }}>{e.progress}%</Text>
+                      </View>
+                      <ProgressBar value={e.progress} />
+                      <Text style={{ fontSize: 11, color: C.slate500, marginTop: 3 }}>Next: {e.nextItem}</Text>
+                    </View>
+                  ))}
+                </Card>
+              )}
+
+              {enrollments.length === 0 && (
+                <EmptyState icon="📚" title="No courses yet" subtitle="Go to Academic Years to enroll in courses." />
+              )}
+            </>
+          )}
+
+          {/* ── My Courses tab ── */}
+          {activeTab === "courses" && (
+            enrollments.length === 0 ? (
+              <EmptyState icon="📚" title="No courses enrolled" subtitle="Go to Academic Years to enroll." />
+            ) : (
+              enrollments.map((e, i) => (
+                <Card key={e.courseId || i} style={e.progress >= 100 ? { borderColor: C.emeraldBorder } : {}}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{e.name}</Text>
+                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>
+                        {e.code} · Year {e.yearId} · {e.credits || 0} credits
+                      </Text>
+                    </View>
+                    {e.progress >= 100 ? (
+                      <Tag label="Done ✓" color={C.emerald} bg={C.emeraldBg} />
+                    ) : (
+                      <Text style={{ fontWeight: "700", color: C.blue, fontSize: 13 }}>{e.progress}%</Text>
+                    )}
+                  </View>
+                  <ProgressBar value={e.progress} height={6} />
+                  <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>
+                    {e.progress >= 100 ? "Completed ✓" : `Next: ${e.nextItem}`}
+                  </Text>
+                </Card>
+              ))
+            )
+          )}
+
+          {/* ── Materials tab ── */}
+          {activeTab === "materials" && (
+            myMaterials.length === 0 ? (
+              <EmptyState icon="📎" title="No materials yet" subtitle="Upload materials through the CoursePlayer on the web." />
+            ) : (
+              myMaterials.map((m, i) => (
+                <Card key={m._id || i}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 13 }} numberOfLines={2}>{m.title}</Text>
+                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{m.course} · {m.type}</Text>
+                    </View>
+                    <Tag
+                      label={STATUS_LABEL[m.status] || m.status}
+                      color={STATUS_COLOR[m.status] || C.slate500}
+                      bg={m.status === "approved" ? C.emeraldBg : m.status === "rejected" ? "#FEF2F2" : C.amberBg}
+                    />
+                  </View>
+                  {m.mentorFeedback ? (
+                    <Text style={{ fontSize: 11, color: C.slate600, marginTop: 4, fontStyle: "italic" }}>
+                      Feedback: {m.mentorFeedback}
+                    </Text>
+                  ) : null}
+                </Card>
+              ))
+            )
+          )}
+        </>
       )}
-
-      {!loading && selectedTab === "dashboard" && (
-        <Card>
-          <Text style={{ fontWeight: "800", fontSize: 16 }}>Overview</Text>
-          <Text style={{ marginTop: 8 }}>Enrolled: {enrollments.length}</Text>
-          <Text>In Progress: {inProgress.length}</Text>
-          <Text>Completed: {completed.length}</Text>
-          <Text>Materials Uploaded: {myMaterials.length}</Text>
-        </Card>
-      )}
-
-      {!loading &&
-        selectedTab === "my-courses" &&
-        (enrollments.length === 0 ? (
-          <EmptyBox message="No courses enrolled. Go to Academic Years to enroll." />
-        ) : (
-          enrollments.map((e, i) => (
-            <Card key={e.courseId || i}>
-              <Text style={{ fontWeight: "600" }}>{e.name}</Text>
-              <Text style={{ fontSize: 12, color: "#64748b" }}>
-                {e.code} · Year {e.yearId}
-              </Text>
-              <View
-                style={{
-                  height: 6,
-                  backgroundColor: "#e2e8f0",
-                  borderRadius: 3,
-                  marginTop: 6,
-                }}
-              >
-                <View
-                  style={{
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: e.progress >= 100 ? "#16a34a" : "#2563EB",
-                    width: `${e.progress || 0}%`,
-                  }}
-                />
-              </View>
-              <Text style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                {e.progress}% ·{" "}
-                {e.progress >= 100 ? "Completed ✓" : `Next: ${e.nextItem}`}
-              </Text>
-            </Card>
-          ))
-        ))}
-
-      {!loading &&
-        selectedTab === "materials" &&
-        (myMaterials.length === 0 ? (
-          <EmptyBox message="No materials uploaded yet." />
-        ) : (
-          <DataTable
-            columns={["title", "course", "type", "status"]}
-            rows={myMaterials.slice(0, 20)}
-          />
-        ))}
     </Screen>
   );
 }
 
-// ── Courses screen — real DB courses with year filter ─────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// COURSES SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
 export function DataScienceCoursesScreen() {
-  const [allCourses, setAllCourses] = useState([]);
-  const [enrollments, setEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [allCourses,   setAllCourses]   = useState([]);
+  const [enrollments,  setEnrollments]  = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState("");
   const [selectedYear, setSelectedYear] = useState("1");
 
   useEffect(() => {
@@ -699,38 +760,24 @@ export function DataScienceCoursesScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const enrolledIds = new Set(enrollments.map((e) => String(e.courseId)));
-  const yearCourses = allCourses.filter(
-    (c) => String(c.yearId) === selectedYear,
-  );
+  const enrolledIds  = useMemo(() => new Set(enrollments.map((e) => String(e.courseId))), [enrollments]);
+  const completedIds = useMemo(() => new Set(enrollments.filter((e) => e.progress >= 100).map((e) => String(e.courseId))), [enrollments]);
+  const yearCourses  = allCourses.filter((c) => c.yearId === selectedYear);
 
   const handleEnroll = async (course) => {
+    if (completedIds.has(String(course._id))) {
+      Alert.alert("Already completed", "You have already completed this course.");
+      return;
+    }
     try {
       await api.post(`/users/enrollments/${course._id}`);
-      setEnrollments((prev) => [
-        ...prev,
-        {
-          courseId: String(course._id),
-          name: course.title,
-          code: course.code,
-          yearId: String(course.yearId),
-          progress: 0,
-          nextItem: "Getting Started",
-        },
-      ]);
+      setEnrollments((prev) => [...prev, {
+        courseId: String(course._id),
+        name: course.title, code: course.code,
+        yearId: course.yearId, credits: course.creditHours || 3,
+        progress: 0, nextItem: "Getting Started",
+      }]);
       Alert.alert("Enrolled!", `You joined ${course.title}`);
-    } catch (e) {
-      Alert.alert("Enroll failed", e.message);
-    }
-  };
-
-  const handleUnenroll = async (course) => {
-    try {
-      await api.delete(`/users/enrollments/${course._id}`);
-      setEnrollments((prev) =>
-        prev.filter((e) => String(e.courseId) !== String(course._id)),
-      );
-      Alert.alert("Unenrolled", `Removed from ${course.title}`);
     } catch (e) {
       Alert.alert("Failed", e.message);
     }
@@ -738,89 +785,61 @@ export function DataScienceCoursesScreen() {
 
   return (
     <Screen>
-      <Title>Courses</Title>
+      <Text style={s.pageTitle}>All Courses</Text>
       <ErrorBox message={error} />
 
-      <Card>
-        <Row>
-          {["1", "2", "3", "4"].map((y) => (
-            <GhostButton
-              key={y}
-              label={`Year ${y}`}
-              onPress={() => setSelectedYear(y)}
-            />
-          ))}
-        </Row>
-      </Card>
+      {/* Year filter */}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {["1", "2", "3", "4"].map((y) => (
+          <TouchableOpacity
+            key={y}
+            onPress={() => setSelectedYear(y)}
+            style={{ flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center", backgroundColor: selectedYear === y ? C.blue : C.white, borderWidth: 1, borderColor: selectedYear === y ? C.blue : C.border }}
+          >
+            <Text style={{ fontWeight: "700", fontSize: 12, color: selectedYear === y ? "#fff" : C.slate600 }}>Year {y}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {loading ? (
-        <Card>
-          <Text>Loading courses…</Text>
-        </Card>
+        <Card><Text style={{ color: C.slate500 }}>Loading courses…</Text></Card>
       ) : yearCourses.length === 0 ? (
-        <EmptyBox
-          message={`No published courses for Year ${selectedYear} yet.`}
-        />
+        <EmptyState icon="📚" title={`No courses for Year ${selectedYear}`} subtitle="No published courses yet." />
       ) : (
         yearCourses.map((course) => {
-          const enrolled = enrolledIds.has(String(course._id));
-          const enrollment = enrollments.find(
-            (e) => String(e.courseId) === String(course._id),
-          );
+          const enrolled    = enrolledIds.has(String(course._id));
+          const done        = completedIds.has(String(course._id));
+          const enrollment  = enrollments.find((e) => String(e.courseId) === String(course._id));
           return (
-            <Card key={course._id}>
-              <Text style={{ fontWeight: "700", fontSize: 15 }}>
-                {course.title}
-              </Text>
-              <Text style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>
-                {course.code} · {course.creditHours} credits
-              </Text>
-              {course.instructor ? (
-                <Text style={{ color: "#64748b", fontSize: 12 }}>
-                  Instructor: {course.instructor}
-                </Text>
-              ) : null}
+            <Card key={course._id} style={done ? { borderColor: C.emeraldBorder } : {}}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{course.title}</Text>
+                  <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>
+                    {course.code} · {course.creditHours} cr · {course.instructor || "TBA"}
+                  </Text>
+                </View>
+                {done ? (
+                  <Tag label="Done ✓" color={C.emerald} bg={C.emeraldBg} />
+                ) : enrolled ? (
+                  <Tag label="Enrolled" color={C.blue} bg={C.blueBg} />
+                ) : null}
+              </View>
+
               {enrolled && enrollment && (
-                <View style={{ marginTop: 6 }}>
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: "#e2e8f0",
-                      borderRadius: 3,
-                    }}
-                  >
-                    <View
-                      style={{
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor:
-                          (enrollment.progress || 0) >= 100
-                            ? "#16a34a"
-                            : "#2563EB",
-                        width: `${enrollment.progress || 0}%`,
-                      }}
-                    />
-                  </View>
-                  <Text
-                    style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
-                  >
-                    {enrollment.progress}% ·{" "}
-                    {(enrollment.progress || 0) >= 100
-                      ? "Completed ✓"
-                      : `Next: ${enrollment.nextItem}`}
+                <View style={{ marginTop: 8 }}>
+                  <ProgressBar value={enrollment.progress} />
+                  <Text style={{ fontSize: 11, color: C.slate500, marginTop: 3 }}>
+                    {enrollment.progress}% · {done ? "Completed ✓" : `Next: ${enrollment.nextItem}`}
                   </Text>
                 </View>
               )}
-              <View style={{ marginTop: 8 }}>
-                {enrolled ? (
-                  <GhostButton
-                    label="Unenroll"
-                    onPress={() => handleUnenroll(course)}
-                  />
-                ) : (
-                  <Button label="Enroll" onPress={() => handleEnroll(course)} />
-                )}
-              </View>
+
+              {!enrolled && !done && (
+                <View style={{ marginTop: 8 }}>
+                  <Btn label="Enroll" small onPress={() => handleEnroll(course)} />
+                </View>
+              )}
             </Card>
           );
         })
@@ -829,53 +848,203 @@ export function DataScienceCoursesScreen() {
   );
 }
 
-// ── Admin screens ─────────────────────────────────────────────────────────────
-export function AdminDashboardScreen() {
-  const [stats, setStats] = useState({});
-  const [activity, setActivity] = useState([]);
-  const [error, setError] = useState("");
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFILE — mirrors web Studentprofile.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+export function ProfileScreen() {
+  const { dbUser, logout } = useAuth();
+  const [form, setForm] = useState({
+    name:    dbUser?.name    || "",
+    email:   dbUser?.email   || "",
+    college: dbUser?.college || "",
+    phone:   dbUser?.phone   || "",
+    bio:     dbUser?.bio     || "",
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [error,    setError]    = useState("");
+  const [enrollments, setEnrollments] = useState([]);
 
   useEffect(() => {
-    Promise.all([
-      endpoints.admin.dashboardStats(),
-      endpoints.admin.dashboardActivity(),
-    ])
-      .then(([sRes, aRes]) => {
-        setStats(sRes.data || sRes || {});
-        setActivity(safeArray(aRes));
-        setError("");
-      })
-      .catch((e) => setError(e.message));
+    api.get("/users/enrollments")
+      .then((r) => setEnrollments(safeArray(r)))
+      .catch(() => {});
   }, []);
+
+  const completed    = enrollments.filter((e) => e.progress >= 100);
+  const totalCredits = completed.reduce((s, e) => s + (e.credits || 0), 0);
+  const totalPossible = 168;
+  const progressPct  = Math.min(100, Math.round((totalCredits / totalPossible) * 100));
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await api.put("/users/profile", { name: form.name, phone: form.phone, college: form.college });
+      setSaved(true);
+      setEditMode(false);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const INFO_ROWS = [
+    { label: "Email",   key: "email",   readOnly: true  },
+    { label: "College", key: "college", readOnly: false },
+    { label: "Phone",   key: "phone",   readOnly: false },
+    { label: "Role",    key: null,      readOnly: true, value: dbUser?.role ? dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1) : "Student" },
+  ];
 
   return (
     <Screen>
-      <Title>Admin Overview</Title>
-      <ErrorBox message={error} />
+      {/* Profile header card */}
       <Card>
-        <Text style={{ fontWeight: "700" }}>
-          Total Students: {stats.totalStudents ?? "-"}
-        </Text>
-        <Text style={{ fontWeight: "700" }}>
-          Total Mentors: {stats.totalMentors ?? "-"}
-        </Text>
-        <Text style={{ fontWeight: "700" }}>
-          Active Courses: {stats.activeCourses ?? "-"}
-        </Text>
-        <Text style={{ fontWeight: "700" }}>
-          Pending Approvals: {stats.pendingApprovals ?? "-"}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <Avatar name={form.name || "S"} size={56} />
+          <View style={{ flex: 1 }}>
+            {editMode ? (
+              <TextInput
+                value={form.name}
+                onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
+                style={[s.input, { marginBottom: 0, fontWeight: "700", fontSize: 16 }]}
+              />
+            ) : (
+              <Text style={{ fontWeight: "800", fontSize: 17, color: C.slate900 }}>{form.name || "Student"}</Text>
+            )}
+            <Text style={{ fontSize: 12, color: C.blue, fontWeight: "600", marginTop: 2 }}>{form.email}</Text>
+            <Text style={{ fontSize: 11, color: C.slate500, marginTop: 1, textTransform: "capitalize" }}>{dbUser?.role || "student"}</Text>
+          </View>
+        </View>
+
+        <Divider />
+
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+          {saved && <Text style={{ fontSize: 12, color: C.emerald, fontWeight: "600" }}>✓ Saved!</Text>}
+          {editMode ? (
+            <View style={{ flexDirection: "row", gap: 8, flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <Btn label="Cancel" variant="outline" small onPress={() => setEditMode(false)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Btn label={saving ? "Saving…" : "Save"} small disabled={saving} onPress={handleSave} />
+              </View>
+            </View>
+          ) : (
+            <Btn label="✏️  Edit Profile" variant="outline" small onPress={() => setEditMode(true)} />
+          )}
+        </View>
       </Card>
+
+      <ErrorBox message={error} />
+
+      {/* Academic overview */}
       <Card>
-        <Text style={{ fontWeight: "800", fontSize: 16 }}>Recent Activity</Text>
+        <SectionLabel>Academic Overview</SectionLabel>
+        <View style={{ flexDirection: "row", marginBottom: 12 }}>
+          <Pill label="Credits Earned"    value={totalCredits} color={C.blue}    />
+          <Pill label="Courses Completed" value={completed.length} color={C.emerald} />
+          <Pill label="Total Enrolled"    value={enrollments.length} color={C.amber}   />
+        </View>
+        <Text style={{ fontSize: 12, color: C.slate600, marginBottom: 6 }}>
+          Degree Progress · <Text style={{ fontWeight: "700", color: C.slate900 }}>{progressPct}%</Text>
+        </Text>
+        <ProgressBar value={progressPct} height={8} />
+      </Card>
+
+      {/* Personal info */}
+      <Card>
+        <SectionLabel>Personal Information</SectionLabel>
+        {INFO_ROWS.map((row) => (
+          <View key={row.label} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <Text style={{ fontSize: 12, color: C.slate500, width: 70 }}>{row.label}</Text>
+            {editMode && !row.readOnly ? (
+              <TextInput
+                value={form[row.key]}
+                onChangeText={(v) => setForm((p) => ({ ...p, [row.key]: v }))}
+                style={[s.input, { flex: 1, marginLeft: 8 }]}
+                autoCapitalize="none"
+              />
+            ) : (
+              <Text style={{ fontSize: 13, fontWeight: "600", color: C.slate900, flex: 1, textAlign: "right" }}>
+                {row.value ?? form[row.key] ?? "—"}
+              </Text>
+            )}
+          </View>
+        ))}
+      </Card>
+
+      {/* Completed courses */}
+      {completed.length > 0 && (
+        <Card>
+          <SectionLabel>Completed Courses</SectionLabel>
+          {completed.slice(0, 5).map((e, i) => (
+            <View key={e.courseId || i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: i > 0 ? 8 : 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "600", color: C.slate900, fontSize: 13 }} numberOfLines={1}>{e.name}</Text>
+                <Text style={{ fontSize: 11, color: C.slate500, marginTop: 1 }}>{e.code} · Year {e.yearId} · {e.credits || 0} cr</Text>
+              </View>
+              <Tag label="✓" color={C.emerald} bg={C.emeraldBg} />
+            </View>
+          ))}
+          {completed.length > 5 && (
+            <Text style={{ fontSize: 12, color: C.slate400, marginTop: 8 }}>+{completed.length - 5} more</Text>
+          )}
+        </Card>
+      )}
+
+      {/* Logout */}
+      <View style={{ marginTop: 8 }}>
+        <Btn label="Logout" variant="danger" onPress={logout} />
+      </View>
+    </Screen>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN SCREENS
+// ─────────────────────────────────────────────────────────────────────────────
+export function AdminDashboardScreen() {
+  const [stats,    setStats]    = useState({});
+  const [activity, setActivity] = useState([]);
+  const [error,    setError]    = useState("");
+
+  useEffect(() => {
+    Promise.all([endpoints.admin.dashboardStats(), endpoints.admin.dashboardActivity()])
+      .then(([sRes, aRes]) => { setStats(sRes.data || sRes || {}); setActivity(safeArray(aRes)); })
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const STAT_CARDS = [
+    { label: "Total Students",   value: stats.totalStudents   ?? "—", color: C.blue    },
+    { label: "Total Mentors",    value: stats.totalMentors    ?? "—", color: C.emerald },
+    { label: "Active Courses",   value: stats.activeCourses   ?? "—", color: C.amber   },
+    { label: "Pending Approvals",value: stats.pendingApprovals?? "—", color: C.rose    },
+  ];
+
+  return (
+    <Screen>
+      <Text style={s.pageTitle}>Admin Overview</Text>
+      <ErrorBox message={error} />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {STAT_CARDS.map((sc) => (
+          <Card key={sc.label} style={{ flex: 1, minWidth: "45%", alignItems: "center", paddingVertical: 16 }}>
+            <Text style={{ fontSize: 26, fontWeight: "800", color: sc.color }}>{sc.value}</Text>
+            <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4, textAlign: "center" }}>{sc.label}</Text>
+          </Card>
+        ))}
+      </View>
+      <Card>
+        <SectionLabel>Recent Activity</SectionLabel>
         {activity.length === 0 ? (
-          <Text style={{ marginTop: 8, color: "#64748b" }}>
-            No recent activity.
-          </Text>
+          <Text style={{ color: C.slate500 }}>No recent activity.</Text>
         ) : (
           activity.slice(0, 8).map((a, i) => (
-            <Text key={a.id || i} style={{ marginTop: 6 }}>
-              - {a.user || "User"} {a.action || "performed an action"}
+            <Text key={a.id || i} style={{ color: C.slate700, fontSize: 13, marginTop: 4 }}>
+              · {a.user || "User"} {a.action || "performed an action"}
             </Text>
           ))
         )}
@@ -885,401 +1054,280 @@ export function AdminDashboardScreen() {
 }
 
 export const AdminAcademicsScreen = () => (
-  <CrudScreen
-    title="Academic Management"
-    load={endpoints.admin.colleges}
-    columns={["name", "years", "semesters", "programs", "status"]}
-  />
+  <CrudScreen title="Academic Management" load={endpoints.admin.colleges}
+    columns={["name", "years", "semesters", "programs", "status"]} />
 );
 export const AdminCoursesScreen = () => (
-  <CrudScreen
-    title="Course Management"
-    load={endpoints.admin.courses}
-    columns={["code", "title", "college", "instructor", "students", "status"]}
-  />
+  <CrudScreen title="Course Management" load={endpoints.admin.courses}
+    columns={["code", "title", "college", "instructor", "students", "status"]} />
 );
 export const AdminMaterialsScreen = () => (
-  <CrudScreen
-    title="Materials Management"
-    load={endpoints.admin.materials}
-    columns={["title", "course", "type", "size", "uploader", "status"]}
-  />
+  <CrudScreen title="Materials Management" load={endpoints.admin.materials}
+    columns={["title", "course", "type", "size", "uploader", "status"]} />
 );
 export const AdminUsersScreen = () => (
-  <CrudScreen
-    title="Users Management"
-    load={endpoints.admin.users}
-    columns={["name", "email", "role", "college", "status"]}
-  />
+  <CrudScreen title="Users Management" load={endpoints.admin.users}
+    columns={["name", "email", "role", "college", "status"]} />
 );
 
-// ── Mentor screens ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// MENTOR SCREENS
+// ─────────────────────────────────────────────────────────────────────────────
 export function MentorDashboardScreen() {
   const [pending, setPending] = useState([]);
-  const [mine, setMine] = useState([]);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [action, setAction] = useState("approve");
+  const [mine,    setMine]    = useState([]);
   const [selected, setSelected] = useState(null);
+  const [action,   setAction]   = useState("approve");
   const [feedback, setFeedback] = useState("");
-  const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error,    setError]    = useState("");
 
   useEffect(() => {
-    Promise.all([
-      endpoints.mentor.pendingMaterials(),
-      endpoints.mentor.myMaterials(),
-    ])
-      .then(([pRes, mRes]) => {
-        setPending(safeArray(pRes));
-        setMine(safeArray(mRes));
-        setError("");
-      })
+    Promise.all([endpoints.mentor.pendingMaterials(), endpoints.mentor.myMaterials()])
+      .then(([pRes, mRes]) => { setPending(safeArray(pRes)); setMine(safeArray(mRes)); })
       .catch((e) => setError(e.message));
   }, []);
 
   return (
     <Screen>
-      <Title>Mentor Dashboard</Title>
+      <Text style={s.pageTitle}>Mentor Dashboard</Text>
       <ErrorBox message={error} />
-      <Card>
-        <Text style={{ fontWeight: "700" }}>
-          Pending Reviews: {pending.length}
-        </Text>
-        <Text style={{ fontWeight: "700" }}>My Materials: {mine.length}</Text>
-      </Card>
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Card style={{ flex: 1, alignItems: "center" }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: C.amber }}>{pending.length}</Text>
+          <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>Pending Reviews</Text>
+        </Card>
+        <Card style={{ flex: 1, alignItems: "center" }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: C.blue }}>{mine.length}</Text>
+          <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>My Materials</Text>
+        </Card>
+      </View>
+
+      <SectionLabel>Pending Materials</SectionLabel>
       {pending.length === 0 ? (
-        <EmptyBox message="No pending materials to review." />
+        <EmptyState icon="✅" title="All clear!" subtitle="No materials pending review." />
       ) : (
-        <DataTable
-          columns={["title", "course", "uploader", "status"]}
-          rows={pending}
-          actions={(row) => (
-            <Row>
-              <GhostButton
-                label="Approve"
-                onPress={() => {
-                  setSelected(row);
-                  setAction("approve");
-                  setFeedback("");
-                  setFeedbackOpen(true);
-                }}
-              />
-              <GhostButton
-                label="Reject"
-                onPress={() => {
-                  setSelected(row);
-                  setAction("reject");
-                  setFeedback("");
-                  setFeedbackOpen(true);
-                }}
-              />
-            </Row>
-          )}
-        />
+        pending.map((m, i) => (
+          <Card key={m._id || i}>
+            <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{m.title}</Text>
+            <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{m.course} · {m.type} · by {m.uploader}</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Btn label="✓ Approve" small onPress={() => { setSelected(m); setAction("approve"); setFeedback(""); setModalOpen(true); }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Btn label="✕ Reject" variant="danger" small onPress={() => { setSelected(m); setAction("reject"); setFeedback(""); setModalOpen(true); }} />
+              </View>
+            </View>
+          </Card>
+        ))
       )}
-      <FormModal
-        visible={feedbackOpen}
-        title={action === "approve" ? "Approve Material" : "Reject Material"}
-        onCancel={() => setFeedbackOpen(false)}
-        onSave={async () => {
-          try {
-            if (!selected?._id) return;
-            if (action === "approve")
-              await endpoints.mentor.approveMaterial(selected._id, {
-                feedback,
-              });
-            else await endpoints.mentor.rejectMaterial(selected._id);
-            setPending((prev) => prev.filter((m) => m._id !== selected._id));
-            setFeedbackOpen(false);
-          } catch (e) {
-            Alert.alert("Failed", e.message);
-          }
-        }}
-      >
-        <Field
-          label="Feedback"
-          value={feedback}
-          onChangeText={setFeedback}
-          placeholder={
-            action === "approve" ? "Great work..." : "Please revise..."
-          }
-        />
-      </FormModal>
+
+      <Modal visible={modalOpen} transparent animationType="slide">
+        <Pressable style={s.modalOverlay} onPress={() => setModalOpen(false)}>
+          <Pressable style={s.modalCard}>
+            <Text style={{ fontWeight: "800", fontSize: 16, color: C.slate900, marginBottom: 8 }}>
+              {action === "approve" ? "Approve Material" : "Reject Material"}
+            </Text>
+            <Field label="Feedback (optional)" value={feedback} onChangeText={setFeedback}
+              placeholder={action === "approve" ? "Great work…" : "Please revise…"} />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+              <View style={{ flex: 1 }}><Btn label="Cancel" variant="outline" onPress={() => setModalOpen(false)} /></View>
+              <View style={{ flex: 1 }}>
+                <Btn
+                  label={action === "approve" ? "Approve" : "Reject"}
+                  variant={action === "approve" ? "primary" : "danger"}
+                  onPress={async () => {
+                    try {
+                      if (action === "approve") await endpoints.mentor.approveMaterial(selected._id, { feedback });
+                      else await endpoints.mentor.rejectMaterial(selected._id);
+                      setPending((prev) => prev.filter((m) => m._id !== selected._id));
+                      setModalOpen(false);
+                    } catch (e) { Alert.alert("Failed", e.message); }
+                  }}
+                />
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
 
 export function MentorUploadScreen() {
-  const [title, setTitle] = useState("");
-  const [course, setCourse] = useState("");
-  const [type, setType] = useState("PDF");
+  const [title,    setTitle]    = useState("");
+  const [course,   setCourse]   = useState("");
+  const [type,     setType]     = useState("PDF");
   const [uploaded, setUploaded] = useState([]);
-  const [error, setError] = useState("");
+  const [error,    setError]    = useState("");
 
   useEffect(() => {
-    endpoints.mentor
-      .myMaterials()
+    endpoints.mentor.myMaterials()
       .then((r) => setUploaded(safeArray(r)))
       .catch((e) => setError(e.message));
   }, []);
 
   return (
     <Screen>
-      <Title>Upload Material</Title>
+      <Text style={s.pageTitle}>Upload Material</Text>
       <ErrorBox message={error} />
       <Card>
-        <Field
-          label="Title"
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Week 4 lecture notes"
-        />
-        <Field
-          label="Course"
-          value={course}
-          onChangeText={setCourse}
-          placeholder="Data Structures"
-        />
-        <Field
-          label="Type"
-          value={type}
-          onChangeText={setType}
-          placeholder="PDF / Video / Slides"
-        />
-        <Button
-          label="Upload"
-          onPress={async () => {
+        <SectionLabel>New Material</SectionLabel>
+        <Field label="Title"  value={title}  onChangeText={setTitle}  placeholder="Week 4 lecture notes" />
+        <Field label="Course" value={course} onChangeText={setCourse} placeholder="Data Structures" />
+        <Field label="Type"   value={type}   onChangeText={setType}   placeholder="PDF / Video / Slides" />
+        <View style={{ marginTop: 8 }}>
+          <Btn label="Upload" onPress={async () => {
             try {
-              await endpoints.mentor.uploadMaterial({
-                title,
-                course,
-                type,
-                status: "Draft",
-              });
+              await endpoints.mentor.uploadMaterial({ title, course, type, status: "Draft" });
               const r = await endpoints.mentor.myMaterials();
               setUploaded(safeArray(r));
-              setTitle("");
-              setCourse("");
-            } catch (e) {
-              Alert.alert("Upload failed", e.message);
-            }
-          }}
-        />
+              setTitle(""); setCourse("");
+            } catch (e) { Alert.alert("Upload failed", e.message); }
+          }} />
+        </View>
       </Card>
-      <DataTable
-        columns={["title", "course", "type", "status"]}
-        rows={uploaded}
-        actions={(row) => (
-          <Row>
-            <GhostButton
-              label="Delete"
-              onPress={async () => {
-                try {
-                  await endpoints.mentor.deleteMaterial(row._id);
-                  setUploaded((prev) => prev.filter((m) => m._id !== row._id));
-                } catch (e) {
-                  Alert.alert("Delete failed", e.message);
-                }
-              }}
-            />
-          </Row>
-        )}
-      />
+
+      <SectionLabel>My Uploaded Materials</SectionLabel>
+      {uploaded.length === 0 ? (
+        <EmptyState icon="📄" title="No materials yet" />
+      ) : (
+        uploaded.map((m, i) => (
+          <Card key={m._id || i}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 13 }}>{m.title}</Text>
+                <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{m.course} · {m.type}</Text>
+              </View>
+              <Tag label={m.status || "Draft"} color={m.status === "Active" ? C.emerald : C.amber}
+                bg={m.status === "Active" ? C.emeraldBg : C.amberBg} />
+            </View>
+          </Card>
+        ))
+      )}
     </Screen>
   );
 }
 
 export function MentorStudentsScreen() {
-  const [users, setUsers] = useState([]);
+  const [users,  setUsers]  = useState([]);
   const [search, setSearch] = useState("");
-  const [error, setError] = useState("");
+  const [error,  setError]  = useState("");
 
   useEffect(() => {
-    endpoints.admin.users
-      .getAll()
+    endpoints.admin.users.getAll()
       .then((r) => setUsers(safeArray(r)))
       .catch((e) => setError(e.message));
   }, []);
 
   const filtered = users
     .filter((u) => (u.role || "").toLowerCase() === "student")
-    .filter(
-      (s) =>
-        (s.name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (s.email || "").toLowerCase().includes(search.toLowerCase()),
+    .filter((s) =>
+      (s.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.email || "").toLowerCase().includes(search.toLowerCase()),
     );
 
   return (
     <Screen>
-      <Title>Students</Title>
+      <Text style={s.pageTitle}>Students</Text>
       <ErrorBox message={error} />
-      <Field
-        label="Search"
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Name or email…"
-      />
+      <Field label="" value={search} onChangeText={setSearch} placeholder="🔍 Search by name or email…" />
       {filtered.length === 0 ? (
-        <EmptyBox message="No students found." />
+        <EmptyState icon="👨‍🎓" title="No students found" />
       ) : (
-        <DataTable
-          columns={["name", "email", "college", "status"]}
-          rows={filtered}
-        />
+        filtered.map((u, i) => (
+          <Card key={u._id || i}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Avatar name={u.name || "S"} size={36} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 13 }}>{u.name}</Text>
+                <Text style={{ fontSize: 12, color: C.slate500 }}>{u.email}</Text>
+                {u.college ? <Text style={{ fontSize: 11, color: C.slate400 }}>{u.college}</Text> : null}
+              </View>
+              <Tag label={u.status || "Active"} color={u.status === "Active" ? C.emerald : C.amber}
+                bg={u.status === "Active" ? C.emeraldBg : C.amberBg} />
+            </View>
+          </Card>
+        ))
       )}
     </Screen>
   );
 }
 
 export function MentorProfileScreen() {
-  const { dbUser } = useAuth();
-  const [profile, setProfile] = useState({
-    name: dbUser?.name || "",
-    email: dbUser?.email || "",
-    college: dbUser?.college || "",
-    bio: dbUser?.bio || "",
-  });
-
-  return (
-    <Screen>
-      <Title>My Profile</Title>
-      <Card>
-        <Text style={{ fontWeight: "700", fontSize: 18 }}>
-          {profile.name || "Mentor"}
-        </Text>
-        <Text>{profile.email}</Text>
-        <Text>{profile.college}</Text>
-      </Card>
-      <Card>
-        <Field
-          label="Name"
-          value={profile.name}
-          onChangeText={(v) => setProfile((p) => ({ ...p, name: v }))}
-          placeholder="Full name"
-        />
-        <Field
-          label="College"
-          value={profile.college}
-          onChangeText={(v) => setProfile((p) => ({ ...p, college: v }))}
-          placeholder="College"
-        />
-        <Field
-          label="Bio"
-          value={profile.bio}
-          onChangeText={(v) => setProfile((p) => ({ ...p, bio: v }))}
-          placeholder="Bio"
-        />
-        <Button
-          label="Save Changes"
-          onPress={async () => {
-            try {
-              await api.put("/users/profile", {
-                name: profile.name,
-                college: profile.college,
-              });
-              Alert.alert("Saved!", "Profile updated.");
-            } catch (e) {
-              Alert.alert("Save failed", e.message);
-            }
-          }}
-        />
-      </Card>
-    </Screen>
-  );
-}
-
-export function ProfileScreen() {
   const { dbUser, logout } = useAuth();
   const [profile, setProfile] = useState({
-    name: dbUser?.name || "",
-    email: dbUser?.email || "",
-    college: dbUser?.college || "",
-    bio: dbUser?.bio || "",
-    phone: dbUser?.phone || "",
+    name: dbUser?.name || "", email: dbUser?.email || "",
+    college: dbUser?.college || "", bio: dbUser?.bio || "",
   });
-
-  const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      await api.put("/users/profile", profile);
-      Alert.alert("Success", "Profile updated successfully!");
-      setEditMode(false);
-    } catch (e) {
-      Alert.alert("Error", e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [saving, setSaving] = useState(false);
 
   return (
     <Screen>
-      <Title>Profile</Title>
       <Card>
-        <Text style={{ fontWeight: "800", fontSize: 16, marginBottom: 12 }}>
-          Personal Information
-        </Text>
-
-        <Field
-          label="Full Name"
-          value={profile.name}
-          onChangeText={(value) => setProfile((p) => ({ ...p, name: value }))}
-          placeholder="Enter your full name"
-        />
-
-        <Field
-          label="Email"
-          value={profile.email}
-          onChangeText={(value) => setProfile((p) => ({ ...p, email: value }))}
-          placeholder="Enter your email"
-        />
-
-        <Field
-          label="College"
-          value={profile.college}
-          onChangeText={(value) =>
-            setProfile((p) => ({ ...p, college: value }))
-          }
-          placeholder="Enter your college name"
-        />
-
-        <Field
-          label="Phone"
-          value={profile.phone}
-          onChangeText={(value) => setProfile((p) => ({ ...p, phone: value }))}
-          placeholder="Enter your phone number"
-        />
-
-        <Field
-          label="Bio"
-          value={profile.bio}
-          onChangeText={(value) => setProfile((p) => ({ ...p, bio: value }))}
-          placeholder="Tell us about yourself"
-          multiline
-        />
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 16,
-          }}
-        >
-          <GhostButton
-            label={editMode ? "Cancel" : "Edit"}
-            onPress={() => setEditMode(!editMode)}
-          />
-          {editMode ? (
-            <Button
-              label={loading ? "Saving..." : "Save Profile"}
-              onPress={handleSave}
-            />
-          ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <Avatar name={profile.name || "M"} size={52} bg="#7C3AED" />
+          <View>
+            <Text style={{ fontWeight: "800", fontSize: 16, color: C.slate900 }}>{profile.name || "Mentor"}</Text>
+            <Text style={{ fontSize: 12, color: "#7C3AED", fontWeight: "600" }}>{profile.email}</Text>
+            <Tag label="Mentor" color="#7C3AED" bg="#F5F3FF" />
+          </View>
         </View>
       </Card>
-
-      <Button label="Logout" onPress={logout} />
+      <Card>
+        <SectionLabel>Edit Profile</SectionLabel>
+        <Field label="Name"    value={profile.name}    onChangeText={(v) => setProfile((p) => ({ ...p, name: v }))}    placeholder="Full name" />
+        <Field label="College" value={profile.college} onChangeText={(v) => setProfile((p) => ({ ...p, college: v }))} placeholder="College" />
+        <Field label="Bio"     value={profile.bio}     onChangeText={(v) => setProfile((p) => ({ ...p, bio: v }))}     placeholder="Bio" multiline />
+        <View style={{ marginTop: 8 }}>
+          <Btn label={saving ? "Saving…" : "Save Changes"} disabled={saving} onPress={async () => {
+            setSaving(true);
+            try {
+              await api.put("/users/profile", { name: profile.name, college: profile.college });
+              Alert.alert("Saved!", "Profile updated.");
+            } catch (e) { Alert.alert("Error", e.message); } finally { setSaving(false); }
+          }} />
+        </View>
+      </Card>
+      <Btn label="Logout" variant="danger" onPress={logout} />
     </Screen>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  pageTitle: { fontSize: 22, fontWeight: "800", color: C.slate900 },
+  card: {
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+  },
+  input: {
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: C.slate900,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(2,6,23,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: C.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    gap: 10,
+  },
+});
