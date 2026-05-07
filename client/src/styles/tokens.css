@@ -1,47 +1,55 @@
-/* ============================================
-   EDUHUB DESIGN SYSTEM — TOKENS
-   Refined Academic Dark Theme
-   ============================================ */
+/* ============================================================
+   EDUHUB DESIGN SYSTEM — TOKENS v2
+   Deep indigo/violet base with electric accents
+   ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 :root {
-    /* ── Brand Palette ──────────────────────── */
-    --color-ink: #0d0f14;
-    --color-ink-soft: #161922;
-    --color-surface: #1b1f2b;
-    --color-surface-2: #222738;
-    --color-surface-3: #2a2f42;
+    --radius: 0.875rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-full: 9999px;
+
+    /* ── Dark palette (default) ─────────── */
+    --color-ink: #0f1117;
+    --color-ink-soft: #141720;
+    --color-surface: #191d2c;
+    --color-surface-2: #1e2235;
+    --color-surface-3: #252a3e;
+
     --color-border: rgba(255, 255, 255, 0.07);
     --color-border-2: rgba(255, 255, 255, 0.12);
 
-    /* ── Accent ─────────────────────────────── */
-    --color-accent: #5b8cff;
-    --color-accent-2: #7b9cff;
-    --color-accent-glow: rgba(91, 140, 255, 0.25);
-    --color-accent-soft: rgba(91, 140, 255, 0.10);
+    /* ── Accent ─────────────────────────── */
+    --color-accent: #7c6ffd;
+    --color-accent-2: #9d93fe;
+    --color-accent-glow: rgba(124, 111, 253, 0.3);
+    --color-accent-soft: rgba(124, 111, 253, 0.12);
 
-    /* ── Semantic ───────────────────────────── */
+    /* ── Semantic ───────────────────────── */
     --color-success: #34d399;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
     --color-info: #60a5fa;
-
     --color-success-soft: rgba(52, 211, 153, 0.12);
     --color-warning-soft: rgba(251, 191, 36, 0.12);
     --color-danger-soft: rgba(248, 113, 113, 0.12);
     --color-info-soft: rgba(96, 165, 250, 0.12);
 
-    /* ── Text ───────────────────────────────── */
-    --color-text: #e8eaf2;
+    /* ── Text ───────────────────────────── */
+    --color-text: #eaecf5;
     --color-text-2: #a0a8c3;
-    --color-text-3: #636b8a;
-    --color-text-inv: #0d0f14;
+    --color-text-3: #5c6480;
+    --color-text-inv: #0f1117;
 
-    /* ── Typography ─────────────────────────── */
-    --font-display: 'DM Serif Display', Georgia, serif;
-    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    /* ── Typography ─────────────────────── */
+    --font-sans: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'DM Mono', 'JetBrains Mono', monospace;
+    --font-display: 'Sora', sans-serif;
 
     --text-xs: 0.6875rem;
     /* 11px */
@@ -60,7 +68,7 @@
     --leading-snug: 1.35;
     --leading-normal: 1.6;
 
-    /* ── Spacing ────────────────────────────── */
+    /* ── Spacing ────────────────────────── */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -72,32 +80,27 @@
     --space-12: 3rem;
     --space-16: 4rem;
 
-    /* ── Radius ─────────────────────────────── */
-    --radius-sm: 0.375rem;
-    --radius-md: 0.625rem;
-    --radius-lg: 0.875rem;
-    --radius-xl: 1.25rem;
-    --radius-2xl: 1.75rem;
-    --radius-full: 9999px;
-
-    /* ── Shadows ────────────────────────────── */
+    /* ── Shadows ────────────────────────── */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
-    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.6);
-    --shadow-accent: 0 0 24px var(--color-accent-glow);
-    --shadow-glow: 0 0 40px rgba(91, 140, 255, 0.15);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.65);
+    --shadow-accent: 0 0 32px var(--color-accent-glow);
+    --shadow-glow: 0 0 48px rgba(124, 111, 253, 0.18);
 
-    /* ── Transitions ────────────────────────── */
+    /* ── Gradients ──────────────────────── */
+    --gradient-primary: linear-gradient(135deg, #7c6ffd, #4fc3f7);
+    --gradient-aurora: linear-gradient(135deg, #7c6ffd, #4fc3f7, #f472b6);
+
+    /* ── Transitions ────────────────────── */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-linear: linear;
 
     --duration-fast: 120ms;
     --duration-normal: 220ms;
     --duration-slow: 380ms;
 
-    /* ── Z-Index ────────────────────────────── */
+    /* ── Z-Index ────────────────────────── */
     --z-bg: -10;
     --z-base: 0;
     --z-raised: 10;
@@ -120,4 +123,8 @@
     --color-text-2: #404660;
     --color-text-3: #7a82a6;
     --color-text-inv: #ffffff;
+    --color-accent: #5b4fcf;
+    --color-accent-2: #7b6fea;
+    --color-accent-glow: rgba(91, 79, 207, 0.2);
+    --color-accent-soft: rgba(91, 79, 207, 0.1);
 }

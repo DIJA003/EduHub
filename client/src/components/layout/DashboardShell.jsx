@@ -5,7 +5,7 @@ import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 import { initials } from "../../lib/utils";
 
-/* ── Nav helpers ─────────────────────────── */
+/* ── Nav definitions ─────────────────── */
 export const STUDENT_NAV = [
   { to: "/std-dashboard", label: "Dashboard", icon: "⬡", end: true },
   { to: "/academic-year", label: "Academic Years", icon: "◈" },
@@ -35,7 +35,7 @@ const NAV_BY_ROLE = {
   student: STUDENT_NAV,
 };
 
-/* ── Avatar ──────────────────────────────── */
+/* ── Avatar ──────────────────────────── */
 function Avatar({ name, size = "sm", onClick }) {
   const ini = initials(name);
   const hash = [...(name ?? "")].reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -54,7 +54,8 @@ function Avatar({ name, size = "sm", onClick }) {
       className={cn(
         sizeMap[size] ?? sizeMap.sm,
         "rounded-full flex items-center justify-center font-bold text-white shrink-0",
-        "transition-all duration-200 hover:ring-2 hover:ring-offset-2",
+        "transition-all duration-200",
+        "hover:ring-2 hover:ring-offset-2",
         "hover:ring-[var(--color-accent)] hover:ring-offset-[var(--color-ink)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
       )}
@@ -66,7 +67,7 @@ function Avatar({ name, size = "sm", onClick }) {
   );
 }
 
-/* ── NavItem ─────────────────────────────── */
+/* ── NavItem ─────────────────────────── */
 function NavItem({ to, icon, label, end, collapsed }) {
   return (
     <NavLink
@@ -78,7 +79,7 @@ function NavItem({ to, icon, label, end, collapsed }) {
           "text-[var(--text-sm)] font-medium transition-all duration-[var(--duration-fast)]",
           "group relative",
           isActive
-            ? "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] border border-[var(--color-accent)] border-opacity-20"
+            ? "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] border border-[var(--color-accent)] border-opacity-25 shadow-[0_0_12px_var(--color-accent-glow)]"
             : "text-[var(--color-text-3)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
         )
       }
@@ -91,11 +92,10 @@ function NavItem({ to, icon, label, end, collapsed }) {
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
       {collapsed && (
-        /* Tooltip on hover when collapsed */
         <span
           className={cn(
             "absolute left-full ml-2.5 px-2.5 py-1.5 z-50",
-            "bg-[var(--color-surface-3)] text-[var(--color-text)] text-[var(--text-xs)]",
+            "glass-strong text-[var(--color-text)] text-[var(--text-xs)]",
             "rounded-[var(--radius-md)] whitespace-nowrap shadow-[var(--shadow-lg)]",
             "border border-[var(--color-border-2)]",
             "pointer-events-none opacity-0 group-hover:opacity-100",
@@ -110,14 +110,13 @@ function NavItem({ to, icon, label, end, collapsed }) {
   );
 }
 
-/* ── Main Shell ──────────────────────────── */
+/* ── Main Shell ──────────────────────── */
 export default function DashboardShell({ title, navItems, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const logout = useAuthStore((s) => s.logout);
   const role = dbUser?.role;
-
   const nav = navItems ?? NAV_BY_ROLE[role] ?? STUDENT_NAV;
 
   const handleLogout = useCallback(async () => {
@@ -133,12 +132,19 @@ export default function DashboardShell({ title, navItems, children }) {
     }[role] ?? "Portal";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-ink)] font-sans">
+    <div className="flex h-screen overflow-hidden bg-[var(--color-ink)] font-sans relative">
+      {/* Aurora background */}
+      <div className="aurora-bg" aria-hidden="true">
+        <div className="aurora-bg__blob-1" />
+        <div className="aurora-bg__blob-2" />
+        <div className="aurora-bg__blob-3" />
+      </div>
+
       {/* ── Sidebar ────────────────────── */}
       <aside
         className={cn(
           "flex flex-col flex-shrink-0 relative z-[var(--z-raised)]",
-          "bg-[var(--color-surface)] border-r border-[var(--color-border)]",
+          "glass-strong border-r border-[var(--color-border)]",
           "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
           collapsed ? "w-[58px]" : "w-56",
         )}
@@ -150,7 +156,7 @@ export default function DashboardShell({ title, navItems, children }) {
             collapsed && "justify-center",
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-white text-sm font-black">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] text-white text-sm font-black shadow-[var(--shadow-accent)]">
             E
           </div>
           {!collapsed && (
@@ -170,7 +176,6 @@ export default function DashboardShell({ title, navItems, children }) {
               "shrink-0 p-1 rounded-[var(--radius-sm)] text-[var(--color-text-3)]",
               "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
               "transition-colors duration-[var(--duration-fast)]",
-              collapsed && "ml-0",
             )}
           >
             <svg
@@ -189,9 +194,9 @@ export default function DashboardShell({ title, navItems, children }) {
           </button>
         </div>
 
-        {/* Nav links */}
+        {/* Nav */}
         <nav
-          className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden"
+          className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden no-scrollbar"
           aria-label="Main navigation"
         >
           {nav.map((item) => (
@@ -199,7 +204,7 @@ export default function DashboardShell({ title, navItems, children }) {
           ))}
         </nav>
 
-        {/* User info */}
+        {/* User bottom */}
         <div className="p-2 border-t border-[var(--color-border)]">
           <div
             className={cn(
@@ -256,7 +261,7 @@ export default function DashboardShell({ title, navItems, children }) {
       {/* ── Main content ───────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Topbar */}
-        <header className="h-14 flex items-center justify-between px-6 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
+        <header className="h-14 flex items-center justify-between px-6 glass-strong border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
           {title && (
             <h1 className="text-[var(--text-base)] font-bold text-[var(--color-text)] truncate">
               {title}

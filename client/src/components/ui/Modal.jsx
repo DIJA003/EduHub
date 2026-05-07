@@ -29,13 +29,11 @@ export default function Modal({
 
   useEffect(() => {
     if (!open) return;
-
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const handleKey = (e) => {
       if (e.key === "Escape") onClose?.();
-
       if (e.key === "Tab") {
         const panel = panelRef.current;
         if (!panel) return;
@@ -57,7 +55,6 @@ export default function Modal({
 
     document.addEventListener("keydown", handleKey);
     setTimeout(() => panelRef.current?.focus(), 50);
-
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = prev;
@@ -78,10 +75,18 @@ export default function Modal({
       ref={overlayRef}
       onClick={handleOverlayClick}
       className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(10px)" }}
       role="presentation"
-      aria-hidden="false"
     >
+      {/* Ambient glow behind modal */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 40%, rgba(124,111,253,0.12) 0%, transparent 70%)",
+        }}
+      />
+
       <div
         ref={panelRef}
         role="dialog"
@@ -89,8 +94,8 @@ export default function Modal({
         aria-labelledby={title ? "modal-title" : undefined}
         tabIndex={-1}
         className={cn(
-          "w-full outline-none animate-scale-in",
-          "bg-[var(--color-surface)] border border-[var(--color-border-2)]",
+          "relative w-full outline-none animate-scale-in",
+          "glass-strong border border-[var(--color-border-2)]",
           "rounded-[var(--radius-2xl)] shadow-[var(--shadow-xl)]",
           sizes[size] ?? sizes.md,
           className,
@@ -151,7 +156,7 @@ export default function Modal({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-ink-soft)] rounded-b-[var(--radius-2xl)]">
+          <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-ink-soft)] bg-opacity-50 rounded-b-[var(--radius-2xl)]">
             {footer}
           </div>
         )}

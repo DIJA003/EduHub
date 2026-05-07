@@ -10,12 +10,12 @@ import Input from "../../../components/ui/Input";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setFirebaseUser, setDbUser, setLoading } = useAuthStore();
+  const { setFirebaseUser, setDbUser } = useAuthStore();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const [loading, setLocalLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   const from = location.state?.from?.pathname || "/";
 
@@ -30,10 +30,7 @@ export default function Login() {
       setError("Please enter your email and password.");
       return;
     }
-
-    setLocalLoading(true);
-    setError("");
-
+    setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(
         auth,
@@ -41,14 +38,9 @@ export default function Login() {
         form.password,
       );
       setFirebaseUser(cred.user);
-
-      // Wait briefly for token propagation
       await new Promise((r) => setTimeout(r, 300));
-
       const { data: dbUser } = await authApi.getMe();
       setDbUser(dbUser);
-
-      // Role-based redirect
       if (dbUser?.role === "admin")
         return navigate("/admin", { replace: true });
       if (dbUser?.role === "mentor")
@@ -64,27 +56,35 @@ export default function Login() {
       };
       setError(messages[err.code] || err.message || "Login failed.");
     } finally {
-      setLocalLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Aurora blobs */}
+      <div className="aurora-bg" aria-hidden="true">
+        <div className="aurora-bg__blob-1" />
+        <div className="aurora-bg__blob-2" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-black mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] text-white text-2xl font-black mb-5 shadow-[var(--shadow-accent)]">
             E
           </div>
-          <h1 className="text-2xl font-black text-slate-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-black text-[var(--color-text)] tracking-tight">
+            Welcome back
+          </h1>
+          <p className="mt-1 text-sm text-[var(--color-text-3)]">
             Sign in to your EduHub account
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="glass-strong rounded-[var(--radius-2xl)] p-8 shadow-[var(--shadow-xl)]">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-5 rounded-[var(--radius-lg)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-3 text-sm text-[var(--color-danger)]">
               {error}
             </div>
           )}
@@ -104,7 +104,7 @@ export default function Login() {
             <Input
               label="Password"
               name="password"
-              type={showPassword ? "text" : "password"}
+              type={showPwd ? "text" : "password"}
               placeholder="Your password"
               value={form.password}
               onChange={handleChange}
@@ -113,11 +113,11 @@ export default function Login() {
               rightIcon={
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="text-slate-400 hover:text-slate-600"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="text-[var(--color-text-3)] hover:text-[var(--color-text)] transition-colors"
                   tabIndex={-1}
                 >
-                  {showPassword ? (
+                  {showPwd ? (
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -159,7 +159,7 @@ export default function Login() {
             <div className="flex items-center justify-end">
               <Link
                 to="/forgotpassword"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-2)] transition-colors"
               >
                 Forgot password?
               </Link>
@@ -167,6 +167,7 @@ export default function Login() {
 
             <Button
               type="submit"
+              variant="gradient"
               loading={loading}
               className="w-full"
               size="lg"
@@ -175,11 +176,11 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-[var(--color-text-3)]">
             Don't have an account?{" "}
             <Link
               to="/register"
-              className="font-semibold text-blue-600 hover:underline"
+              className="font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-2)] transition-colors"
             >
               Create one
             </Link>

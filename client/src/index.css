@@ -1,46 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* EduHub — Main CSS entry point */
+@import './styles/globals.css';
 
-/* Base resets */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
+/* Tailwind directives are already included in globals.css */
+/* App-level overrides below */
+
+/* Aurora background blobs on root layout */
+.aurora-bg {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    overflow: hidden;
 }
 
-html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+.aurora-bg__blob-1 {
+    position: absolute;
+    top: -10rem;
+    right: -10rem;
+    width: 500px;
+    height: 500px;
+    border-radius: 9999px;
+    background: rgba(124, 111, 253, 0.18);
+    filter: blur(100px);
+    animation: blob 14s ease-in-out infinite;
 }
 
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-        "Oxygen", "Ubuntu", sans-serif;
-    background-color: #f8fafc;
-    color: #0f172a;
+.aurora-bg__blob-2 {
+    position: absolute;
+    bottom: -10rem;
+    left: -10rem;
+    width: 450px;
+    height: 450px;
+    border-radius: 9999px;
+    background: rgba(79, 195, 247, 0.12);
+    filter: blur(100px);
+    animation: blob 18s ease-in-out infinite;
+    animation-delay: 3s;
 }
 
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
+.aurora-bg__blob-3 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 380px;
+    height: 380px;
+    border-radius: 9999px;
+    transform: translate(-50%, -50%);
+    background: rgba(244, 114, 182, 0.1);
+    filter: blur(120px);
+    animation: blob 22s ease-in-out infinite;
+    animation-delay: 6s;
 }
 
-/* Focus ring only on keyboard nav */
-:focus:not(:focus-visible) {
-    outline: none;
-}
-
-:focus-visible {
-    outline: 2px solid #2563eb;
-    outline-offset: 2px;
-}
-
-/* Scrollbar styling */
+/* Scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -48,20 +63,10 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--color-surface-3);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-/* Utility: hide scrollbar but keep scroll */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    background: var(--color-text-3);
 }

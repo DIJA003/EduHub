@@ -1,28 +1,53 @@
 import { cn } from "../../lib/utils";
 
 const variants = {
-  default: "bg-slate-100 text-slate-700",
-  blue: "bg-blue-100 text-blue-700",
-  info: "bg-blue-100 text-blue-700",
-  green: "bg-emerald-100 text-emerald-700",
-  success: "bg-emerald-100 text-emerald-700",
-  yellow: "bg-amber-100 text-amber-700",
-  warning: "bg-amber-100 text-amber-700",
-  red: "bg-red-100 text-red-700",
-  danger: "bg-red-100 text-red-700",
-  purple: "bg-purple-100 text-purple-700",
-  gray: "bg-gray-100 text-gray-600",
+  default:
+    "bg-[var(--color-surface-3)] text-[var(--color-text-2)] border-[var(--color-border-2)]",
+  blue: "bg-blue-500/15    text-blue-400    border-blue-500/25",
+  info: "bg-blue-500/15    text-blue-400    border-blue-500/25",
+  green: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  success: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+  yellow: "bg-amber-500/15   text-amber-400   border-amber-500/25",
+  warning: "bg-amber-500/15   text-amber-400   border-amber-500/25",
+  red: "bg-red-500/15     text-red-400     border-red-500/25",
+  danger: "bg-red-500/15     text-red-400     border-red-500/25",
+  purple: "bg-purple-500/15  text-purple-400  border-purple-500/25",
+  gray: "bg-[var(--color-surface-2)] text-[var(--color-text-3)] border-[var(--color-border)]",
+  accent:
+    "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] border-[var(--color-accent)] border-opacity-25",
 };
 
-export default function Badge({ variant = "default", children, className }) {
+export default function Badge({
+  variant = "default",
+  children,
+  className,
+  dot = false,
+}) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold",
+        "inline-flex items-center gap-1.5 border rounded-full",
+        "px-2.5 py-0.5 text-[var(--text-xs)] font-semibold",
         variants[variant] || variants.default,
         className,
       )}
     >
+      {dot && (
+        <span
+          className={cn(
+            "h-1.5 w-1.5 rounded-full shrink-0",
+            variant === "yellow" || variant === "warning"
+              ? "bg-amber-400 animate-pulse"
+              : variant === "green" || variant === "success"
+                ? "bg-emerald-400"
+                : variant === "red" || variant === "danger"
+                  ? "bg-red-400"
+                  : variant === "blue" || variant === "info"
+                    ? "bg-blue-400"
+                    : "bg-[var(--color-text-3)]",
+          )}
+        />
+      )}
       {children}
     </span>
   );

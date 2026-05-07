@@ -3,17 +3,20 @@ import { cn } from "../../lib/utils";
 
 const variants = {
   primary: [
+    "relative overflow-hidden",
     "bg-[var(--color-accent)] text-white",
-    "hover:bg-[var(--color-accent-2)] hover:shadow-[var(--shadow-accent)]",
+    "shadow-[var(--shadow-accent)]",
+    "hover:brightness-110 hover:shadow-[0_0_32px_var(--color-accent-glow)]",
     "active:scale-[0.97]",
     "disabled:opacity-40 disabled:cursor-not-allowed",
-    "shadow-[var(--shadow-sm)]",
+    "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
+    "before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500",
   ].join(" "),
 
   secondary: [
-    "bg-[var(--color-surface-2)] text-[var(--color-text)]",
+    "glass text-[var(--color-text)]",
     "border border-[var(--color-border-2)]",
-    "hover:bg-[var(--color-surface-3)] hover:border-[var(--color-accent)]",
+    "hover:border-[var(--color-accent)] hover:text-[var(--color-accent-2)]",
     "active:scale-[0.97]",
     "disabled:opacity-40 disabled:cursor-not-allowed",
   ].join(" "),
@@ -28,7 +31,7 @@ const variants = {
   danger: [
     "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
     "border border-[var(--color-danger)] border-opacity-30",
-    "hover:bg-[var(--color-danger)] hover:text-white",
+    "hover:bg-[var(--color-danger)] hover:text-white hover:border-transparent",
     "active:scale-[0.97]",
     "disabled:opacity-40 disabled:cursor-not-allowed",
   ].join(" "),
@@ -36,7 +39,7 @@ const variants = {
   success: [
     "bg-[var(--color-success-soft)] text-[var(--color-success)]",
     "border border-[var(--color-success)] border-opacity-30",
-    "hover:bg-[var(--color-success)] hover:text-white",
+    "hover:bg-[var(--color-success)] hover:text-white hover:border-transparent",
     "active:scale-[0.97]",
     "disabled:opacity-40 disabled:cursor-not-allowed",
   ].join(" "),
@@ -46,13 +49,22 @@ const variants = {
     "hover:underline hover:text-[var(--color-accent-2)]",
     "disabled:opacity-40 disabled:cursor-not-allowed",
   ].join(" "),
+
+  gradient: [
+    "relative overflow-hidden text-white font-semibold",
+    "bg-gradient-to-r from-[var(--color-accent)] to-[#4fc3f7]",
+    "shadow-[var(--shadow-accent)]",
+    "hover:shadow-[0_0_40px_var(--color-accent-glow)] hover:brightness-110",
+    "active:scale-[0.97]",
+    "disabled:opacity-40 disabled:cursor-not-allowed",
+  ].join(" "),
 };
 
 const sizes = {
   xs: "px-2.5 py-1.5 text-[var(--text-xs)] gap-1.5 rounded-[var(--radius-sm)]",
-  sm: "px-3.5 py-2 text-[var(--text-sm)] gap-2 rounded-[var(--radius-md)]",
-  md: "px-5 py-2.5 text-[var(--text-base)] gap-2 rounded-[var(--radius-md)]",
-  lg: "px-6 py-3 text-[var(--text-lg)] gap-2.5 rounded-[var(--radius-lg)]",
+  sm: "px-3.5 py-2   text-[var(--text-sm)]  gap-2   rounded-[var(--radius-md)]",
+  md: "px-5   py-2.5 text-[var(--text-base)] gap-2   rounded-[var(--radius-md)]",
+  lg: "px-6   py-3   text-[var(--text-lg)]   gap-2.5 rounded-[var(--radius-lg)]",
 };
 
 const Spinner = () => (

@@ -1,20 +1,24 @@
 import { cn } from "../../lib/utils";
 import Button from "../ui/Button";
 
-export function Skeleton({ className }) {
-  return <div className={cn("skeleton", className)} aria-hidden="true" />;
+export function Skeleton({ className, style }) {
+  return (
+    <div
+      className={cn("skeleton", className)}
+      style={style}
+      aria-hidden="true"
+    />
+  );
 }
 
 export function TableSkeleton({ rows = 5, cols = 4 }) {
   return (
     <div role="status" aria-label="Loading table data">
-      {/* Header */}
       <div className="flex gap-4 px-5 py-3 border-b border-[var(--color-border)]">
         {Array.from({ length: cols }, (_, i) => (
           <Skeleton key={i} className="h-2.5 flex-1 max-w-[120px]" />
         ))}
       </div>
-      {/* Rows */}
       {Array.from({ length: rows }, (_, i) => (
         <div
           key={i}
@@ -121,7 +125,6 @@ export function EmptyState({
           {icon}
         </div>
       )}
-
       <h3
         className={cn(
           "font-semibold text-[var(--color-text)]",
@@ -130,7 +133,6 @@ export function EmptyState({
       >
         {title}
       </h3>
-
       {description && (
         <p
           className={cn(
@@ -141,7 +143,6 @@ export function EmptyState({
           {description}
         </p>
       )}
-
       {action && typeof action === "function" && actionLabel && (
         <Button className="mt-5" size="sm" onClick={action}>
           {actionLabel}
