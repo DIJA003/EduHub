@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { collegesApi } from "../../../lib/api/college.api";
 import { usePagination } from "../../../hooks/usePagination";
@@ -46,7 +46,6 @@ export default function CollegesPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => collegesApi.update(id, data),
     onSuccess: () => {
@@ -56,7 +55,6 @@ export default function CollegesPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const deleteMutation = useMutation({
     mutationFn: collegesApi.remove,
     onSuccess: () => {
@@ -66,7 +64,6 @@ export default function CollegesPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const restoreMutation = useMutation({
     mutationFn: collegesApi.restore,
     onSuccess: () => {
@@ -96,12 +93,19 @@ export default function CollegesPage() {
       semesters: parseInt(form.semesters),
       programs: parseInt(form.programs),
     };
-    if (editTarget) {
+    if (editTarget)
       updateMutation.mutate({ id: editTarget._id, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
+    else createMutation.mutate(payload);
   };
+
+  // Stable callback — won't cause DataTable to re-run its search effect
+  const handleSearch = useCallback(
+    (s) => {
+      setSearch(s);
+      setPage(1);
+    },
+    [setPage],
+  );
 
   const COLUMNS = [
     {
@@ -109,10 +113,10 @@ export default function CollegesPage() {
       label: "College Name",
       render: (c) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center">
+          <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] text-[var(--text-sm)] font-bold flex items-center justify-center">
             {c.name[0]}
           </div>
-          <span className="font-medium text-slate-900">{c.name}</span>
+          <span className="font-medium text-[var(--color-text)]">{c.name}</span>
           {c.isDeleted && <Badge variant="red">Deleted</Badge>}
         </div>
       ),
@@ -160,19 +164,23 @@ export default function CollegesPage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-up">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-900">
+            <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
               Academic Management
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
               Manage faculties, colleges and academic structure.
             </p>
           </div>
           <button
             onClick={() => setShowDeleted((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${showDeleted ? "bg-red-100 text-red-700 border border-red-200" : "bg-white border border-slate-200 text-slate-600"}`}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold border transition-colors ${
+              showDeleted
+                ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] border-opacity-30"
+                : "bg-[var(--color-surface-2)] border-[var(--color-border-2)] text-[var(--color-text-3)] hover:text-[var(--color-text)]"
+            }`}
           >
             {showDeleted ? "Hide Deleted" : "Show Deleted"}
           </button>
@@ -186,10 +194,7 @@ export default function CollegesPage() {
           meta={meta}
           page={page}
           onPage={setPage}
-          onSearch={(s) => {
-            setSearch(s);
-            setPage(1);
-          }}
+          onSearch={handleSearch}
           onAdd={openAdd}
           addLabel="Add College"
           emptyIcon="🏫"
@@ -248,13 +253,13 @@ export default function CollegesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
               Status
             </label>
             <select
               value={form.status}
               onChange={set("status")}
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               <option>Active</option>
               <option>Inactive</option>

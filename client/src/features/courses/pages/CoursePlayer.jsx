@@ -7,7 +7,6 @@ import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
 import { useFirebaseUpload } from "../../materials/hooks/useMaterials";
-import useAuthStore from "../../../stores/auth.store";
 import apiClient from "../../../lib/api/client";
 import { useToasts } from "../../../hooks/useToasts";
 
@@ -65,18 +64,20 @@ function UploadModal({ course, yearId, onClose }) {
       style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
     >
       <div className="w-full max-w-md rounded-[var(--radius-2xl)] bg-[var(--color-surface)] border border-[var(--color-border-2)] shadow-[var(--shadow-xl)] animate-scale-in">
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
           <h2 className="font-bold text-[var(--color-text)]">
             Upload Material
           </h2>
           <button
             onClick={onClose}
-            className="text-[var(--color-text-3)] hover:text-[var(--color-text)] text-xl leading-none"
+            className="text-[var(--color-text-3)] hover:text-[var(--color-text)] text-xl leading-none transition-colors"
           >
             ×
           </button>
         </div>
 
+        {/* Body */}
         <div className="p-6 space-y-4">
           {error && (
             <div className="rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-2 text-[var(--text-sm)] text-[var(--color-danger)]">
@@ -89,14 +90,14 @@ function UploadModal({ course, yearId, onClose }) {
             placeholder="Material title *"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] placeholder:text-[var(--color-text-3)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
           />
           <input
             type="text"
             placeholder="Section / chapter (optional)"
             value={sectionLabel}
             onChange={(e) => setSectionLabel(e.target.value)}
-            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] placeholder:text-[var(--color-text-3)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
           />
 
           <FileDropZone
@@ -108,6 +109,7 @@ function UploadModal({ course, yearId, onClose }) {
           />
         </div>
 
+        {/* Footer */}
         <div className="flex gap-3 border-t border-[var(--color-border)] px-6 py-4">
           <Button variant="ghost" onClick={onClose} disabled={uploading}>
             Cancel
@@ -121,9 +123,10 @@ function UploadModal({ course, yearId, onClose }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function CoursePlayer() {
   const { yearId, courseId } = useParams();
-  const dbUser = useAuthStore((s) => s.dbUser);
   const [showUpload, setShowUpload] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
 
@@ -184,17 +187,18 @@ export default function CoursePlayer() {
 
   return (
     <DashboardShell title={course.title}>
+      {/* Breadcrumb */}
       <div className="mb-4 flex items-center gap-2 text-[var(--text-sm)]">
         <Link
           to="/academic-year"
-          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)]"
+          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)] transition-colors"
         >
           Academic Years
         </Link>
         <span className="text-[var(--color-text-3)]">›</span>
         <Link
           to={`/academic-year/${yearId}`}
-          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)]"
+          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)] transition-colors"
         >
           Year {yearId}
         </Link>
@@ -204,6 +208,7 @@ export default function CoursePlayer() {
         </span>
       </div>
 
+      {/* Course hero banner */}
       <div className="mb-6 rounded-[var(--radius-2xl)] bg-gradient-to-r from-[var(--color-accent)] to-[#7b9cff] p-6 text-white flex flex-wrap gap-4 items-start justify-between shadow-[var(--shadow-accent)]">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -232,6 +237,7 @@ export default function CoursePlayer() {
         </Button>
       </div>
 
+      {/* Materials list */}
       {Object.keys(sections).length === 0 ? (
         <div className="rounded-[var(--radius-2xl)] border-2 border-dashed border-[var(--color-border-2)] py-16 text-center">
           <p className="text-3xl mb-3">📚</p>
@@ -269,6 +275,7 @@ export default function CoursePlayer() {
                   {activeSection === section ? "▲" : "▼"}
                 </span>
               </button>
+
               {activeSection === section && (
                 <div className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
                   {mats.map((mat) => (
@@ -304,6 +311,7 @@ export default function CoursePlayer() {
         </div>
       )}
 
+      {/* Upload modal — rendered outside the list so state is stable */}
       {showUpload && (
         <UploadModal
           course={course}

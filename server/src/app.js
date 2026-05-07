@@ -4,12 +4,13 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const path = require("path");
 
 const {
   errorHandler,
   notFoundHandler,
 } = require("./middleware/error.middleware");
-const path = require("path");
+
 const authRouter = require("./modules/auth/auth.router");
 const usersRouter = require("./modules/users/users.router");
 const coursesRouter = require("./modules/courses/courses.router");
@@ -26,6 +27,7 @@ const adminDashboardRouter = require("./modules/admin/dashboard.router");
 
 const app = express();
 
+// ── Security headers ────────────────────────────────────────────────────────
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -33,22 +35,24 @@ app.use(
   }),
 );
 
+// ── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.CLIENT_URLS || "http://localhost:3000")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error(`CORS: origin "${origin}" not allowed`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  }),
-);
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin "${origin}" not allowed`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+};
 
+app.use(cors(corsOptions));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use(
   "/api/auth/register",
   rateLimit({
@@ -71,10 +75,21 @@ app.use(
   }),
 );
 
+// ── Body parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
+app.use(
+  "/uploads",
+  cors(corsOptions), // allow browser fetch from React dev server
+  express.static(path.join(__dirname, "../../uploads"), {
+    setHeaders(res) {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
+
+// ── Health check ──────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -84,6 +99,7 @@ app.get("/health", (_req, res) => {
   });
 });
 
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/courses", coursesRouter);
@@ -93,12 +109,12 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/academic-years", academicYearsRouter);
-
 app.use("/api/colleges", collegesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/mentor", mentorRouter);
 app.use("/api/admin", adminDashboardRouter);
 
+// ── Error handlers ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);
 app.use(errorHandler);
 

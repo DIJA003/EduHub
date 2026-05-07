@@ -8,6 +8,7 @@ export const MATERIAL_KEYS = {
   pending: ["materials", "pending"],
   list: (params) => ["materials", "list", params],
 };
+
 export const useMyMaterials = (params) =>
   useQuery({
     queryKey: [...MATERIAL_KEYS.my, params],
@@ -78,7 +79,6 @@ export const useDeleteMaterial = () => {
         my: qc.getQueryData(MATERIAL_KEYS.my),
         pending: qc.getQueryData(MATERIAL_KEYS.pending),
       };
-
       qc.setQueryData(MATERIAL_KEYS.my, (old) =>
         Array.isArray(old)
           ? old.filter((m) => m._id !== id && m.id !== id)
@@ -115,11 +115,22 @@ export const useFirebaseUpload = () => {
     if (sectionId) formData.append("sectionId", sectionId);
     if (sectionLabel) formData.append("sectionLabel", sectionLabel);
     if (yearId) formData.append("yearId", yearId);
-    if (title) formData.append("title", title);
-    else formData.append("title", file.name.replace(/\.[^.]+$/, ""));
+    formData.append("title", title || file.name.replace(/\.[^.]+$/, ""));
 
-    const { auth } = await import("../../../lib/firebase");
-    const token = await auth.currentUser?.getIdToken();
+    // Get token from Firebase if available
+    let token = null;
+    try {
+      const { auth } = await import("../../../lib/firebase");
+      token = await auth.currentUser?.getIdToken();
+    } catch {
+      // no-op — token optional in dev
+    }
+
+    // Derive server origin from API URL:
+    // REACT_APP_API_URL = "http://localhost:8000/api"  →  origin = "http://localhost:8000"
+    const API_URL =
+      process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+    const UPLOAD_ENDPOINT = `${API_URL}/uploads/upload`;
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -133,8 +144,16 @@ export const useFirebaseUpload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
+            const material = data?.data ?? data;
+
+            // Patch fileUrl to be fully qualified for local dev
+            if (material?.fileUrl && material.fileUrl.startsWith("/uploads")) {
+              const serverOrigin = API_URL.replace(/\/api$/, "");
+              material.fileUrl = `${serverOrigin}${material.fileUrl}`;
+            }
+
             qc.invalidateQueries({ queryKey: MATERIAL_KEYS.all });
-            resolve(data?.data ?? data);
+            resolve(material);
           } catch {
             reject(new Error("Invalid server response."));
           }
@@ -158,12 +177,9 @@ export const useFirebaseUpload = () => {
         reject(new Error("Upload timed out.")),
       );
 
-      xhr.timeout = 10 * 60 * 1000;
+      xhr.timeout = 10 * 60 * 1000; // 10 min
 
-      const BASE_URL =
-        process.env.REACT_APP_API_URL || "http://localhost:8000/api";
-
-      xhr.open("POST", `${BASE_URL}/uploads/upload`);
+      xhr.open("POST", UPLOAD_ENDPOINT);
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.send(formData);
     });

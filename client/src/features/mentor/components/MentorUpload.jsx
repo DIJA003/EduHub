@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   useMyMaterials,
   useFirebaseUpload,
   useDeleteMaterial,
 } from "../../materials/hooks/useMaterials";
 import { useQuery } from "@tanstack/react-query";
-import api from "../../../lib/api/client";
 import { usePagination } from "../../../hooks/usePagination";
 import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
@@ -29,7 +28,10 @@ export default function MentorUpload() {
   const { page } = usePagination();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [form, setForm] = useState({ courseId: "", title: "" });
+
+  // Separate state fields to avoid object reference churn
+  const [courseId, setCourseId] = useState("");
+  const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -48,25 +50,29 @@ export default function MentorUpload() {
   const { upload } = useFirebaseUpload();
   const deleteMutation = useDeleteMaterial();
 
-  const handleFile = (f) => {
+  // Stable callbacks
+  const handleFile = useCallback((f) => {
     setFile(f);
-    if (!form.title)
-      setForm((p) => ({ ...p, title: f.name.replace(/\.[^.]+$/, "") }));
-  };
+    setTitle((prev) => prev || f.name.replace(/\.[^.]+$/, ""));
+  }, []);
+
+  const handleTitleChange = useCallback((e) => setTitle(e.target.value), []);
+  const handleCourseChange = useCallback(
+    (e) => setCourseId(e.target.value),
+    [],
+  );
 
   const handleUpload = async () => {
-    if (!file || !form.courseId || !form.title.trim())
+    if (!file || !courseId || !title.trim())
       return toast.error("Please select a file, course, and title.");
     setUploading(true);
     setUploadProgress(0);
     try {
-      await upload(
-        { file, courseId: form.courseId, title: form.title },
-        setUploadProgress,
-      );
+      await upload({ file, courseId, title: title.trim() }, setUploadProgress);
       toast.success("Material uploaded successfully");
       setFile(null);
-      setForm({ courseId: "", title: "" });
+      setTitle("");
+      setCourseId("");
     } catch (err) {
       toast.error(err.message || "Upload failed");
     } finally {
@@ -77,17 +83,19 @@ export default function MentorUpload() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-up">
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
             Upload Material
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Share study materials with your students via Firebase Storage.
+          <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
+            Share study materials with your students.
           </p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
+        {/* Upload form */}
+        <div className="surface p-6 space-y-5">
           <FileDropZone
             file={file}
             onFile={handleFile}
@@ -97,29 +105,29 @@ export default function MentorUpload() {
           />
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Material Title <span className="text-red-500">*</span>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Material Title{" "}
+                <span className="text-[var(--color-danger)]">*</span>
               </label>
               <input
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] placeholder:text-[var(--color-text-3)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                 placeholder="e.g. Week 4 Lecture Notes"
-                value={form.title}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, title: e.target.value }))
-                }
+                value={title}
+                onChange={handleTitleChange}
               />
             </div>
+
+            {/* Course */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Course <span className="text-red-500">*</span>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Course <span className="text-[var(--color-danger)]">*</span>
               </label>
               <select
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.courseId}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, courseId: e.target.value }))
-                }
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
+                value={courseId}
+                onChange={handleCourseChange}
               >
                 <option value="">Select course…</option>
                 {courses.map((c) => (
@@ -134,21 +142,24 @@ export default function MentorUpload() {
           <Button
             onClick={handleUpload}
             loading={uploading}
-            disabled={!file || !form.courseId || !form.title.trim()}
+            disabled={!file || !courseId || !title.trim()}
           >
             Upload Material
           </Button>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-200">
-            <h2 className="text-sm font-bold text-slate-900">
+        {/* Materials table */}
+        <div className="surface overflow-hidden">
+          <div className="px-5 py-4 border-b border-[var(--color-border)]">
+            <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text)]">
               My Uploaded Materials
             </h2>
           </div>
 
           {isLoading ? (
-            <div className="p-8 text-center text-slate-400">Loading…</div>
+            <div className="p-8 text-center text-[var(--color-text-3)] text-[var(--text-sm)]">
+              Loading…
+            </div>
           ) : materials.length === 0 ? (
             <EmptyState
               icon="📁"
@@ -157,13 +168,13 @@ export default function MentorUpload() {
             />
           ) : (
             <table className="w-full">
-              <thead className="bg-slate-50">
+              <thead className="bg-[var(--color-surface-2)]">
                 <tr>
                   {["Material", "Course", "Type", "Status", "Date", ""].map(
                     (h) => (
                       <th
                         key={h}
-                        className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+                        className="px-5 py-3 text-left text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)]"
                       >
                         {h}
                       </th>
@@ -171,11 +182,11 @@ export default function MentorUpload() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[var(--color-border)]">
                 {materials.map((m) => (
                   <tr
                     key={m._id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className="hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -183,7 +194,7 @@ export default function MentorUpload() {
                           {TYPE_ICON[m.type] || "📁"}
                         </span>
                         <div>
-                          <p className="font-medium text-slate-900 text-sm">
+                          <p className="font-medium text-[var(--color-text)] text-[var(--text-sm)]">
                             {m.title}
                           </p>
                           {m.fileUrl && (
@@ -191,7 +202,7 @@ export default function MentorUpload() {
                               href={m.fileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline"
+                              className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline"
                             >
                               View file ↗
                             </a>
@@ -203,16 +214,16 @@ export default function MentorUpload() {
                       {m.courseRef?.title ? (
                         <Badge variant="blue">{m.courseRef.title}</Badge>
                       ) : (
-                        "—"
+                        <span className="text-[var(--color-text-3)]">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-slate-500">
+                    <td className="px-5 py-3.5 text-[var(--text-xs)] text-[var(--color-text-3)]">
                       {m.type}
                     </td>
                     <td className="px-5 py-3.5">
                       <Badge variant={statusBadge(m.status)}>{m.status}</Badge>
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-slate-400">
+                    <td className="px-5 py-3.5 text-[var(--text-xs)] text-[var(--color-text-3)]">
                       {formatDate(m.createdAt)}
                     </td>
                     <td className="px-5 py-3.5 text-right">
@@ -222,7 +233,7 @@ export default function MentorUpload() {
                         onClick={() => setDeleteTarget(m)}
                       >
                         <svg
-                          className="w-3.5 h-3.5 text-red-500"
+                          className="w-3.5 h-3.5 text-[var(--color-danger)]"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"

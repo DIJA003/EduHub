@@ -70,6 +70,12 @@ const formatBytes = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const getServerOrigin = () => {
+  if (process.env.SERVER_URL) return process.env.SERVER_URL.replace(/\/$/, "");
+  const port = process.env.PORT || 8000;
+  return `http://localhost:${port}`;
+};
+
 const uploadsController = {
   uploadMiddleware: upload.single("file"),
 
@@ -79,8 +85,12 @@ const uploadsController = {
 
       const courseId = req.body?.courseId || null;
       const userId = req.user.id;
+
       const storagePath = `${courseId || "general"}/${userId}/${req.file.filename}`;
-      const fileUrl = `/uploads/materials/${storagePath}`;
+
+      const serverOrigin = getServerOrigin();
+      const fileUrl = `${serverOrigin}/uploads/materials/${storagePath}`;
+
       const fileType = detectFileType(req.file.mimetype);
       const title =
         req.body?.title || req.file.originalname.replace(/\.[^.]+$/, "");
@@ -98,7 +108,7 @@ const uploadsController = {
           sectionLabel: req.body?.sectionLabel || undefined,
           yearId: req.body?.yearId || undefined,
           title,
-          fileUrl,
+          fileUrl, // ← fully qualified URL
           fileType,
         },
       });
@@ -114,6 +124,7 @@ const uploadsController = {
           fileSize: formatBytes(req.file.size),
           mimeType: req.file.mimetype,
           storagePath,
+          fileUrl,
           courseId,
           status: material.status,
         },

@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Base Reset ──────────────────────── */
+/* ── Base Reset ──────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -30,7 +30,7 @@ body {
     overflow-x: hidden;
 }
 
-/* ── Focus ───────────────────────────── */
+/* ── Focus ───────────────────────────────────────────────── */
 :focus:not(:focus-visible) {
     outline: none;
 }
@@ -41,7 +41,7 @@ body {
     border-radius: var(--radius-sm);
 }
 
-/* ── Scrollbar ───────────────────────── */
+/* ── Scrollbar ───────────────────────────────────────────── */
 ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -60,13 +60,13 @@ body {
     background: var(--color-text-3);
 }
 
-/* ── Selection ───────────────────────── */
+/* ── Selection ───────────────────────────────────────────── */
 ::selection {
     background: var(--color-accent-soft);
     color: var(--color-accent-2);
 }
 
-/* ── Headings ────────────────────────── */
+/* ── Headings ────────────────────────────────────────────── */
 h1,
 h2,
 h3,
@@ -79,32 +79,36 @@ h6 {
     letter-spacing: -0.02em;
 }
 
-/* ── Utility classes ─────────────────── */
+/* ── Glass utilities (Merger2-calibrated) ────────────────── */
 
-/* Glass morphism */
+/* Lighter glass — matches Merger2's sidebar/navbar feel */
 .glass {
-    background: rgba(25, 29, 44, 0.65);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background: rgba(17, 21, 32, 0.70);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
     border: 1px solid var(--color-border);
 }
 
+/* Strong glass — used by DashboardShell, modals */
 .glass-strong {
-    background: rgba(25, 29, 44, 0.85);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    background: rgba(17, 21, 32, 0.88);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--color-border-2);
 }
 
-/* Light mode glass overrides */
-[data-theme="light"] .glass {
-    background: rgba(255, 255, 255, 0.7);
+/* Light mode overrides */
+[data-theme="light"] .glass,
+html.light .glass {
+    background: rgba(255, 255, 255, 0.72);
 }
 
-[data-theme="light"] .glass-strong {
-    background: rgba(255, 255, 255, 0.9);
+[data-theme="light"] .glass-strong,
+html.light .glass-strong {
+    background: rgba(255, 255, 255, 0.92);
 }
 
+/* ── Surface utility ─────────────────────────────────────── */
 .surface {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -117,7 +121,7 @@ h6 {
     border-radius: var(--radius-lg);
 }
 
-/* Gradients */
+/* ── Gradient utilities ──────────────────────────────────── */
 .gradient-primary {
     background: var(--gradient-primary);
 }
@@ -145,7 +149,7 @@ h6 {
     box-shadow: var(--shadow-accent);
 }
 
-/* Hover lift */
+/* ── Hover lift ──────────────────────────────────────────── */
 .hover-lift {
     transition: transform var(--duration-normal) var(--ease-out),
         box-shadow var(--duration-normal) ease;
@@ -156,7 +160,7 @@ h6 {
     box-shadow: var(--shadow-lg);
 }
 
-/* Grid pattern overlay */
+/* ── Grid pattern ────────────────────────────────────────── */
 .grid-pattern {
     background-image:
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -164,7 +168,7 @@ h6 {
     background-size: 48px 48px;
 }
 
-/* ── Animations ──────────────────────── */
+/* ── Animations ──────────────────────────────────────────── */
 @keyframes fadeUp {
     from {
         opacity: 0;
@@ -219,7 +223,7 @@ h6 {
     }
 
     50% {
-        box-shadow: 0 0 28px var(--color-accent-glow), 0 0 56px rgba(124, 111, 253, 0.1);
+        box-shadow: 0 0 28px var(--color-accent-glow), 0 0 56px rgba(108, 99, 255, 0.10);
     }
 }
 
@@ -279,7 +283,7 @@ h6 {
     }
 }
 
-/* Animation utilities */
+/* ── Animation classes ───────────────────────────────────── */
 .animate-fade-up {
     animation: fadeUp var(--duration-slow) var(--ease-out) both;
 }
@@ -333,7 +337,7 @@ h6 {
     animation-delay: 300ms;
 }
 
-/* ── Skeleton ────────────────────────── */
+/* ── Skeleton ─────────────────────────────────────────────── */
 .skeleton {
     background: linear-gradient(90deg,
             var(--color-surface-2) 25%,
@@ -344,7 +348,7 @@ h6 {
     border-radius: var(--radius-md);
 }
 
-/* No scrollbar */
+/* ── Scrollbar hide ───────────────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
@@ -352,4 +356,14 @@ h6 {
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* ── Merger2 admin.css baseline overrides ─────────────────
+   The admin pages import ../../assets/admin.css which sets
+   body / bg-base. We neutralise any conflict by ensuring
+   admin-area pages still see the right background through
+   the CSS variable bridge above.
+   ──────────────────────────────────────────────────────── */
+.bg-accent {
+    background-color: var(--accent) !important;
 }

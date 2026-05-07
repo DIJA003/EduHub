@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TableSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Pagination from "../../../components/common/Pagination";
@@ -24,20 +24,25 @@ export default function DataTable({
 }) {
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 400);
+  const onSearchRef = useRef(onSearch);
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
 
   useEffect(() => {
-    onSearch?.(debouncedSearch);
+    onSearchRef.current?.(debouncedSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="surface overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 gap-3">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 shrink-0">
+          <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text)] shrink-0">
             {title}
             {meta?.total != null && (
-              <span className="ml-2 text-slate-400 font-normal">
+              <span className="ml-2 text-[var(--color-text-3)] font-normal">
                 ({meta.total})
               </span>
             )}
@@ -107,12 +112,12 @@ export default function DataTable({
           />
         ) : (
           <table className="w-full">
-            <thead className="bg-slate-50">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap"
+                    className="px-5 py-3 text-left text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)] whitespace-nowrap"
                     style={{ width: col.width }}
                   >
                     {col.label}
@@ -120,16 +125,16 @@ export default function DataTable({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {data.map((row, i) => (
                 <tr
                   key={row._id || i}
-                  className="hover:bg-slate-50 transition-colors"
+                  className="hover:bg-[var(--color-surface-2)] transition-colors duration-[var(--duration-fast)]"
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className="px-5 py-3.5 text-sm text-slate-700 whitespace-nowrap"
+                      className="px-5 py-3.5 text-[var(--text-sm)] text-[var(--color-text-2)] whitespace-nowrap"
                     >
                       {col.render ? col.render(row) : (row[col.key] ?? "—")}
                     </td>

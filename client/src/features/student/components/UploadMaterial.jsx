@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import { useFirebaseUpload } from "../../materials/hooks/useMaterials";
@@ -6,29 +6,33 @@ import { toast } from "../../../hooks/useToasts";
 
 export default function UploadMaterial({ enrollments }) {
   const [file, setFile] = useState(null);
-  const [form, setForm] = useState({ courseId: "", title: "" });
+  const [courseId, setCourseId] = useState("");
+  const [title, setTitle] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { upload } = useFirebaseUpload();
 
-  const handleFile = (f) => {
+  const handleFile = useCallback((f) => {
     setFile(f);
-    if (!form.title)
-      setForm((p) => ({ ...p, title: f.name.replace(/\.[^.]+$/, "") }));
-  };
+    setTitle((prev) => prev || f.name.replace(/\.[^.]+$/, ""));
+  }, []);
+
+  const handleTitleChange = useCallback((e) => setTitle(e.target.value), []);
+  const handleCourseChange = useCallback(
+    (e) => setCourseId(e.target.value),
+    [],
+  );
 
   const handleUpload = async () => {
-    if (!file || !form.courseId || !form.title.trim())
+    if (!file || !courseId || !title.trim())
       return toast.error("Please select a file, course, and title.");
     setUploading(true);
     try {
-      await upload(
-        { file, courseId: form.courseId, title: form.title },
-        setProgress,
-      );
+      await upload({ file, courseId, title: title.trim() }, setProgress);
       toast.success("Material submitted for review");
       setFile(null);
-      setForm({ courseId: "", title: "" });
+      setTitle("");
+      setCourseId("");
     } catch (err) {
       toast.error(err.message || "Upload failed");
     } finally {
@@ -38,8 +42,8 @@ export default function UploadMaterial({ enrollments }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-      <h2 className="text-sm font-bold text-slate-900">
+    <div className="surface p-6 space-y-4">
+      <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text)]">
         Upload Material for Review
       </h2>
 
@@ -51,29 +55,28 @@ export default function UploadMaterial({ enrollments }) {
       />
 
       <div className="grid grid-cols-2 gap-3">
+        {/* Title */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-[var(--text-xs)] font-medium text-[var(--color-text-2)] mb-1.5">
             Title
           </label>
           <input
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3 py-2 text-[var(--text-sm)] text-[var(--color-text)] placeholder:text-[var(--color-text-3)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
             placeholder="e.g. Chapter 3 Notes"
-            value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+            value={title}
+            onChange={handleTitleChange}
           />
         </div>
+
+        {/* Course select */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-[var(--text-xs)] font-medium text-[var(--color-text-2)] mb-1.5">
             Course
           </label>
           <select
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.courseId}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, courseId: e.target.value }))
-            }
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3 py-2 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
+            value={courseId}
+            onChange={handleCourseChange}
           >
             <option value="">Select course…</option>
             {enrollments.map((e) => (
@@ -88,11 +91,12 @@ export default function UploadMaterial({ enrollments }) {
       <Button
         onClick={handleUpload}
         loading={uploading}
-        disabled={!file || !form.courseId || !form.title.trim()}
+        disabled={!file || !courseId || !title.trim()}
       >
         Submit for Review
       </Button>
-      <p className="text-xs text-slate-400">
+
+      <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
         📌 Materials are reviewed by your mentor before being visible to others.
       </p>
     </div>

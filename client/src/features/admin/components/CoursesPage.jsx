@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import {
   useCourses,
   useCreateCourse,
@@ -14,7 +13,6 @@ import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-import { formatDate } from "../../../lib/utils";
 
 const EMPTY_FORM = {
   code: "",
@@ -52,7 +50,6 @@ export default function CoursesPage() {
   const restoreMutation = useRestoreCourse();
 
   const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
-
   const openAdd = () => {
     setForm(EMPTY_FORM);
     setEditTarget(null);
@@ -72,22 +69,34 @@ export default function CoursesPage() {
     setEditTarget(c);
     setModal(true);
   };
-
   const handleSave = () => {
     const payload = {
       ...form,
       yearId: form.yearId ? parseInt(form.yearId, 10) : undefined,
       creditHours: parseInt(form.creditHours, 10),
     };
-    if (editTarget) {
+    if (editTarget)
       updateMutation.mutate(
         { id: editTarget._id, data: payload },
         { onSuccess: () => setModal(false) },
       );
-    } else {
-      createMutation.mutate(payload, { onSuccess: () => setModal(false) });
-    }
+    else createMutation.mutate(payload, { onSuccess: () => setModal(false) });
   };
+
+  const handleSearch = useCallback(
+    (s) => {
+      setSearch(s);
+      setPage(1);
+    },
+    [setPage],
+  );
+
+  const filterBtnClass = (active) =>
+    `px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold transition-colors capitalize ${
+      active
+        ? "bg-[var(--color-accent)] text-white"
+        : "bg-[var(--color-surface-2)] border border-[var(--color-border-2)] text-[var(--color-text-3)] hover:text-[var(--color-text)]"
+    }`;
 
   const COLUMNS = [
     {
@@ -104,14 +113,16 @@ export default function CoursesPage() {
       key: "title",
       label: "Title",
       render: (c) => (
-        <span className="font-medium text-slate-900">{c.title}</span>
+        <span className="font-medium text-[var(--color-text)]">{c.title}</span>
       ),
     },
     {
       key: "college",
       label: "College",
       render: (c) => (
-        <span className="text-slate-500 text-xs">{c.college || "—"}</span>
+        <span className="text-[var(--color-text-3)] text-[var(--text-xs)]">
+          {c.college || "—"}
+        </span>
       ),
     },
     {
@@ -123,7 +134,9 @@ export default function CoursesPage() {
     {
       key: "creditHours",
       label: "Credits",
-      render: (c) => <span className="text-slate-500">{c.creditHours} cr</span>,
+      render: (c) => (
+        <span className="text-[var(--color-text-3)]">{c.creditHours} cr</span>
+      ),
     },
     {
       key: "status",
@@ -165,16 +178,15 @@ export default function CoursesPage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-up">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
             Course Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
             Create and manage courses across all faculties.
           </p>
         </div>
-
         <div className="flex gap-2 flex-wrap">
           {["all", "Draft", "Published", "Archived"].map((s) => (
             <button
@@ -183,23 +195,22 @@ export default function CoursesPage() {
                 setStatusFilter(s);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
-                statusFilter === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
+              className={filterBtnClass(statusFilter === s)}
             >
               {s}
             </button>
           ))}
           <button
             onClick={() => setShowDeleted((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ml-auto ${showDeleted ? "bg-red-100 text-red-700 border border-red-200" : "bg-white border border-slate-200 text-slate-600"}`}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold ml-auto border transition-colors ${
+              showDeleted
+                ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] border-opacity-30"
+                : "bg-[var(--color-surface-2)] border-[var(--color-border-2)] text-[var(--color-text-3)]"
+            }`}
           >
             {showDeleted ? "Hide Deleted" : "Show Deleted"}
           </button>
         </div>
-
         <DataTable
           title="All Courses"
           data={courses}
@@ -208,10 +219,7 @@ export default function CoursesPage() {
           meta={meta}
           page={page}
           onPage={setPage}
-          onSearch={(s) => {
-            setSearch(s);
-            setPage(1);
-          }}
+          onSearch={handleSearch}
           onAdd={openAdd}
           addLabel="Add Course"
           emptyIcon="📚"
@@ -250,13 +258,13 @@ export default function CoursesPage() {
               disabled={!!editTarget}
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
                 Status
               </label>
               <select
                 value={form.status}
                 onChange={set("status")}
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               >
                 <option>Draft</option>
                 <option>Published</option>
@@ -264,7 +272,6 @@ export default function CoursesPage() {
               </select>
             </div>
           </div>
-
           <Input
             label="Course Title"
             required
@@ -272,16 +279,15 @@ export default function CoursesPage() {
             onChange={set("title")}
             placeholder="Introduction to Computer Science"
           />
-
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
                 Academic Year
               </label>
               <select
                 value={form.yearId}
                 onChange={set("yearId")}
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               >
                 <option value="">None</option>
                 {[1, 2, 3, 4].map((y) => (
@@ -306,7 +312,6 @@ export default function CoursesPage() {
               placeholder="Dr. Smith"
             />
           </div>
-
           <Input
             label="College / Faculty"
             value={form.college}

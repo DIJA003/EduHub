@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usersApi } from "../../../lib/api/users.api";
 import { usePagination } from "../../../hooks/usePagination";
@@ -41,7 +41,6 @@ export default function UsersPage() {
         .getAll({ page, limit, search, role: roleFilter, showDeleted })
         .then((r) => r.data),
   });
-
   const users = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
 
@@ -54,7 +53,6 @@ export default function UsersPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => usersApi.update(id, data),
     onSuccess: () => {
@@ -64,7 +62,6 @@ export default function UsersPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const deleteMutation = useMutation({
     mutationFn: usersApi.remove,
     onSuccess: () => {
@@ -74,7 +71,6 @@ export default function UsersPage() {
     },
     onError: (e) => toast.error(e.message),
   });
-
   const restoreMutation = useMutation({
     mutationFn: usersApi.restore,
     onSuccess: () => {
@@ -101,25 +97,38 @@ export default function UsersPage() {
     setEditTarget(u);
     setModal(true);
   };
-
   const handleSave = () => {
     if (!form.name?.trim() || !form.email?.trim())
       return toast.error("Name and email are required");
     if (!editTarget && (!form.password || form.password.length < 8))
       return toast.error("Password must be at least 8 characters");
-
-    if (editTarget) {
-      const payload = {
-        name: form.name,
-        role: form.role,
-        college: form.college,
-        status: form.status,
-      };
-      updateMutation.mutate({ id: editTarget._id, data: payload });
-    } else {
-      createMutation.mutate(form);
-    }
+    if (editTarget)
+      updateMutation.mutate({
+        id: editTarget._id,
+        data: {
+          name: form.name,
+          role: form.role,
+          college: form.college,
+          status: form.status,
+        },
+      });
+    else createMutation.mutate(form);
   };
+
+  const handleSearch = useCallback(
+    (s) => {
+      setSearch(s);
+      setPage(1);
+    },
+    [setPage],
+  );
+
+  const filterBtnClass = (active) =>
+    `px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold transition-colors capitalize ${
+      active
+        ? "bg-[var(--color-accent)] text-white"
+        : "bg-[var(--color-surface-2)] border border-[var(--color-border-2)] text-[var(--color-text-3)] hover:text-[var(--color-text)]"
+    }`;
 
   const COLUMNS = [
     {
@@ -127,12 +136,14 @@ export default function UsersPage() {
       label: "User",
       render: (u) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] text-white text-[var(--text-xs)] font-bold flex items-center justify-center shrink-0">
             {initials(u.name)}
           </div>
           <div>
-            <p className="font-medium text-slate-900">{u.name}</p>
-            <p className="text-xs text-slate-400">{u.email}</p>
+            <p className="font-medium text-[var(--color-text)]">{u.name}</p>
+            <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+              {u.email}
+            </p>
           </div>
           {u.isDeleted && <Badge variant="red">Removed</Badge>}
         </div>
@@ -160,7 +171,9 @@ export default function UsersPage() {
       key: "college",
       label: "College",
       render: (u) => (
-        <span className="text-slate-500 text-xs">{u.college || "—"}</span>
+        <span className="text-[var(--color-text-3)] text-[var(--text-xs)]">
+          {u.college || "—"}
+        </span>
       ),
     },
     {
@@ -172,7 +185,7 @@ export default function UsersPage() {
       key: "createdAt",
       label: "Joined",
       render: (u) => (
-        <span className="text-slate-400 text-xs">
+        <span className="text-[var(--color-text-3)] text-[var(--text-xs)]">
           {formatDate(u.createdAt)}
         </span>
       ),
@@ -210,21 +223,22 @@ export default function UsersPage() {
     },
   ];
 
+  const selectClass =
+    "w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
+
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-up">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-900">
+            <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
               Users Management
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
               Manage students, mentors, and administrators.
             </p>
           </div>
         </div>
-
-        {/* Role filter tabs */}
         <div className="flex gap-2 flex-wrap">
           {["all", "student", "mentor", "admin"].map((r) => (
             <button
@@ -233,27 +247,18 @@ export default function UsersPage() {
                 setRoleFilter(r);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
-                roleFilter === r
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
+              className={filterBtnClass(roleFilter === r)}
             >
               {r}
             </button>
           ))}
           <button
             onClick={() => setShowDeleted((v) => !v)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ml-auto ${
-              showDeleted
-                ? "bg-red-100 text-red-700 border border-red-200"
-                : "bg-white border border-slate-200 text-slate-600"
-            }`}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold ml-auto border transition-colors ${showDeleted ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] border-opacity-30" : "bg-[var(--color-surface-2)] border-[var(--color-border-2)] text-[var(--color-text-3)]"}`}
           >
             {showDeleted ? "Hide Removed" : "Show Removed"}
           </button>
         </div>
-
         <DataTable
           title="All Users"
           data={users}
@@ -262,10 +267,7 @@ export default function UsersPage() {
           meta={meta}
           page={page}
           onPage={setPage}
-          onSearch={(s) => {
-            setSearch(s);
-            setPage(1);
-          }}
+          onSearch={handleSearch}
           onAdd={openAdd}
           addLabel="Add User"
           emptyIcon="👥"
@@ -274,7 +276,6 @@ export default function UsersPage() {
         />
       </div>
 
-      {/* Add/Edit Modal */}
       <Modal
         open={modal}
         onClose={() => setModal(false)}
@@ -303,15 +304,15 @@ export default function UsersPage() {
               placeholder="Jane Smith"
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Role <span className="text-red-500">*</span>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Role <span className="text-[var(--color-danger)]">*</span>
               </label>
               <select
                 value={form.role}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, role: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={selectClass}
               >
                 <option value="student">Student</option>
                 <option value="mentor">Mentor</option>
@@ -319,7 +320,6 @@ export default function UsersPage() {
               </select>
             </div>
           </div>
-
           <Input
             label="Email Address"
             required
@@ -329,7 +329,6 @@ export default function UsersPage() {
             placeholder="jane@university.edu"
             disabled={!!editTarget}
           />
-
           {!editTarget && (
             <Input
               label="Password"
@@ -342,7 +341,6 @@ export default function UsersPage() {
               placeholder="Min 8 characters"
             />
           )}
-
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="College / Faculty"
@@ -353,7 +351,7 @@ export default function UsersPage() {
               placeholder="Faculty of Science"
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
                 Status
               </label>
               <select
@@ -361,7 +359,7 @@ export default function UsersPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, status: e.target.value }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={selectClass}
               >
                 <option>Active</option>
                 <option>Pending</option>
@@ -372,7 +370,6 @@ export default function UsersPage() {
         </div>
       </Modal>
 
-      {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
         title="Remove User"

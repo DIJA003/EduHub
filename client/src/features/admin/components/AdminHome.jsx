@@ -9,12 +9,11 @@ import { timeAgo } from "../../../lib/utils";
 
 const StatCard = ({ title, value, icon, color }) => {
   const colors = {
-    blue: "bg-[var(--color-accent-soft)]  text-[var(--color-accent)]",
-    green: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
-    amber: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
-    red: "bg-[var(--color-danger-soft)]  text-[var(--color-danger)]",
+    blue: "bg-[var(--color-accent-soft)]   text-[var(--color-accent)]",
+    green: "bg-[var(--color-success-soft)]  text-[var(--color-success)]",
+    amber: "bg-[var(--color-warning-soft)]  text-[var(--color-warning)]",
+    red: "bg-[var(--color-danger-soft)]   text-[var(--color-danger)]",
   };
-
   return (
     <div className="surface p-5">
       <div className="flex items-center justify-between mb-4">
@@ -39,7 +38,6 @@ export default function AdminHome() {
     queryKey: ["admin-stats"],
     queryFn: () => dashboardApi.getStats().then((r) => r.data?.data ?? r.data),
   });
-
   const { data: logs, isLoading: logsLoading } = useQuery({
     queryKey: ["admin-recent-logs"],
     queryFn: () =>
@@ -96,7 +94,6 @@ export default function AdminHome() {
             Recent Activity
           </h2>
         </div>
-
         {logsLoading ? (
           <TableSkeleton rows={6} cols={4} />
         ) : (

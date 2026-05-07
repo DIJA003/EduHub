@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   useAllMaterials,
   useDeleteMaterial,
@@ -24,10 +24,17 @@ export default function MaterialsPage() {
     search,
     status: statusFilter !== "all" ? statusFilter : "",
   });
-
   const materials = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
   const deleteMutation = useDeleteMaterial();
+
+  const handleSearch = useCallback(
+    (s) => {
+      setSearch(s);
+      setPage(1);
+    },
+    [setPage],
+  );
 
   const TYPE_ICON = {
     PDF: "📄",
@@ -38,6 +45,13 @@ export default function MaterialsPage() {
     Other: "📁",
   };
 
+  const filterBtnClass = (active) =>
+    `px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold transition-colors capitalize ${
+      active
+        ? "bg-[var(--color-accent)] text-white"
+        : "bg-[var(--color-surface-2)] border border-[var(--color-border-2)] text-[var(--color-text-3)] hover:text-[var(--color-text)]"
+    }`;
+
   const COLUMNS = [
     {
       key: "title",
@@ -46,7 +60,7 @@ export default function MaterialsPage() {
         <div className="flex items-center gap-2">
           <span className="text-lg">{TYPE_ICON[m.type] || "📁"}</span>
           <div>
-            <p className="font-medium text-slate-900 truncate max-w-xs">
+            <p className="font-medium text-[var(--color-text)] truncate max-w-xs">
               {m.title}
             </p>
             {m.fileUrl && (
@@ -54,7 +68,7 @@ export default function MaterialsPage() {
                 href={m.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline"
+                className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline"
               >
                 View file ↗
               </a>
@@ -76,13 +90,17 @@ export default function MaterialsPage() {
     {
       key: "type",
       label: "Type",
-      render: (m) => <span className="text-xs text-slate-500">{m.type}</span>,
+      render: (m) => (
+        <span className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+          {m.type}
+        </span>
+      ),
     },
     {
       key: "uploadedBy",
       label: "Uploaded By",
       render: (m) => (
-        <span className="text-sm text-slate-600">
+        <span className="text-[var(--text-sm)] text-[var(--color-text-2)]">
           {m.uploadedBy?.name || "—"}
         </span>
       ),
@@ -96,7 +114,9 @@ export default function MaterialsPage() {
       key: "createdAt",
       label: "Uploaded",
       render: (m) => (
-        <span className="text-xs text-slate-400">{timeAgo(m.createdAt)}</span>
+        <span className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+          {timeAgo(m.createdAt)}
+        </span>
       ),
     },
     {
@@ -141,16 +161,15 @@ export default function MaterialsPage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 animate-fade-up">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
             Materials Management
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
             Review and manage all uploaded course materials.
           </p>
         </div>
-
         <div className="flex gap-2 flex-wrap">
           {["all", "pending", "approved", "rejected"].map((s) => (
             <button
@@ -159,17 +178,12 @@ export default function MaterialsPage() {
                 setStatusFilter(s);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${
-                statusFilter === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
+              className={filterBtnClass(statusFilter === s)}
             >
               {s}
             </button>
           ))}
         </div>
-
         <DataTable
           title="All Materials"
           data={materials}
@@ -178,10 +192,7 @@ export default function MaterialsPage() {
           meta={meta}
           page={page}
           onPage={setPage}
-          onSearch={(s) => {
-            setSearch(s);
-            setPage(1);
-          }}
+          onSearch={handleSearch}
           emptyIcon="📂"
           emptyTitle="No materials found"
           emptyDescription="Try a different status filter."
@@ -197,7 +208,6 @@ export default function MaterialsPage() {
         onCancel={review.closeReview}
         loading={review.isLoading}
       />
-
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Material"

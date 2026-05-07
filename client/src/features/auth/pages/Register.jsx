@@ -35,7 +35,6 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!form.name.trim()) return setError("Please enter your name.");
     if (form.password !== form.confirmPassword)
       return setError("Passwords do not match.");
@@ -44,7 +43,6 @@ export default function Register() {
         "Password must be at least 8 characters with uppercase, lowercase, and a number.",
       );
     }
-
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(
@@ -54,7 +52,6 @@ export default function Register() {
       );
       const continueUrl = `${window.location.origin}/auth/action`;
       await sendEmailVerification(cred.user, { url: continueUrl });
-
       try {
         await authApi.register({
           name: form.name.trim(),
@@ -64,7 +61,6 @@ export default function Register() {
       } catch (backendErr) {
         console.error("Backend registration error:", backendErr.message);
       }
-
       navigate("/verify-email");
     } catch (err) {
       const messages = {
@@ -79,22 +75,31 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Aurora blobs */}
+      <div className="aurora-bg" aria-hidden="true">
+        <div className="aurora-bg__blob-1" />
+        <div className="aurora-bg__blob-2" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-black mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] text-white text-2xl font-black mb-5 shadow-[var(--shadow-accent)]">
             E
           </div>
-          <h1 className="text-2xl font-black text-slate-900">
+          <h1 className="text-2xl font-black text-[var(--color-text)] tracking-tight">
             Create your account
           </h1>
-          <p className="mt-1 text-sm text-slate-500">Join EduHub — it's free</p>
+          <p className="mt-1 text-[var(--text-sm)] text-[var(--color-text-3)]">
+            Join EduHub — it's free
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="glass-strong rounded-[var(--radius-2xl)] p-8 shadow-[var(--shadow-xl)]">
           {/* Role selector */}
           <div className="mb-6">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">
+            <p className="text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)] mb-3">
               I am joining as a…
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -103,26 +108,32 @@ export default function Register() {
                   key={opt.value}
                   type="button"
                   onClick={() => setRole(opt.value)}
-                  className={`flex flex-col items-center rounded-xl border-2 p-4 text-center transition-all duration-150 ${
+                  className={`flex flex-col items-center rounded-[var(--radius-xl)] border-2 p-4 text-center transition-all duration-[var(--duration-normal)] ${
                     role === opt.value
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-slate-200 hover:border-slate-300"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
+                      : "border-[var(--color-border-2)] hover:border-[var(--color-accent)] hover:border-opacity-50"
                   }`}
                 >
                   <span className="text-2xl mb-1">{opt.emoji}</span>
                   <span
-                    className={`text-sm font-bold ${role === opt.value ? "text-blue-700" : "text-slate-800"}`}
+                    className={`text-[var(--text-sm)] font-bold ${
+                      role === opt.value
+                        ? "text-[var(--color-accent-2)]"
+                        : "text-[var(--color-text)]"
+                    }`}
                   >
                     {opt.label}
                   </span>
-                  <span className="text-xs text-slate-500">{opt.desc}</span>
+                  <span className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+                    {opt.desc}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-[var(--radius-lg)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-3 text-[var(--text-sm)] text-[var(--color-danger)]">
               {error}
             </div>
           )}
@@ -173,6 +184,7 @@ export default function Register() {
 
             <Button
               type="submit"
+              variant="gradient"
               loading={loading}
               className="w-full"
               size="lg"
@@ -181,11 +193,11 @@ export default function Register() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-[var(--text-sm)] text-[var(--color-text-3)]">
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-semibold text-blue-600 hover:underline"
+              className="font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-2)] transition-colors"
             >
               Sign in
             </Link>

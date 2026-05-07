@@ -1,52 +1,91 @@
 /* ============================================================
-   EDUHUB DESIGN SYSTEM — TOKENS v2
-   Deep indigo/violet base with electric accents
+   EDUHUB UNIFIED DESIGN TOKENS
+   Merger2 variables are the source of truth.
+   Refactor variables are aliased to match Merger2 values.
+   Both sets coexist — no component needs to change its class names.
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
+/* ── Merger2 source-of-truth variables ──────────────────────
+   These are used directly by admin/mentor pages (Merger2 code).
+   Keep them as-is so those pages are untouched.
+   ──────────────────────────────────────────────────────────── */
 :root {
-    --radius: 0.875rem;
-    --radius-sm: calc(var(--radius) - 4px);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) + 4px);
-    --radius-2xl: calc(var(--radius) + 8px);
-    --radius-full: 9999px;
+    /* Backgrounds */
+    --bg-base: #0a0c12;
+    --bg-surface: #111520;
+    --bg-card: #181d2e;
+    --bg-hover: #1e2438;
 
-    /* ── Dark palette (default) ─────────── */
-    --color-ink: #0f1117;
-    --color-ink-soft: #141720;
-    --color-surface: #191d2c;
-    --color-surface-2: #1e2235;
-    --color-surface-3: #252a3e;
+    /* Accent — electric indigo/violet */
+    --accent: #6c63ff;
+    --accent-light: #9d93fe;
+    --accent-glow: rgba(108, 99, 255, 0.14);
+    --border-focus: #6c63ff;
 
-    --color-border: rgba(255, 255, 255, 0.07);
+    /* Text */
+    --text-primary: #eaecf5;
+    --text-secondary: #a0a8c3;
+    --text-muted: #5c6480;
+
+    /* Borders */
+    --border: rgba(255, 255, 255, 0.07);
+    --border-light: rgba(255, 255, 255, 0.04);
+
+    /* Semantic */
+    --success: #34d399;
+    --success-bg: rgba(52, 211, 153, 0.12);
+    --warning: #fbbf24;
+    --warning-bg: rgba(251, 191, 36, 0.12);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.12);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+
+    /* ── Refactor aliases ─────────────────────────────────────
+     Every var(--color-*) used in the Refactor codebase is
+     aliased here to the nearest Merger2 equivalent.
+     This means Refactor components render with Merger2's palette
+     without any JSX changes.
+     ──────────────────────────────────────────────────────── */
+
+    /* Canvas / ink */
+    --color-ink: var(--bg-base);
+    --color-ink-soft: #0f1320;
+
+    /* Surfaces */
+    --color-surface: var(--bg-surface);
+    --color-surface-2: var(--bg-card);
+    --color-surface-3: var(--bg-hover);
+
+    /* Borders */
+    --color-border: var(--border);
     --color-border-2: rgba(255, 255, 255, 0.12);
 
-    /* ── Accent ─────────────────────────── */
-    --color-accent: #7c6ffd;
-    --color-accent-2: #9d93fe;
-    --color-accent-glow: rgba(124, 111, 253, 0.3);
-    --color-accent-soft: rgba(124, 111, 253, 0.12);
+    /* Accent */
+    --color-accent: var(--accent);
+    --color-accent-2: var(--accent-light);
+    --color-accent-glow: rgba(108, 99, 255, 0.30);
+    --color-accent-soft: var(--accent-glow);
 
-    /* ── Semantic ───────────────────────── */
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
-    --color-info: #60a5fa;
-    --color-success-soft: rgba(52, 211, 153, 0.12);
-    --color-warning-soft: rgba(251, 191, 36, 0.12);
-    --color-danger-soft: rgba(248, 113, 113, 0.12);
-    --color-info-soft: rgba(96, 165, 250, 0.12);
+    /* Text */
+    --color-text: var(--text-primary);
+    --color-text-2: var(--text-secondary);
+    --color-text-3: var(--text-muted);
+    --color-text-inv: #0a0c12;
 
-    /* ── Text ───────────────────────────── */
-    --color-text: #eaecf5;
-    --color-text-2: #a0a8c3;
-    --color-text-3: #5c6480;
-    --color-text-inv: #0f1117;
+    /* Semantic */
+    --color-success: var(--success);
+    --color-success-soft: var(--success-bg);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-bg);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-bg);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-bg);
 
-    /* ── Typography ─────────────────────── */
+    /* ── Typography ──────────────────────────────────────────── */
     --font-sans: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'DM Mono', 'JetBrains Mono', monospace;
     --font-display: 'Sora', sans-serif;
@@ -68,7 +107,16 @@
     --leading-snug: 1.35;
     --leading-normal: 1.6;
 
-    /* ── Spacing ────────────────────────── */
+    /* ── Radii ───────────────────────────────────────────────── */
+    --radius: 0.875rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-full: 9999px;
+
+    /* ── Spacing ─────────────────────────────────────────────── */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
@@ -80,19 +128,19 @@
     --space-12: 3rem;
     --space-16: 4rem;
 
-    /* ── Shadows ────────────────────────── */
+    /* ── Shadows ─────────────────────────────────────────────── */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.65);
     --shadow-accent: 0 0 32px var(--color-accent-glow);
-    --shadow-glow: 0 0 48px rgba(124, 111, 253, 0.18);
+    --shadow-glow: 0 0 48px rgba(108, 99, 255, 0.18);
 
-    /* ── Gradients ──────────────────────── */
-    --gradient-primary: linear-gradient(135deg, #7c6ffd, #4fc3f7);
-    --gradient-aurora: linear-gradient(135deg, #7c6ffd, #4fc3f7, #f472b6);
+    /* ── Gradients ───────────────────────────────────────────── */
+    --gradient-primary: linear-gradient(135deg, #6c63ff, #4fc3f7);
+    --gradient-aurora: linear-gradient(135deg, #6c63ff, #4fc3f7, #f472b6);
 
-    /* ── Transitions ────────────────────── */
+    /* ── Motion ──────────────────────────────────────────────── */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -100,7 +148,7 @@
     --duration-normal: 220ms;
     --duration-slow: 380ms;
 
-    /* ── Z-Index ────────────────────────── */
+    /* ── Z-index ─────────────────────────────────────────────── */
     --z-bg: -10;
     --z-base: 0;
     --z-raised: 10;
@@ -110,21 +158,134 @@
     --z-overlay: 800;
 }
 
-/* Light mode override */
+/* ── Merger2 admin.css compatibility ────────────────────────
+   The admin/mentor pages load admin.css which defines its own
+   theme variables (--bg-base, --accent, etc.) via :root and
+   the .light class. We mirror those values here so the Merger2
+   pages continue to look exactly as designed.
+   ──────────────────────────────────────────────────────────── */
+
+/* Dark mode override via data-theme="light" (Refactor pattern) */
 [data-theme="light"] {
+    /* Merger2 light palette */
+    --bg-base: #f5f6fa;
+    --bg-surface: #ffffff;
+    --bg-card: #f0f1f7;
+    --bg-hover: #e8eaf2;
+
+    --accent: #5b4fcf;
+    --accent-light: #7b6fea;
+    --accent-glow: rgba(91, 79, 207, 0.10);
+    --border-focus: #5b4fcf;
+
+    --text-primary: #0d0f14;
+    --text-secondary: #404660;
+    --text-muted: #7a82a6;
+
+    --border: rgba(0, 0, 0, 0.07);
+    --border-light: rgba(0, 0, 0, 0.04);
+
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.10);
+    --warning: #d97706;
+    --warning-bg: rgba(217, 119, 6, 0.10);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.10);
+    --info: #2563eb;
+    --info-bg: rgba(37, 99, 235, 0.10);
+
+    /* Refactor aliases in light mode */
+    --color-ink: var(--bg-base);
+    --color-ink-soft: #eef0f7;
+    --color-surface: var(--bg-surface);
+    --color-surface-2: var(--bg-card);
+    --color-surface-3: var(--bg-hover);
+    --color-border: var(--border);
+    --color-border-2: rgba(0, 0, 0, 0.12);
+    --color-accent: var(--accent);
+    --color-accent-2: var(--accent-light);
+    --color-accent-glow: rgba(91, 79, 207, 0.20);
+    --color-accent-soft: var(--accent-glow);
+    --color-text: var(--text-primary);
+    --color-text-2: var(--text-secondary);
+    --color-text-3: var(--text-muted);
+    --color-text-inv: #ffffff;
+
+    --color-success: var(--success);
+    --color-success-soft: var(--success-bg);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-bg);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-bg);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-bg);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.07);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    --shadow-accent: 0 0 32px var(--color-accent-glow);
+    --shadow-glow: 0 0 48px rgba(91, 79, 207, 0.15);
+}
+
+/* Also support Merger2's .light class on <html> */
+html.light {
+    --bg-base: #f5f6fa;
+    --bg-surface: #ffffff;
+    --bg-card: #f0f1f7;
+    --bg-hover: #e8eaf2;
+
+    --accent: #5b4fcf;
+    --accent-light: #7b6fea;
+    --accent-glow: rgba(91, 79, 207, 0.10);
+    --border-focus: #5b4fcf;
+
+    --text-primary: #0d0f14;
+    --text-secondary: #404660;
+    --text-muted: #7a82a6;
+
+    --border: rgba(0, 0, 0, 0.07);
+    --border-light: rgba(0, 0, 0, 0.04);
+
+    --success: #059669;
+    --success-bg: rgba(5, 150, 105, 0.10);
+    --warning: #d97706;
+    --warning-bg: rgba(217, 119, 6, 0.10);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.10);
+    --info: #2563eb;
+    --info-bg: rgba(37, 99, 235, 0.10);
+
+    /* Refactor aliases */
     --color-ink: #f5f6fa;
     --color-ink-soft: #eef0f7;
     --color-surface: #ffffff;
-    --color-surface-2: #f5f6fa;
-    --color-surface-3: #eef0f7;
+    --color-surface-2: #f0f1f7;
+    --color-surface-3: #e8eaf2;
     --color-border: rgba(0, 0, 0, 0.07);
     --color-border-2: rgba(0, 0, 0, 0.12);
+    --color-accent: #5b4fcf;
+    --color-accent-2: #7b6fea;
+    --color-accent-glow: rgba(91, 79, 207, 0.20);
+    --color-accent-soft: rgba(91, 79, 207, 0.10);
     --color-text: #0d0f14;
     --color-text-2: #404660;
     --color-text-3: #7a82a6;
     --color-text-inv: #ffffff;
-    --color-accent: #5b4fcf;
-    --color-accent-2: #7b6fea;
-    --color-accent-glow: rgba(91, 79, 207, 0.2);
-    --color-accent-soft: rgba(91, 79, 207, 0.1);
+
+    --color-success: #059669;
+    --color-success-soft: rgba(5, 150, 105, 0.10);
+    --color-warning: #d97706;
+    --color-warning-soft: rgba(217, 119, 6, 0.10);
+    --color-danger: #dc2626;
+    --color-danger-soft: rgba(220, 38, 38, 0.10);
+    --color-info: #2563eb;
+    --color-info-soft: rgba(37, 99, 235, 0.10);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.07);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    --shadow-accent: 0 0 32px rgba(91, 79, 207, 0.20);
+    --shadow-glow: 0 0 48px rgba(91, 79, 207, 0.15);
 }

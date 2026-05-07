@@ -30,8 +30,8 @@ function NotificationItem({ n, onMarkRead, onDelete }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 py-3",
-        "hover:bg-[var(--color-surface-2)] cursor-pointer",
+        "flex items-start gap-3 px-4 py-3 cursor-pointer",
+        "hover:bg-[var(--color-surface-2)]",
         "transition-colors duration-[var(--duration-fast)]",
         !n.isRead && "bg-[var(--color-accent-soft)]",
       )}
@@ -90,15 +90,18 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const qc = useQueryClient();
 
-  const { data } = useQuery({
+  const { data: raw } = useQuery({
     queryKey: ["notifications"],
+    // r.data is { success, data: [...], meta: { unreadCount, ... } }
     queryFn: () => notificationsApi.getAll({ limit: 20 }).then((r) => r.data),
     refetchInterval: 30_000,
   });
 
-  const notifications = Array.isArray(data) ? data : (data?.data ?? []);
+  // Normalise — the server wraps in { success, data, meta }
+  const notifications = Array.isArray(raw) ? raw : (raw?.data ?? []);
   const unreadCount =
-    data?.meta?.unreadCount ?? notifications.filter((n) => !n.isRead).length;
+    raw?.meta?.unreadCount ?? notifications.filter((n) => !n.isRead).length;
+
   useEffect(() => {
     document.title = unreadCount > 0 ? `(${unreadCount}) EduHub` : "EduHub";
   }, [unreadCount]);
@@ -205,8 +208,11 @@ export default function NotificationBell() {
           {/* List */}
           <div className="max-h-80 overflow-y-auto divide-y divide-[var(--color-border)]">
             {notifications.length === 0 ? (
-              <div className="py-10 text-center text-[var(--text-sm)] text-[var(--color-text-3)]">
-                No notifications
+              <div className="py-10 text-center">
+                <p className="text-2xl mb-2">🔔</p>
+                <p className="text-[var(--text-sm)] text-[var(--color-text-3)]">
+                  No notifications
+                </p>
               </div>
             ) : (
               notifications.map((n) => (

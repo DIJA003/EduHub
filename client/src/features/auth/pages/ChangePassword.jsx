@@ -29,7 +29,6 @@ export default function ChangePassword() {
     e.preventDefault();
     const user = auth.currentUser;
     if (!user) return navigate("/login");
-
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(form.newPassword)) {
       return setErrMsg(
         "Password must be at least 8 chars with uppercase, lowercase, and a number.",
@@ -67,11 +66,15 @@ export default function ChangePassword() {
 
   if (status === "success") {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 relative overflow-hidden">
+        <div className="aurora-bg" aria-hidden="true">
+          <div className="aurora-bg__blob-1" />
+          <div className="aurora-bg__blob-2" />
+        </div>
+        <div className="w-full max-w-md glass-strong rounded-[var(--radius-2xl)] p-8 shadow-[var(--shadow-xl)] text-center relative z-10">
+          <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-emerald-600"
+              className="w-8 h-8 text-[var(--color-success)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -84,10 +87,10 @@ export default function ChangePassword() {
               />
             </svg>
           </div>
-          <h1 className="text-xl font-black text-slate-900">
+          <h1 className="text-xl font-black text-[var(--color-text)]">
             Password updated!
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-[var(--text-sm)] text-[var(--color-text-3)]">
             Your password has been changed successfully.
           </p>
           <Button
@@ -103,27 +106,32 @@ export default function ChangePassword() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <div className="aurora-bg" aria-hidden="true">
+        <div className="aurora-bg__blob-1" />
+        <div className="aurora-bg__blob-2" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         <div className="mb-6">
           <Link
             to="/home"
-            className="text-sm font-semibold text-slate-600 hover:text-blue-600"
+            className="text-[var(--text-sm)] font-semibold text-[var(--color-text-3)] hover:text-[var(--color-accent)] transition-colors"
           >
             ← Back to Home
           </Link>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <h1 className="text-xl font-black text-slate-900 mb-1">
+        <div className="glass-strong rounded-[var(--radius-2xl)] p-8 shadow-[var(--shadow-xl)]">
+          <h1 className="text-xl font-black text-[var(--color-text)] mb-1">
             Change password
           </h1>
-          <p className="text-sm text-slate-500 mb-6">
+          <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mb-6">
             Enter your current password, then choose a new one.
           </p>
 
           {errMsg && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-[var(--radius-lg)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-3 text-[var(--text-sm)] text-[var(--color-danger)]">
               {errMsg}
             </div>
           )}
@@ -136,7 +144,7 @@ export default function ChangePassword() {
               onChange={set("currentPassword")}
               required
             />
-            <div className="h-px bg-slate-100" />
+            <div className="h-px bg-[var(--color-border)]" />
             <Input
               label="New password"
               type="password"
@@ -164,14 +172,14 @@ export default function ChangePassword() {
                   );
                   const color =
                     form.newPassword.length < 6
-                      ? "bg-red-400"
+                      ? "bg-[var(--color-danger)]"
                       : form.newPassword.length < 10
-                        ? "bg-amber-400"
-                        : "bg-emerald-500";
+                        ? "bg-[var(--color-warning)]"
+                        : "bg-[var(--color-success)]";
                   return (
                     <div
                       key={i}
-                      className={`h-1 flex-1 rounded-full transition-colors ${i < strength ? color : "bg-slate-200"}`}
+                      className={`h-1 flex-1 rounded-full transition-colors ${i < strength ? color : "bg-[var(--color-surface-3)]"}`}
                     />
                   );
                 })}
@@ -180,6 +188,7 @@ export default function ChangePassword() {
 
             <Button
               type="submit"
+              variant="gradient"
               loading={status === "loading"}
               className="w-full"
               size="lg"

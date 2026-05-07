@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { logsApi } from "../../../lib/api/logs.api";
 import { usePagination } from "../../../hooks/usePagination";
 import DataTable from "./DataTable";
 import Badge from "../../../components/ui/Badges";
-import { timeAgo, formatDateTime } from "../../../lib/utils";
+import { timeAgo } from "../../../lib/utils";
 
 const ACTION_COLORS = {
   CREATE: "green",
@@ -69,16 +69,32 @@ export default function LogsPage() {
         })
         .then((r) => r.data),
   });
-
   const logs = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
+
+  const handleSearch = useCallback(
+    (s) => {
+      setSearch(s);
+      setPage(1);
+    },
+    [setPage],
+  );
+
+  const chipClass = (active) =>
+    `px-2.5 py-1 rounded-[var(--radius-sm)] text-[var(--text-xs)] font-medium transition-colors cursor-pointer ${
+      active
+        ? "bg-[var(--color-accent)] text-white"
+        : "bg-[var(--color-surface-3)] text-[var(--color-text-3)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
+    }`;
 
   const COLUMNS = [
     {
       key: "createdAt",
       label: "Time",
       render: (l) => (
-        <span className="text-xs text-slate-400">{timeAgo(l.createdAt)}</span>
+        <span className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+          {timeAgo(l.createdAt)}
+        </span>
       ),
     },
     {
@@ -91,13 +107,17 @@ export default function LogsPage() {
     {
       key: "entity",
       label: "Entity",
-      render: (l) => <span className="text-xs text-slate-600">{l.entity}</span>,
+      render: (l) => (
+        <span className="text-[var(--text-xs)] text-[var(--color-text-2)]">
+          {l.entity}
+        </span>
+      ),
     },
     {
       key: "entityName",
       label: "Record",
       render: (l) => (
-        <span className="font-medium text-slate-900 text-xs">
+        <span className="font-medium text-[var(--color-text)] text-[var(--text-xs)]">
           {l.entityName || "—"}
         </span>
       ),
@@ -107,15 +127,15 @@ export default function LogsPage() {
       label: "Performed By",
       render: (l) => (
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-bold flex items-center justify-center">
             {(l.performedBy?.name || "?")[0].toUpperCase()}
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-900">
+            <p className="text-[var(--text-xs)] font-medium text-[var(--color-text)]">
               {l.performedBy?.name || "System"}
             </p>
             {l.performedBy?.role && (
-              <p className="text-[10px] text-slate-400 capitalize">
+              <p className="text-[10px] text-[var(--color-text-3)] capitalize">
                 {l.performedBy.role}
               </p>
             )}
@@ -128,26 +148,31 @@ export default function LogsPage() {
       label: "Status",
       render: (l) =>
         l.success !== false ? (
-          <span className="text-xs font-semibold text-emerald-600">✓ OK</span>
+          <span className="text-[var(--text-xs)] font-semibold text-[var(--color-success)]">
+            ✓ OK
+          </span>
         ) : (
-          <span className="text-xs font-semibold text-red-600">✗ Failed</span>
+          <span className="text-[var(--text-xs)] font-semibold text-[var(--color-danger)]">
+            ✗ Failed
+          </span>
         ),
     },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-up">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">History Logs</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
+          History Logs
+        </h1>
+        <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
           Full audit trail of every action in the system.
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+      <div className="surface p-4 space-y-3">
         <div>
-          <p className="text-xs font-bold uppercase text-slate-400 mb-2">
+          <p className="text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)] mb-2">
             Entity
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -158,16 +183,15 @@ export default function LogsPage() {
                   setEntityFilter(e);
                   setPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${entityFilter === e ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                className={chipClass(entityFilter === e)}
               >
                 {e}
               </button>
             ))}
           </div>
         </div>
-
         <div>
-          <p className="text-xs font-bold uppercase text-slate-400 mb-2">
+          <p className="text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)] mb-2">
             Action
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -178,7 +202,7 @@ export default function LogsPage() {
                   setActionFilter(a);
                   setPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${actionFilter === a ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                className={chipClass(actionFilter === a)}
               >
                 {a}
               </button>
@@ -195,10 +219,7 @@ export default function LogsPage() {
         meta={meta}
         page={page}
         onPage={setPage}
-        onSearch={(s) => {
-          setSearch(s);
-          setPage(1);
-        }}
+        onSearch={handleSearch}
         emptyIcon="📋"
         emptyTitle="No log entries found"
         emptyDescription="Try adjusting your filters."
