@@ -18,10 +18,6 @@ export const materialsApi = {
 };
 
 export const uploadsApi = {
-  getSignedUrl: (data) => api.post("/uploads/signed-url", data),
-
-  confirm: (data) => api.post("/uploads/confirm", data),
-
   deleteFile: (storagePath) =>
     api.delete("/uploads/file", { data: { storagePath } }),
 };

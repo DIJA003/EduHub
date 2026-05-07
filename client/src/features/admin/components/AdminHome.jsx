@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { dashboardApi } from "../../../lib/api/dashboard.api";
 import api from "../../../lib/api/client";
 import {
   CardSkeleton,
@@ -8,25 +9,27 @@ import { timeAgo } from "../../../lib/utils";
 
 const StatCard = ({ title, value, icon, color }) => {
   const colors = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-emerald-50 text-emerald-600",
-    amber: "bg-amber-50 text-amber-600",
-    red: "bg-red-50 text-red-600",
+    blue: "bg-[var(--color-accent-soft)]  text-[var(--color-accent)]",
+    green: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+    amber: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+    red: "bg-[var(--color-danger-soft)]  text-[var(--color-danger)]",
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+    <div className="surface p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[var(--text-xs)] font-bold uppercase tracking-widest text-[var(--color-text-3)]">
           {title}
         </p>
         <div
-          className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg ${colors[color] || colors.blue}`}
+          className={`w-9 h-9 rounded-[var(--radius-md)] flex items-center justify-center text-base ${colors[color] ?? colors.blue}`}
         >
           {icon}
         </div>
       </div>
-      <p className="text-3xl font-black text-slate-900">{value ?? "—"}</p>
+      <p className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
+        {value ?? "—"}
+      </p>
     </div>
   );
 };
@@ -34,10 +37,7 @@ const StatCard = ({ title, value, icon, color }) => {
 export default function AdminHome() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["admin-stats"],
-    queryFn: () =>
-      api
-        .get("/logs", { params: { limit: 10 } })
-        .then((r) => r.data?.data || []),
+    queryFn: () => dashboardApi.getStats().then((r) => r.data?.data ?? r.data),
   });
 
   const { data: logs, isLoading: logsLoading } = useQuery({
@@ -45,16 +45,16 @@ export default function AdminHome() {
     queryFn: () =>
       api
         .get("/logs", { params: { limit: 10 } })
-        .then((r) => r.data?.data || []),
+        .then((r) => r.data?.data ?? []),
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-up">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">
+        <h1 className="text-[var(--text-3xl)] font-black text-[var(--color-text)]">
           Overview Dashboard
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-[var(--text-sm)] text-[var(--color-text-3)] mt-1">
           Welcome back, Admin. Here's what's happening today.
         </p>
       </div>
@@ -90,50 +90,52 @@ export default function AdminHome() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200">
-          <h2 className="text-sm font-bold text-slate-900">Recent Activity</h2>
+      <div className="surface overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text)]">
+            Recent Activity
+          </h2>
         </div>
 
         {logsLoading ? (
-          <TableSkeleton rows={6} cols={3} />
+          <TableSkeleton rows={6} cols={4} />
         ) : (
           <table className="w-full">
-            <thead className="bg-slate-50">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 {["Action", "Entity", "Performed By", "Time"].map((h) => (
                   <th
                     key={h}
-                    className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+                    className="px-5 py-3 text-left text-[var(--text-xs)] font-bold uppercase tracking-wide text-[var(--color-text-3)]"
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {(logs || []).map((log) => (
                 <tr
                   key={log._id}
-                  className="hover:bg-slate-50 transition-colors"
+                  className="hover:bg-[var(--color-surface-2)] transition-colors"
                 >
-                  <td className="px-5 py-3 text-sm font-medium text-slate-700">
+                  <td className="px-5 py-3 text-[var(--text-sm)] font-medium text-[var(--color-text)]">
                     {log.action}
                   </td>
-                  <td className="px-5 py-3 text-sm text-slate-600">
+                  <td className="px-5 py-3 text-[var(--text-sm)] text-[var(--color-text-2)]">
                     {log.entityName || log.entity}
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)] text-[var(--text-xs)] font-bold flex items-center justify-center">
                         {log.performedBy?.name?.[0]?.toUpperCase() || "?"}
                       </div>
-                      <span className="text-sm text-slate-700">
+                      <span className="text-[var(--text-sm)] text-[var(--color-text-2)]">
                         {log.performedBy?.name || "System"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-xs text-slate-400">
+                  <td className="px-5 py-3 text-[var(--text-xs)] text-[var(--color-text-3)]">
                     {timeAgo(log.createdAt)}
                   </td>
                 </tr>

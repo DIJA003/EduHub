@@ -1,5 +1,6 @@
 import Modal from "../ui/Modal";
 import Button from "../ui/Button";
+import { Textarea } from "../ui/Input";
 
 export default function ReviewModal({
   open,
@@ -18,30 +19,36 @@ export default function ReviewModal({
     <Modal
       open={open}
       onClose={onCancel}
-      title={isApprove ? "✅ Approve Material" : "❌ Reject Material"}
+      title={isApprove ? "Approve Material" : "Reject Material"}
+      subtitle={
+        isApprove
+          ? "This material will be visible to all students in the course."
+          : "The student will be notified with your feedback."
+      }
       footer={
         <>
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
           <Button
-            variant={isApprove ? "primary" : "danger"}
+            variant={isApprove ? "success" : "danger"}
             onClick={onConfirm}
             loading={loading}
           >
-            {isApprove ? "Confirm Approval" : "Confirm Rejection"}
+            {isApprove ? "✓ Confirm Approval" : "✕ Confirm Rejection"}
           </Button>
         </>
       }
     >
-      <p className="text-sm text-slate-600 mb-3">
-        Add feedback <span className="font-semibold">(optional)</span>:
-      </p>
-      <textarea
+      <Textarea
+        label="Feedback"
+        hint="Optional — shown to the student"
         rows={4}
-        className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm
-                   text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder={isApprove ? "Great work!…" : "Please revise…"}
+        placeholder={
+          isApprove
+            ? "Great work! Well explained…"
+            : "Please revise and re-upload…"
+        }
         value={feedback}
         onChange={(e) => onFeedbackChange(e.target.value)}
       />

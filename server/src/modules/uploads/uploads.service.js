@@ -1,6 +1,6 @@
-const { bucket } = require("../../config/firebase");
 const path = require("path");
 const crypto = require("crypto");
+const fs = require("fs");
 const { AppError } = require("../../middleware/error.middleware");
 
 const ALLOWED_MIMES = new Set([
@@ -21,7 +21,9 @@ const ALLOWED_MIMES = new Set([
   "text/plain",
 ]);
 
-const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
+const MAX_FILE_BYTES = 100 * 1024 * 1024;
+
+const UPLOAD_DIR = path.join(__dirname, "../../../../uploads/materials");
 
 const detectFileType = (mimeType) => {
   if (mimeType === "application/pdf") return "PDF";
@@ -35,63 +37,37 @@ const detectFileType = (mimeType) => {
 
 const uploadsService = {
   async getSignedUploadUrl({ fileName, mimeType, fileSize, courseId, userId }) {
-    if (!ALLOWED_MIMES.has(mimeType)) {
+    if (!ALLOWED_MIMES.has(mimeType))
       throw new AppError(`File type "${mimeType}" is not allowed.`, 400);
-    }
 
-    if (fileSize && fileSize > MAX_FILE_BYTES) {
+    if (fileSize && fileSize > MAX_FILE_BYTES)
       throw new AppError(
         `File exceeds the maximum allowed size of ${MAX_FILE_BYTES / 1024 / 1024} MB.`,
         400,
       );
-    }
 
     const ext = path.extname(fileName).toLowerCase() || ".bin";
     const uniqueId = crypto.randomBytes(12).toString("hex");
-    const storagePath = `materials/${courseId || "general"}/${userId}/${uniqueId}${ext}`;
-
-    const file = bucket.file(storagePath);
-    const [signedUrl] = await file.getSignedUrl({
-      version: "v4",
-      action: "write",
-      expires: Date.now() + 15 * 60 * 1000,
-      contentType: mimeType,
-    });
-
+    const storagePath = `${courseId || "general"}/${userId}/${uniqueId}${ext}`;
     const fileType = detectFileType(mimeType);
 
-    return {
-      signedUrl,
-      storagePath,
-      fileType,
-      publicUrl: `https://storage.googleapis.com/${bucket.name}/${storagePath}`,
-    };
-  },
-  async getPublicUrl(storagePath) {
-    if (!storagePath) return null;
-    try {
-      const file = bucket.file(storagePath);
-      await file.makePublic();
-      return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
-    } catch (err) {
-      console.warn("[Uploads] getPublicUrl failed:", err.message);
-      try {
-        const [url] = await bucket.file(storagePath).getSignedUrl({
-          version: "v4",
-          action: "read",
-          expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-        });
-        return url;
-      } catch {
-        return null;
-      }
-    }
+    // Ensure directory exists
+    const dir = path.join(UPLOAD_DIR, courseId || "general", userId);
+    fs.mkdirSync(dir, { recursive: true });
+
+    return { storagePath, fileType };
   },
 
-  async deleteFile(storagePath) {
+  getPublicUrl(storagePath) {
+    if (!storagePath) return null;
+    return `/uploads/materials/${storagePath}`;
+  },
+
+  deleteFile(storagePath) {
     if (!storagePath) return;
+    const fullPath = path.join(UPLOAD_DIR, storagePath);
     try {
-      await bucket.file(storagePath).delete();
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     } catch (err) {
       console.warn(
         "[Uploads] Could not delete file:",

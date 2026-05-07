@@ -1,55 +1,106 @@
-const uploadsService = require("./uploads.service");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+const multer = require("multer");
 const { confirmUpload } = require("../materials/materials.service");
+const uploadsService = require("./uploads.service");
 const { logAction } = require("../../shared/logger");
 const { success, badRequest, created } = require("../../shared/response");
 
-const uploadsController = {
-  async getSignedUrl(req, res, next) {
-    try {
-      const { fileName, mimeType, fileSize, courseId } = req.body;
+const UPLOAD_DIR = path.join(__dirname, "../../../../uploads/materials");
 
-      if (!fileName || !mimeType)
-        return badRequest(res, "fileName and mimeType are required.");
+const ALLOWED_MIMES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/zip",
+  "application/x-zip-compressed",
+  "video/mp4",
+  "video/webm",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "text/plain",
+]);
 
-      const result = await uploadsService.getSignedUploadUrl({
-        fileName,
-        mimeType,
-        fileSize: fileSize ? Number(fileSize) : undefined,
-        courseId: courseId || null,
-        userId: req.user.id,
-        userRole: req.user.role,
-      });
-
-      return success(res, result);
-    } catch (err) {
-      next(err);
-    }
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    const courseId = req.body?.courseId || "general";
+    const userId = req.user?.id || "unknown";
+    const dir = path.join(UPLOAD_DIR, courseId, userId);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
   },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
+    const uniqueId = crypto.randomBytes(12).toString("hex");
+    cb(null, `${uniqueId}${ext}`);
+  },
+});
 
-  async confirmUploadHandler(req, res, next) {
+const fileFilter = (req, file, cb) => {
+  if (ALLOWED_MIMES.has(file.mimetype)) return cb(null, true);
+  cb(new Error(`File type "${file.mimetype}" is not allowed.`));
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
+
+const detectFileType = (mimeType) => {
+  if (mimeType === "application/pdf") return "PDF";
+  if (mimeType.startsWith("video/")) return "Video";
+  if (mimeType.startsWith("image/")) return "Image";
+  if (mimeType.includes("presentation") || mimeType.includes("powerpoint"))
+    return "Slides";
+  if (mimeType.includes("zip")) return "ZIP";
+  return "Other";
+};
+
+const formatBytes = (bytes) => {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const uploadsController = {
+  uploadMiddleware: upload.single("file"),
+
+  async handleUpload(req, res, next) {
     try {
-      const { storagePath, fileName, mimeType } = req.body;
+      if (!req.file) return badRequest(res, "No file uploaded.");
 
-      if (!storagePath || !fileName || !mimeType)
-        return badRequest(
-          res,
-          "storagePath, fileName, and mimeType are required.",
-        );
-
-      let fileUrl = req.body.fileUrl;
-      if (!fileUrl && storagePath)
-        fileUrl = await uploadsService.getPublicUrl(storagePath);
-
-      if (!fileUrl)
-        return badRequest(
-          res,
-          "fileUrl is required. Ensure the file was uploaded successfully.",
-        );
+      const courseId = req.body?.courseId || null;
+      const userId = req.user.id;
+      const storagePath = `${courseId || "general"}/${userId}/${req.file.filename}`;
+      const fileUrl = `/uploads/materials/${storagePath}`;
+      const fileType = detectFileType(req.file.mimetype);
+      const title =
+        req.body?.title || req.file.originalname.replace(/\.[^.]+$/, "");
 
       const material = await confirmUpload({
-        uploadedBy: req.user.id,
+        uploadedBy: userId,
         uploaderRole: req.user.role,
-        body: { ...req.body, fileUrl },
+        body: {
+          storagePath,
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          fileSize: req.file.size,
+          courseId: courseId || undefined,
+          sectionId: req.body?.sectionId || undefined,
+          sectionLabel: req.body?.sectionLabel || undefined,
+          yearId: req.body?.yearId || undefined,
+          title,
+          fileUrl,
+          fileType,
+        },
       });
 
       await logAction({
@@ -60,10 +111,10 @@ const uploadsController = {
         performedBy: req.user,
         req,
         details: {
-          fileSize: req.body.fileSize,
-          mimeType,
+          fileSize: formatBytes(req.file.size),
+          mimeType: req.file.mimetype,
           storagePath,
-          courseId: req.body.courseId,
+          courseId,
           status: material.status,
         },
       });
@@ -78,7 +129,7 @@ const uploadsController = {
     try {
       const { storagePath } = req.body;
       if (!storagePath) return badRequest(res, "storagePath is required.");
-      await uploadsService.deleteFile(storagePath);
+      uploadsService.deleteFile(storagePath);
       return success(res, { deleted: true });
     } catch (err) {
       next(err);

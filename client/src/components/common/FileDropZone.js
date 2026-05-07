@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 const ACCEPT = "application/pdf,video/*,.ppt,.pptx,application/zip,image/*";
@@ -12,9 +12,11 @@ export default function FileDropZone({
   className,
 }) {
   const inputRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const handleDrop = (e) => {
     e.preventDefault();
+    setDragOver(false);
     const dropped = e.dataTransfer.files[0];
     if (dropped) onFile(dropped);
   };
@@ -22,12 +24,21 @@ export default function FileDropZone({
   return (
     <div className={cn("space-y-3", className)}>
       <div
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => !uploading && inputRef.current?.click()}
         className={cn(
-          "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors",
-          "border-slate-300 hover:border-blue-400 hover:bg-blue-50",
+          "border-2 border-dashed rounded-[var(--radius-xl)] p-8 text-center cursor-pointer",
+          "transition-all duration-[var(--duration-normal)]",
+          dragOver
+            ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] scale-[1.01]"
+            : file
+              ? "border-[var(--color-success)] bg-[var(--color-success-soft)]"
+              : "border-[var(--color-border-2)] hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)]",
           uploading && "pointer-events-none opacity-60",
         )}
       >
@@ -40,36 +51,41 @@ export default function FileDropZone({
         />
 
         {file ? (
-          <div>
-            <p className="font-semibold text-emerald-600 text-sm">
-              ✅ {file.name}
+          <div className="space-y-1">
+            <div className="text-2xl">📎</div>
+            <p className="font-semibold text-[var(--color-success)] text-[var(--text-sm)]">
+              {file.name}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {(file.size / (1024 * 1024)).toFixed(2)} MB
+            <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+              {(file.size / (1024 * 1024)).toFixed(2)} MB · Click to change
             </p>
           </div>
         ) : (
-          <div>
-            <p className="text-2xl mb-2">☁️</p>
-            <p className="font-semibold text-slate-700 text-sm">
+          <div className="space-y-2">
+            <div className="w-12 h-12 rounded-[var(--radius-xl)] bg-[var(--color-accent-soft)] flex items-center justify-center text-2xl mx-auto">
+              ☁️
+            </div>
+            <p className="font-semibold text-[var(--color-text)] text-[var(--text-sm)]">
               Drag & drop or click to browse
             </p>
-            <p className="text-xs text-slate-400 mt-1">
-              PDF, Video, Slides, ZIP, Images — max {maxMB}MB
+            <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+              PDF, Video, Slides, ZIP, Images — max {maxMB} MB
             </p>
           </div>
         )}
       </div>
 
       {uploading && (
-        <div>
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-500">Uploading…</span>
-            <span className="font-bold text-blue-600">{progress}%</span>
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[var(--text-xs)]">
+            <span className="text-[var(--color-text-3)]">Uploading…</span>
+            <span className="font-bold text-[var(--color-accent)]">
+              {progress}%
+            </span>
           </div>
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[var(--color-surface-3)] rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-600 rounded-full transition-[width]"
+              className="h-full bg-[var(--color-accent)] rounded-full transition-[width] duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>

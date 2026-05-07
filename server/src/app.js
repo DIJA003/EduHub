@@ -9,7 +9,7 @@ const {
   errorHandler,
   notFoundHandler,
 } = require("./middleware/error.middleware");
-
+const path = require("path");
 const authRouter = require("./modules/auth/auth.router");
 const usersRouter = require("./modules/users/users.router");
 const coursesRouter = require("./modules/courses/courses.router");
@@ -73,6 +73,7 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 app.get("/health", (_req, res) => {
   res.json({

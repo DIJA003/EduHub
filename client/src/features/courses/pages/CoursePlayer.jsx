@@ -1,14 +1,12 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../../../lib/firebase";
 import DashboardShell from "../../../components/layout/DashboardShell";
 import { Skeleton } from "../../../components/common/LoadingSkeleton";
+import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
-import { useUpdateProgress } from "../hooks/useEnrollments";
-import { useCreateMaterial } from "../../materials/hooks/useMaterials";
+import { useFirebaseUpload } from "../../materials/hooks/useMaterials";
 import useAuthStore from "../../../stores/auth.store";
 import apiClient from "../../../lib/api/client";
 import { useToasts } from "../../../hooks/useToasts";
@@ -17,8 +15,7 @@ const MAX_FILE_MB = 50;
 
 function UploadModal({ course, yearId, onClose }) {
   const { addToast } = useToasts();
-  const createMaterial = useCreateMaterial();
-  const fileRef = useRef(null);
+  const { upload } = useFirebaseUpload();
 
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
@@ -27,9 +24,7 @@ function UploadModal({ course, yearId, onClose }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleFile = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const handleFile = (f) => {
     if (f.size > MAX_FILE_MB * 1024 * 1024) {
       setError(`File exceeds ${MAX_FILE_MB} MB limit.`);
       return;
@@ -44,39 +39,17 @@ function UploadModal({ course, yearId, onClose }) {
     if (!title.trim()) return setError("Please enter a title.");
     setUploading(true);
     setError("");
-
     try {
-      const ext = file.name.split(".").pop();
-      const storagePath = `materials/${course._id || course.id}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      const task = uploadBytesResumable(storageRef, file);
-
-      await new Promise((resolve, reject) => {
-        task.on(
-          "state_changed",
-          (snap) =>
-            setProgress(
-              Math.round((snap.bytesTransferred / snap.totalBytes) * 100),
-            ),
-          reject,
-          resolve,
-        );
-      });
-
-      const fileUrl = await getDownloadURL(task.snapshot.ref);
-
-      await createMaterial.mutateAsync({
-        title: title.trim(),
-        courseId: course._id || course.id,
-        yearId,
-        sectionLabel: sectionLabel.trim(),
-        type: ext?.toUpperCase() || "Other",
-        fileUrl,
-        storagePath,
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        mimeType: file.type,
-      });
-
+      await upload(
+        {
+          file,
+          courseId: course._id || course.id,
+          yearId,
+          sectionLabel: sectionLabel.trim(),
+          title: title.trim(),
+        },
+        setProgress,
+      );
       addToast("Material submitted for review!", "success");
       onClose();
     } catch (err) {
@@ -87,76 +60,56 @@ function UploadModal({ course, yearId, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 py-6">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="font-bold text-slate-900">Upload Material</h2>
+    <div
+      className="fixed inset-0 z-[var(--z-modal)] flex items-end sm:items-center justify-center px-4 py-6"
+      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+    >
+      <div className="w-full max-w-md rounded-[var(--radius-2xl)] bg-[var(--color-surface)] border border-[var(--color-border-2)] shadow-[var(--shadow-xl)] animate-scale-in">
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-4">
+          <h2 className="font-bold text-[var(--color-text)]">
+            Upload Material
+          </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 text-xl leading-none"
+            className="text-[var(--color-text-3)] hover:text-[var(--color-text)] text-xl leading-none"
           >
             ×
           </button>
         </div>
+
         <div className="p-6 space-y-4">
           {error && (
-            <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+            <div className="rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-2 text-[var(--text-sm)] text-[var(--color-danger)]">
               {error}
             </div>
           )}
+
           <input
             type="text"
             placeholder="Material title *"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
           <input
             type="text"
             placeholder="Section / chapter (optional)"
             value={sectionLabel}
             onChange={(e) => setSectionLabel(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-4 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           />
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 p-6 cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors"
-          >
-            {file ? (
-              <p className="text-sm font-medium text-slate-700">{file.name}</p>
-            ) : (
-              <>
-                <span className="text-2xl">📎</span>
-                <p className="text-sm text-slate-500">
-                  Click to select a file (max {MAX_FILE_MB} MB)
-                </p>
-              </>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              onChange={handleFile}
-            />
-          </div>
 
-          {uploading && (
-            <div>
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
-                <span>Uploading…</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-blue-500 transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
+          <FileDropZone
+            file={file}
+            onFile={handleFile}
+            uploading={uploading}
+            progress={progress}
+            maxMB={MAX_FILE_MB}
+          />
         </div>
-        <div className="flex gap-3 border-t border-slate-100 px-6 py-4">
-          <Button variant="secondary" onClick={onClose} disabled={uploading}>
+
+        <div className="flex gap-3 border-t border-[var(--color-border)] px-6 py-4">
+          <Button variant="ghost" onClick={onClose} disabled={uploading}>
             Cancel
           </Button>
           <Button loading={uploading} onClick={handleUpload}>
@@ -171,7 +124,6 @@ function UploadModal({ course, yearId, onClose }) {
 export default function CoursePlayer() {
   const { yearId, courseId } = useParams();
   const dbUser = useAuthStore((s) => s.dbUser);
-  const updateProgress = useUpdateProgress();
   const [showUpload, setShowUpload] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
 
@@ -197,20 +149,24 @@ export default function CoursePlayer() {
 
   if (isLoading) {
     return (
-      <DashboardShell title="Loading…" user={dbUser}>
-        <Skeleton rows={5} />
+      <DashboardShell title="Loading…">
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
       </DashboardShell>
     );
   }
 
   if (!course) {
     return (
-      <DashboardShell title="Course Not Found" user={dbUser}>
-        <div className="text-center py-16 text-slate-500">
+      <DashboardShell title="Course Not Found">
+        <div className="text-center py-16 text-[var(--color-text-3)]">
           Course not found.{" "}
           <Link
             to={`/academic-year/${yearId}`}
-            className="text-blue-600 hover:underline"
+            className="text-[var(--color-accent)] hover:underline"
           >
             Go back
           </Link>
@@ -227,28 +183,28 @@ export default function CoursePlayer() {
   }, {});
 
   return (
-    <DashboardShell title={course.title} user={dbUser}>
-      <div className="mb-4 flex items-center gap-2 text-sm">
+    <DashboardShell title={course.title}>
+      <div className="mb-4 flex items-center gap-2 text-[var(--text-sm)]">
         <Link
           to="/academic-year"
-          className="text-slate-400 hover:text-blue-600"
+          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)]"
         >
           Academic Years
         </Link>
-        <span className="text-slate-300">›</span>
+        <span className="text-[var(--color-text-3)]">›</span>
         <Link
           to={`/academic-year/${yearId}`}
-          className="text-slate-400 hover:text-blue-600"
+          className="text-[var(--color-text-3)] hover:text-[var(--color-accent)]"
         >
-          Year
+          Year {yearId}
         </Link>
-        <span className="text-slate-300">›</span>
-        <span className="font-semibold text-slate-700 truncate">
+        <span className="text-[var(--color-text-3)]">›</span>
+        <span className="font-semibold text-[var(--color-text)] truncate">
           {course.title}
         </span>
       </div>
 
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex flex-wrap gap-4 items-start justify-between">
+      <div className="mb-6 rounded-[var(--radius-2xl)] bg-gradient-to-r from-[var(--color-accent)] to-[#7b9cff] p-6 text-white flex flex-wrap gap-4 items-start justify-between shadow-[var(--shadow-accent)]">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded">
@@ -277,10 +233,12 @@ export default function CoursePlayer() {
       </div>
 
       {Object.keys(sections).length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 py-16 text-center">
+        <div className="rounded-[var(--radius-2xl)] border-2 border-dashed border-[var(--color-border-2)] py-16 text-center">
           <p className="text-3xl mb-3">📚</p>
-          <p className="text-sm font-medium text-slate-600">No materials yet</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="text-[var(--text-sm)] font-medium text-[var(--color-text-2)]">
+            No materials yet
+          </p>
+          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-text-3)]">
             Upload the first material for this course.
           </p>
           <Button
@@ -292,41 +250,38 @@ export default function CoursePlayer() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.entries(sections).map(([section, mats]) => (
-            <div
-              key={section}
-              className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden"
-            >
+            <div key={section} className="surface overflow-hidden">
               <button
-                className="flex w-full items-center justify-between px-5 py-4 font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                className="flex w-full items-center justify-between px-5 py-4 font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-2)] transition-colors"
                 onClick={() =>
                   setActiveSection(activeSection === section ? null : section)
                 }
               >
                 <span className="flex items-center gap-2">
                   <span>📂</span> {section}
-                  <span className="text-xs font-normal text-slate-400">
+                  <span className="text-[var(--text-xs)] font-normal text-[var(--color-text-3)]">
                     ({mats.length} files)
                   </span>
                 </span>
-                <span className="text-slate-400">
+                <span className="text-[var(--color-text-3)]">
                   {activeSection === section ? "▲" : "▼"}
                 </span>
               </button>
               {activeSection === section && (
-                <div className="divide-y divide-slate-50 border-t border-slate-100">
+                <div className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
                   {mats.map((mat) => (
                     <div
                       key={mat._id || mat.id}
-                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--color-surface-2)] transition-colors"
                     >
                       <span className="text-xl">📄</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">
+                        <p className="text-[var(--text-sm)] font-medium text-[var(--color-text)] truncate">
                           {mat.title}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
                           {mat.type} · {mat.size}
                         </p>
                       </div>
@@ -335,7 +290,7 @@ export default function CoursePlayer() {
                           href={mat.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0 text-xs font-bold text-blue-600 hover:underline"
+                          className="shrink-0 text-[var(--text-xs)] font-bold text-[var(--color-accent)] hover:underline"
                         >
                           Open ↗
                         </a>

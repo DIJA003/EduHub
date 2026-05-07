@@ -5,8 +5,12 @@ const uploadsController = require("./uploads.controller");
 
 router.use(verifyToken);
 
-router.post("/signed-url", uploadsController.getSignedUrl);
-router.post("/confirm", uploadsController.confirmUploadHandler);
+router.post(
+  "/upload",
+  uploadsController.uploadMiddleware,
+  uploadsController.handleUpload,
+);
+
 router.delete("/file", uploadsController.deleteFile);
 
 module.exports = router;

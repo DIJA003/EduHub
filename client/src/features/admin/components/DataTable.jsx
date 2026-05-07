@@ -145,10 +145,8 @@ export default function DataTable({
       {meta && meta.pages > 1 && (
         <Pagination
           page={page || meta.page}
-          pages={meta.pages}
-          onNext={() => onPage?.(meta.page + 1)}
-          onPrev={() => onPage?.(meta.page - 1)}
-          onPage={onPage}
+          totalPages={meta.pages}
+          onPageChange={onPage}
         />
       )}
     </div>

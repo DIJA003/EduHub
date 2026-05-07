@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { materialsApi, uploadsApi } from "../../../lib/api/materials.api";
+import { materialsApi } from "../../../lib/api/materials.api";
 import { toast } from "../../../hooks/useToasts";
 
 export const MATERIAL_KEYS = {
@@ -7,15 +7,6 @@ export const MATERIAL_KEYS = {
   my: ["materials", "my"],
   pending: ["materials", "pending"],
   list: (params) => ["materials", "list", params],
-};
-const detectFileType = (mimeType) => {
-  if (mimeType === "application/pdf") return "PDF";
-  if (mimeType.startsWith("video/")) return "Video";
-  if (mimeType.startsWith("image/")) return "Image";
-  if (mimeType.includes("presentation") || mimeType.includes("powerpoint"))
-    return "Slides";
-  if (mimeType.includes("zip")) return "ZIP";
-  return "Other";
 };
 export const useMyMaterials = (params) =>
   useQuery({
@@ -118,77 +109,65 @@ export const useFirebaseUpload = () => {
   ) => {
     if (!file) throw new Error("No file provided.");
 
-    const { data: urlResp } = await uploadsApi.getSignedUrl({
-      fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
-      fileSize: file.size,
-      courseId: courseId || undefined,
-      sectionId: sectionId || undefined,
-      sectionLabel: sectionLabel || undefined,
-      yearId: yearId || undefined,
-    });
+    const formData = new FormData();
+    formData.append("file", file);
+    if (courseId) formData.append("courseId", courseId);
+    if (sectionId) formData.append("sectionId", sectionId);
+    if (sectionLabel) formData.append("sectionLabel", sectionLabel);
+    if (yearId) formData.append("yearId", yearId);
+    if (title) formData.append("title", title);
+    else formData.append("title", file.name.replace(/\.[^.]+$/, ""));
 
-    const { signedUrl, storagePath, fileType } = urlResp?.data ?? urlResp;
-    if (!signedUrl || !storagePath) {
-      throw new Error(
-        "Server did not return a valid upload URL. Please try again.",
+    const { auth } = await import("../../../lib/firebase");
+    const token = await auth.currentUser?.getIdToken();
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable)
+          onProgress(Math.round((e.loaded / e.total) * 100));
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            qc.invalidateQueries({ queryKey: MATERIAL_KEYS.all });
+            resolve(data?.data ?? data);
+          } catch {
+            reject(new Error("Invalid server response."));
+          }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.message || `Upload failed: ${xhr.status}`));
+          } catch {
+            reject(new Error(`Upload failed: ${xhr.status}`));
+          }
+        }
+      });
+
+      xhr.addEventListener("error", () =>
+        reject(new Error("Network error during upload.")),
       );
-    }
+      xhr.addEventListener("abort", () =>
+        reject(new Error("Upload cancelled.")),
+      );
+      xhr.addEventListener("timeout", () =>
+        reject(new Error("Upload timed out.")),
+      );
 
-    await xhrUpload(
-      signedUrl,
-      file,
-      file.type || "application/octet-stream",
-      (pct) => onProgress(Math.round(pct * 0.9)),
-    );
+      xhr.timeout = 10 * 60 * 1000;
 
-    onProgress(95);
-    const { data: confirmResp } = await uploadsApi.confirm({
-      storagePath,
-      fileName: file.name,
-      mimeType: file.type || "application/octet-stream",
-      fileSize: file.size,
-      courseId: courseId || undefined,
-      sectionId: sectionId || undefined,
-      sectionLabel: sectionLabel || undefined,
-      yearId: yearId || undefined,
-      title: title || file.name.replace(/\.[^.]+$/, ""),
-      fileType,
+      const BASE_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+
+      xhr.open("POST", `${BASE_URL}/uploads/upload`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.send(formData);
     });
-
-    onProgress(100);
-    qc.invalidateQueries({ queryKey: MATERIAL_KEYS.all });
-    return confirmResp?.data ?? confirmResp;
   };
 
   return { upload };
 };
-
-function xhrUpload(signedUrl, file, contentType, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) onProgress(e.loaded / e.total);
-    });
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else
-        reject(
-          new Error(`Firebase upload failed: ${xhr.status} ${xhr.statusText}`),
-        );
-    });
-    xhr.addEventListener("error", () =>
-      reject(new Error("Network error during upload.")),
-    );
-    xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
-    xhr.addEventListener("timeout", () =>
-      reject(new Error("Upload timed out.")),
-    );
-
-    xhr.timeout = 10 * 60 * 1000;
-    xhr.open("PUT", signedUrl);
-    xhr.setRequestHeader("Content-Type", contentType);
-    xhr.send(file);
-  });
-}
