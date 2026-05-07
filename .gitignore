@@ -33,21 +33,5 @@ coverage/
 *.sln
 *.sw?
 
-# ─── OS ───────────────────────────────────────────────────────────────────────
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# ─── Logs ─────────────────────────────────────────────────────────────────────
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# ─── Local uploads (dev only) ─────────────────────────────────────────────────
-server/uploads/
+server\config\serviceAccountKey.json
+server/config/serviceAccountKey.json
