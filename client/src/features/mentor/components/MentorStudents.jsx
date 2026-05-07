@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "../../../lib/api/client";
+import { mentorApi } from "../../../lib/api/mentor.api";
 import { TableSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Badge from "../../../components/ui/Badges";
@@ -8,7 +8,7 @@ import { formatDate, initials } from "../../../lib/utils";
 export default function MentorStudents() {
   const { data, isLoading } = useQuery({
     queryKey: ["mentor-students"],
-    queryFn: () => api.get("/mentor/students").then((r) => r.data?.data || []),
+    queryFn: () => mentorApi.getStudents().then((r) => r.data?.data || []),
   });
 
   const students = data || [];

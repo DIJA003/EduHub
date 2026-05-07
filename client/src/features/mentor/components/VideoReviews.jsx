@@ -1,24 +1,18 @@
 import { useState } from "react";
-import {
-  usePendingMaterials,
-  useAllMaterials,
-  useApproveMaterial,
-  useRejectMaterial,
-} from "../../materials/hooks/useMaterials";
+import { useAllMaterials } from "../../materials/hooks/useMaterials";
 import { usePagination } from "../../../hooks/usePagination";
+import { useMaterialReview } from "../../../hooks/useMaterialReview";
+import ReviewModal from "../../../components/common/ReviewModel";
 import DataTable from "../../admin/components/DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
-import Modal from "../../../components/ui/Modal";
 import { timeAgo } from "../../../lib/utils";
 
 export default function VideoReviews() {
   const { page, setPage } = usePagination();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [reviewTarget, setReviewTarget] = useState(null);
-  const [reviewAction, setReviewAction] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const review = useMaterialReview();
 
   const { data, isLoading } = useAllMaterials({
     page,
@@ -27,23 +21,6 @@ export default function VideoReviews() {
   });
   const materials = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
-
-  const approveMutation = useApproveMaterial();
-  const rejectMutation = useRejectMaterial();
-
-  const openReview = (m, action) => {
-    setReviewTarget(m);
-    setReviewAction(action);
-    setFeedback("");
-  };
-  const handleReview = () => {
-    const mutate =
-      reviewAction === "approve" ? approveMutation : rejectMutation;
-    mutate.mutate(
-      { id: reviewTarget._id, feedback },
-      { onSuccess: () => setReviewTarget(null) },
-    );
-  };
 
   const COLUMNS = [
     {
@@ -92,13 +69,13 @@ export default function VideoReviews() {
         <div className="flex items-center gap-1.5 justify-end">
           {m.status === "pending" ? (
             <>
-              <Button size="xs" onClick={() => openReview(m, "approve")}>
+              <Button size="xs" onClick={() => review.openReview(m, "approve")}>
                 Approve
               </Button>
               <Button
                 size="xs"
                 variant="danger"
-                onClick={() => openReview(m, "reject")}
+                onClick={() => review.openReview(m, "reject")}
               >
                 Reject
               </Button>
@@ -108,7 +85,10 @@ export default function VideoReviews() {
               size="xs"
               variant="secondary"
               onClick={() =>
-                openReview(m, m.status === "approved" ? "reject" : "approve")
+                review.openReview(
+                  m,
+                  m.status === "approved" ? "reject" : "approve",
+                )
               }
             >
               Change
@@ -139,7 +119,11 @@ export default function VideoReviews() {
                 setStatusFilter(s);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${statusFilter === s ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600"}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${
+                statusFilter === s
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-slate-200 text-slate-600"
+              }`}
             >
               {s}
             </button>
@@ -163,48 +147,15 @@ export default function VideoReviews() {
         />
       </div>
 
-      <Modal
-        open={!!reviewTarget}
-        onClose={() => setReviewTarget(null)}
-        title={
-          reviewAction === "approve"
-            ? "✅ Approve Material"
-            : "❌ Reject Material"
-        }
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setReviewTarget(null)}>
-              Cancel
-            </Button>
-            {reviewAction === "approve" ? (
-              <Button
-                onClick={handleReview}
-                loading={approveMutation.isPending}
-              >
-                Confirm Approval
-              </Button>
-            ) : (
-              <Button
-                variant="danger"
-                onClick={handleReview}
-                loading={rejectMutation.isPending}
-              >
-                Confirm Rejection
-              </Button>
-            )}
-          </>
-        }
-      >
-        <textarea
-          rows={4}
-          className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder={
-            reviewAction === "approve" ? "Great work!…" : "Please revise…"
-          }
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-        />
-      </Modal>
+      <ReviewModal
+        open={!!review.reviewTarget}
+        action={review.reviewAction}
+        feedback={review.feedback}
+        onFeedbackChange={review.setFeedback}
+        onConfirm={review.submitReview}
+        onCancel={review.closeReview}
+        loading={review.isLoading}
+      />
     </>
   );
 }

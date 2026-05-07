@@ -25,10 +25,9 @@ export default function DataTable({
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 400);
 
-  // Notify parent when debounced search changes
   useEffect(() => {
     onSearch?.(debouncedSearch);
-  }, [debouncedSearch, onSearch]);
+  }, [debouncedSearch]);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">

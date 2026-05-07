@@ -1,15 +1,14 @@
 import { useState } from "react";
 import {
   useAllMaterials,
-  useApproveMaterial,
-  useRejectMaterial,
   useDeleteMaterial,
 } from "../../materials/hooks/useMaterials";
 import { usePagination } from "../../../hooks/usePagination";
+import { useMaterialReview } from "../../../hooks/useMaterialReview";
+import ReviewModal from "../../../components/common/ReviewModel";
 import DataTable from "./DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
-import Modal from "../../../components/ui/Modal";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { timeAgo } from "../../../lib/utils";
 
@@ -17,10 +16,8 @@ export default function MaterialsPage() {
   const { page, setPage } = usePagination();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [reviewTarget, setReviewTarget] = useState(null);
-  const [reviewAction, setReviewAction] = useState("");
-  const [feedback, setFeedback] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const review = useMaterialReview();
 
   const { data, isLoading } = useAllMaterials({
     page,
@@ -30,30 +27,7 @@ export default function MaterialsPage() {
 
   const materials = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
-
-  const approveMutation = useApproveMaterial();
-  const rejectMutation = useRejectMaterial();
   const deleteMutation = useDeleteMaterial();
-
-  const openReview = (m, action) => {
-    setReviewTarget(m);
-    setReviewAction(action);
-    setFeedback("");
-  };
-
-  const handleReview = () => {
-    if (reviewAction === "approve") {
-      approveMutation.mutate(
-        { id: reviewTarget._id, feedback },
-        { onSuccess: () => setReviewTarget(null) },
-      );
-    } else {
-      rejectMutation.mutate(
-        { id: reviewTarget._id, feedback },
-        { onSuccess: () => setReviewTarget(null) },
-      );
-    }
-  };
 
   const TYPE_ICON = {
     PDF: "📄",
@@ -133,13 +107,13 @@ export default function MaterialsPage() {
         <div className="flex items-center gap-1.5 justify-end flex-wrap">
           {m.status === "pending" && (
             <>
-              <Button size="xs" onClick={() => openReview(m, "approve")}>
+              <Button size="xs" onClick={() => review.openReview(m, "approve")}>
                 Approve
               </Button>
               <Button
                 size="xs"
                 variant="danger"
-                onClick={() => openReview(m, "reject")}
+                onClick={() => review.openReview(m, "reject")}
               >
                 Reject
               </Button>
@@ -214,55 +188,15 @@ export default function MaterialsPage() {
         />
       </div>
 
-      {/* Review Modal */}
-      <Modal
-        open={!!reviewTarget}
-        onClose={() => setReviewTarget(null)}
-        title={
-          reviewAction === "approve"
-            ? "✅ Approve Material"
-            : "❌ Reject Material"
-        }
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setReviewTarget(null)}>
-              Cancel
-            </Button>
-            {reviewAction === "approve" ? (
-              <Button
-                onClick={handleReview}
-                loading={approveMutation.isPending}
-              >
-                Confirm Approval
-              </Button>
-            ) : (
-              <Button
-                variant="danger"
-                onClick={handleReview}
-                loading={rejectMutation.isPending}
-              >
-                Confirm Rejection
-              </Button>
-            )}
-          </>
-        }
-      >
-        <p className="text-sm text-slate-600 mb-3">
-          Add feedback for the student{" "}
-          <span className="font-semibold">(optional)</span>:
-        </p>
-        <textarea
-          rows={4}
-          className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder={
-            reviewAction === "approve"
-              ? "Great work! Well explained…"
-              : "Please revise and re-upload…"
-          }
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-        />
-      </Modal>
+      <ReviewModal
+        open={!!review.reviewTarget}
+        action={review.reviewAction}
+        feedback={review.feedback}
+        onFeedbackChange={review.setFeedback}
+        onConfirm={review.submitReview}
+        onCancel={review.closeReview}
+        loading={review.isLoading}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

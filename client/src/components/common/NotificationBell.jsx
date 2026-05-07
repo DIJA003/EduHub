@@ -99,6 +99,9 @@ export default function NotificationBell() {
   const notifications = Array.isArray(data) ? data : (data?.data ?? []);
   const unreadCount =
     data?.meta?.unreadCount ?? notifications.filter((n) => !n.isRead).length;
+  useEffect(() => {
+    document.title = unreadCount > 0 ? `(${unreadCount}) EduHub` : "EduHub";
+  }, [unreadCount]);
 
   const invalidate = () =>
     qc.invalidateQueries({ queryKey: ["notifications"] });

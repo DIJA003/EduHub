@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   useMyMaterials,
   useFirebaseUpload,
@@ -6,25 +6,32 @@ import {
 } from "../../materials/hooks/useMaterials";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../../lib/api/client";
-import { useAuth } from "../../../hooks/useAuth";
 import { usePagination } from "../../../hooks/usePagination";
+import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import EmptyState from "../../../components/common/EmptyStat";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { toast } from "../../../hooks/useToasts";
 import { formatDate } from "../../../lib/utils";
+import { mentorApi } from "../../../lib/api/mentor.api";
+
+const TYPE_ICON = {
+  PDF: "📄",
+  Video: "🎬",
+  Slides: "📊",
+  ZIP: "🗜️",
+  Image: "🖼️",
+  Other: "📁",
+};
 
 export default function MentorUpload() {
-  const { user } = useAuth();
   const { page } = usePagination();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [form, setForm] = useState({ courseId: "", title: "" });
   const [file, setFile] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const fileRef = useRef(null);
 
   const { data: materialsData, isLoading } = useMyMaterials({ page });
   const materials = Array.isArray(materialsData)
@@ -34,7 +41,7 @@ export default function MentorUpload() {
   const { data: coursesData } = useQuery({
     queryKey: ["mentor-my-courses"],
     queryFn: () =>
-      api.get("/courses?limit=100").then((r) => r.data?.data || []),
+      mentorApi.getMyCourses().then((r) => r.data?.data ?? r.data ?? []),
   });
   const courses = coursesData || [];
 
@@ -48,13 +55,10 @@ export default function MentorUpload() {
   };
 
   const handleUpload = async () => {
-    if (!file || !form.courseId || !form.title.trim()) {
+    if (!file || !form.courseId || !form.title.trim())
       return toast.error("Please select a file, course, and title.");
-    }
-
     setUploading(true);
     setUploadProgress(0);
-
     try {
       await upload(
         { file, courseId: form.courseId, title: form.title },
@@ -71,15 +75,6 @@ export default function MentorUpload() {
     }
   };
 
-  const TYPE_ICON = {
-    PDF: "📄",
-    Video: "🎬",
-    Slides: "📊",
-    ZIP: "🗜️",
-    Image: "🖼️",
-    Other: "📁",
-  };
-
   return (
     <>
       <div className="space-y-6">
@@ -92,67 +87,14 @@ export default function MentorUpload() {
           </p>
         </div>
 
-        {/* Upload Form */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
-          {/* Drop Zone */}
-          <div
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${dragOver ? "border-blue-500 bg-blue-50" : "border-slate-300 hover:border-slate-400"}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              handleFile(e.dataTransfer.files[0]);
-            }}
-            onClick={() => !uploading && fileRef.current?.click()}
-          >
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              accept="application/pdf,video/*,.ppt,.pptx,application/zip,image/*"
-              onChange={(e) => handleFile(e.target.files[0])}
-            />
-            <div className="text-4xl mb-2">☁️</div>
-            {file ? (
-              <>
-                <p className="font-semibold text-emerald-600">✅ {file.name}</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold text-slate-700">
-                  Drag & drop or click to browse
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  PDF, Video, Slides, ZIP, Images — max 200MB
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Upload progress */}
-          {uploading && (
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-500">Uploading…</span>
-                <span className="font-bold text-blue-600">
-                  {uploadProgress}%
-                </span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-[width]"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
+          <FileDropZone
+            file={file}
+            onFile={handleFile}
+            uploading={uploading}
+            progress={uploadProgress}
+            maxMB={200}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -198,7 +140,6 @@ export default function MentorUpload() {
           </Button>
         </div>
 
-        {/* Materials table */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-200">
             <h2 className="text-sm font-bold text-slate-900">
