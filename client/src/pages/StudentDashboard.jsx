@@ -48,12 +48,20 @@ export default function StudentDashboard() {
   const prevMaterials = useRef([]);
   const isMounted     = useRef(false);
 
-  const activeYear       = years[currentYearId] || {};
-  const enrolledCourses  = activeYear?.enrolled  || [];
-  const availableCourses = activeYear?.available || [];
-  const earnedCredits    = activeYear?.meta?.earnedCredits ?? 0;
-  const totalCredits     = activeYear?.meta?.totalCredits  ?? 42;
-  const firstName        = dbUser?.name ? dbUser.name.split(" ")[0] : "Student";
+  // Collect courses from ALL years
+  const enrolledCourses  = Object.values(years).flatMap((y) => y.enrolled || []);
+  // Available = courses from unlocked years that student hasn't enrolled in yet
+  const availableCourses = Object.entries(years)
+    .filter(([, y]) => y.meta?.unlocked !== false)
+    .flatMap(([yid, y]) =>
+      (y.available || []).map((c) => ({ ...c, yearId: yid }))
+    );
+  // Total earned credits across all years
+  const earnedCredits = Object.values(years).reduce(
+    (sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0
+  );
+  const totalCredits = 168; // total degree credits
+  const firstName    = dbUser?.name ? dbUser.name.split(" ")[0] : "Student";
 
   // Track enrollment changes → activity log
   useEffect(() => {
@@ -157,15 +165,15 @@ export default function StudentDashboard() {
     navigate(`/std-dashboard#${id}`, { replace: true });
   };
 
-  const openUndoDialog  = (course) => setUndoTarget({ id: course.id, name: course.name });
+  const openUndoDialog  = (course) => setUndoTarget({ id: course.id, name: course.name, yearId: course.yearId || currentYearId });
   const closeUndoDialog = ()       => setUndoTarget(null);
-  const confirmUndo     = ()       => { if (undoTarget) { undoEnrollment(currentYearId, undoTarget.id); closeUndoDialog(); } };
+  const confirmUndo     = ()       => { if (undoTarget) { undoEnrollment(undoTarget.yearId || currentYearId, undoTarget.id); closeUndoDialog(); } };
 
   const handleEnroll = (course) => {
     const credits = course.credits || 3;
-    const planned = sumEnrolledCredits(enrolledCourses);
-    if (planned + credits > totalCredits) { setLimitDialogOpen(true); return; }
-    enrollCourse(currentYearId, { id: course.id, name: course.name, code: course.code || "", credits, mongoId: course.mongoId });
+    // Use the year the course belongs to, fall back to currentYearId
+    const targetYearId = course.yearId || currentYearId;
+    enrollCourse(targetYearId, { id: course.id, name: course.name, code: course.code || "", credits, mongoId: course.mongoId });
   };
 
   const bg        = "bg-slate-900";
@@ -185,7 +193,7 @@ export default function StudentDashboard() {
           </div>
           <p className="pl-10 text-[10px] font-medium uppercase tracking-wide text-slate-500">
             {currentYearId
-              ? `Year ${currentYearId} · ${activeYear?.meta?.title?.split(":")[0] || "Current"}`
+              ? `Year ${currentYearId} · ${years[currentYearId]?.meta?.title?.split(":")[0] || "Current"}`
               : "Loading…"}
           </p>
         </div>
@@ -427,7 +435,7 @@ export default function StudentDashboard() {
                         <button
                           key={course.id}
                           type="button"
-                          onClick={() => navigate(`/academic-year/${currentYearId}/course/${course.id}?upload=1`)}
+                          onClick={() => navigate(`/academic-year/${course.yearId || currentYearId}/course/${course.id}?upload=1`)}
                           className="rounded-xl border border-slate-700 bg-slate-800/50 p-5 text-left transition hover:border-blue-500/60 hover:bg-slate-800"
                         >
                           <h3 className={`font-semibold ${courseTxt}`}>{course.name}</h3>

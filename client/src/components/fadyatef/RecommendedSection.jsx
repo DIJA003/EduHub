@@ -24,19 +24,16 @@ export default function RecommendedSection() {
   const navigate = useNavigate();
   const { years } = useCourses();
 
-  // Find the In Progress year
-  const inProgressYear = Object.values(years).find(
-    (y) => y.meta?.status === "In Progress",
-  );
-
-  const available = inProgressYear?.available;
-
-  // Pool: not yet enrolled. Show at most 3; enrolling removes from pool so another
-  // course fills the slot on the next render.
-  const recommended = useMemo(
-    () => (available?.length ? available.slice(0, MAX_RECOMMENDED) : []),
-    [available],
-  );
+  // Pool available courses from ALL unlocked years so when year 2/3/4 unlocks
+  // its courses appear in suggestions too
+  const recommended = useMemo(() => {
+    const all = Object.entries(years)
+      .filter(([, y]) => y.meta?.unlocked !== false)
+      .flatMap(([yid, y]) =>
+        (y.available || []).map((c) => ({ ...c, yearId: yid })),
+      );
+    return all.slice(0, MAX_RECOMMENDED);
+  }, [years]);
 
   if (recommended.length === 0) return null;
 

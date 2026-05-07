@@ -174,26 +174,37 @@ export function CourseProvider({ children }) {
           const earnedCredits = computeYearEarnedCredits(enrolled);
           const totalCredits  = dbYear ? (dbYear.totalCredits || 42) : 42;
 
-          // Year done = all enrolled courses complete (no credit total check)
+          // Credit thresholds to unlock each year
+          // Year 1: always open
+          // Year 2: 39+ total earned credits across ALL years
+          // Year 3: 78+ total earned credits across ALL years
+          // Year 4: 117+ total earned credits across ALL years
+          const UNLOCK_THRESHOLDS = { 1: 0, 2: 39, 3: 78, 4: 117 };
+
+          // Total earned credits across all already-built years + this year
+          const totalEarnedSoFar = Object.values(next).reduce(
+            (sum, y) => sum + (y.meta?.earnedCredits ?? 0), 0
+          ) + earnedCredits;
+
+          const threshold = UNLOCK_THRESHOLDS[ynum] ?? 0;
+          const meetsThreshold = totalEarnedSoFar >= threshold;
+
+          // Year done = all enrolled courses complete
           const yearDone = allComplete;
+
+          // Unlocked if:
+          // - Year 1 always
+          // - Already has enrollments (was previously unlocked)
+          // - Meets credit threshold
+          const unlocked = ynum === 1 ? true : enrolled.length > 0 || meetsThreshold;
 
           const status = yearDone
             ? "Completed"
             : enrolled.length > 0
             ? "In Progress"
-            : hasContent
+            : unlocked
             ? "In Progress"
             : "Locked";
-
-          // Use already-built `next[prevYid]` — not old stale state
-          const prevYid     = String(ynum - 1);
-          const prevDone    =
-            ynum === 1 ||
-            next[prevYid]?.meta?.status === "Completed" ||
-            (next[prevYid]?.enrolled?.length > 0 &&
-              next[prevYid].enrolled.every((c) => c.progress >= 100));
-
-          const unlocked = ynum === 1 ? true : prevDone || enrolled.length > 0;
 
           next[yid] = withYearEarnedCredits({
             meta: {
@@ -352,13 +363,7 @@ export function CourseProvider({ children }) {
         // unlock next year if all done
         const allComplete =
           enrolled.length > 0 && enrolled.every((c) => c.progress >= 100);
-        const totalCredits = year.meta?.totalCredits ?? 42;
-        const earned = computeYearEarnedCredits(enrolled);
-        // Year is done when ALL enrolled courses are 100% complete.
-        // We don't require earned >= totalCredits because a student may
-        // be enrolled in fewer than the maximum courses for their year.
         const yearDone = allComplete;
-        const nextYid = String(Number(yearId) + 1);
 
         let nextYears = {
           ...prev,
@@ -367,29 +372,34 @@ export function CourseProvider({ children }) {
             enrolled,
             meta: {
               ...year.meta,
-              status: yearDone
-                ? "Completed"
-                : year.meta.status || "In Progress",
+              status: yearDone ? "Completed" : year.meta.status || "In Progress",
             },
           }),
         };
 
-        if (yearDone && prev[nextYid] && !prev[nextYid].meta.unlocked) {
-          nextYears = {
-            ...nextYears,
-            [nextYid]: {
-              ...prev[nextYid],
-              meta: {
-                ...prev[nextYid].meta,
-                unlocked: true,
-                status:
-                  prev[nextYid].meta.status === "Locked"
-                    ? "In Progress"
-                    : prev[nextYid].meta.status,
+        // Check credit thresholds — unlock years when student earns enough credits
+        // Year 2: 39 credits, Year 3: 78 credits, Year 4: 117 credits
+        const UNLOCK_THRESHOLDS = { "2": 39, "3": 78, "4": 117 };
+        const totalEarned = Object.keys(nextYears).reduce(
+          (sum, yid) => sum + (nextYears[yid]?.meta?.earnedCredits ?? 0), 0
+        );
+
+        Object.entries(UNLOCK_THRESHOLDS).forEach(([yid, threshold]) => {
+          if (totalEarned >= threshold && nextYears[yid] && !nextYears[yid].meta.unlocked) {
+            nextYears = {
+              ...nextYears,
+              [yid]: {
+                ...nextYears[yid],
+                meta: {
+                  ...nextYears[yid].meta,
+                  unlocked: true,
+                  status: nextYears[yid].meta.status === "Locked" ? "In Progress" : nextYears[yid].meta.status,
+                },
               },
-            },
-          };
-        }
+            };
+          }
+        });
+
         return nextYears;
       });
 

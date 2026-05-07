@@ -34,13 +34,19 @@ function buildBaseFromAccount(dbUser, user, currentYearId, years) {
       ? user.uid.slice(0, 8)
       : "—";
 
-  const activeYear = currentYearId && years?.[currentYearId];
+  // Show the HIGHEST unlocked year so profile updates when year 2/3/4 unlocks
+  const unlockedIds = Object.entries(years || {})
+    .filter(([, y]) => y.meta?.unlocked !== false)
+    .map(([id]) => Number(id));
+  const highestYear = unlockedIds.length > 0 ? Math.max(...unlockedIds) : null;
+  const displayYearId = highestYear ? String(highestYear) : currentYearId;
+  const activeYear = displayYearId && years?.[displayYearId];
   const shortTitle = activeYear?.meta?.title?.split(":")[0]?.trim();
   const yearLevel =
-    currentYearId && shortTitle
-      ? `${shortTitle} — in progress (Year ${currentYearId})`
-      : currentYearId
-      ? `Year ${currentYearId} — in progress`
+    displayYearId && shortTitle
+      ? `${shortTitle} — in progress (Year ${displayYearId})`
+      : displayYearId
+      ? `Year ${displayYearId} — in progress`
       : "—";
 
   return {
@@ -103,10 +109,11 @@ export default function StudentProfile() {
 
     const stored = loadProfileEdits();
     if (stored) {
+      const built = buildBaseFromAccount(dbUser, user, currentYearId, years);
       setForm((prev) => ({
         ...prev,
-        studentId: buildBaseFromAccount(dbUser, user, currentYearId, years).studentId,
-        yearLevel: buildBaseFromAccount(dbUser, user, currentYearId, years).yearLevel,
+        studentId: built.studentId,
+        yearLevel: built.yearLevel,
         email: (dbUser?.email || user?.email || "").trim() || prev.email,
       }));
     } else {
