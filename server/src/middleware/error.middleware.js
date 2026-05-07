@@ -10,7 +10,8 @@ class AppError extends Error {
 }
 
 const errorHandler = (err, req, res, next) => {
-  if (!err.statusCode || err.statusCode >= 500) {
+  const statusFromErr = err.statusCode || err.status || 500;
+  if (statusFromErr >= 500) {
     console.error(
       `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`,
       {

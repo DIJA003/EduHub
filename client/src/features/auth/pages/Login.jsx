@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
@@ -6,11 +7,13 @@ import { authApi } from "../../../lib/api/auth.api";
 import useAuthStore from "../../../stores/auth.store";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import BrandMark from "../../../components/layout/BrandMark";
+import ThemeToggle from "../../../components/layout/ThemeToggle";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setFirebaseUser, setDbUser, setLoading } = useAuthStore();
+  const { setFirebaseUser, setDbUser } = useAuthStore();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -69,27 +72,47 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-black mb-4">
-            E
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--color-ink)] px-4 py-12 font-sans">
+      <div className="absolute right-4 top-4 z-10 sm:right-8 sm:top-8">
+        <ThemeToggle />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(91,140,255,0.35),transparent),radial-gradient(ellipse_at_bottom_right,rgba(91,140,255,0.08),transparent)]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"
+        aria-hidden="true"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-md"
+      >
+        <div className="mb-8 text-center">
+          <div className="mb-5 flex justify-center">
+            <BrandMark size="lg" animated />
           </div>
-          <h1 className="text-2xl font-black text-slate-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Sign in to your EduHub account
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text)]">
+            Welcome back
+          </h1>
+          <p className="mt-1.5 text-[var(--text-sm)] text-[var(--color-text-3)]">
+            Sign in to your EduHub workspace
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="glass rounded-[var(--radius-2xl)] border border-[var(--color-border)] p-6 shadow-[var(--shadow-xl)] sm:p-8">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div
+              className="mb-4 rounded-[var(--radius-lg)] border border-[var(--color-danger)]/40 bg-[var(--color-danger-soft)] px-4 py-3 text-[var(--text-sm)] text-[var(--color-danger)]"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <Input
               label="Email address"
               name="email"
@@ -99,6 +122,8 @@ export default function Login() {
               onChange={handleChange}
               autoComplete="email"
               required
+              autoCapitalize="off"
+              spellCheck={false}
             />
 
             <Input
@@ -114,8 +139,10 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="text-slate-400 hover:text-slate-600"
-                  tabIndex={-1}
+                  className="text-[var(--color-text-3)] transition-colors hover:text-[var(--color-text)]"
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                 >
                   {showPassword ? (
                     <svg
@@ -159,7 +186,7 @@ export default function Login() {
             <div className="flex items-center justify-end">
               <Link
                 to="/forgotpassword"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-[var(--text-xs)] font-semibold text-[var(--color-accent)] transition-colors hover:text-[var(--color-accent-2)] hover:underline"
               >
                 Forgot password?
               </Link>
@@ -168,24 +195,24 @@ export default function Login() {
             <Button
               type="submit"
               loading={loading}
-              className="w-full"
+              className="w-full shadow-[var(--shadow-glow)]"
               size="lg"
             >
               Sign in
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Don't have an account?{" "}
+          <p className="mt-6 text-center text-[var(--text-sm)] text-[var(--color-text-3)]">
+            Don&apos;t have an account?{" "}
             <Link
               to="/register"
-              className="font-semibold text-blue-600 hover:underline"
+              className="font-semibold text-[var(--color-accent)] transition-colors hover:text-[var(--color-accent-2)] hover:underline"
             >
               Create one
             </Link>
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

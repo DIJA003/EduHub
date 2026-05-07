@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import Button from "../../../components/ui/Button";
+import BrandMark from "../../../components/layout/BrandMark";
+import ThemeToggle from "../../../components/layout/ThemeToggle";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -14,33 +16,34 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[var(--color-ink)] text-[var(--color-text)]">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-100 backdrop-blur">
+      <header className="sticky top-0 z-50 glass border-b border-[var(--color-border)] bg-[var(--color-surface)]/70 backdrop-blur-xl">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black">
-              E
-            </div>
-            <span className="text-lg font-black text-blue-600">EduHub</span>
+            <BrandMark size="sm" animated />
+            <span className="text-lg font-black text-[var(--color-accent)]">
+              EduHub
+            </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
             <a
               href="#features"
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-[var(--color-text-2)] transition-colors hover:text-[var(--color-accent)]"
             >
               Features
             </a>
             <a
               href="#roles"
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-[var(--color-text-2)] transition-colors hover:text-[var(--color-accent)]"
             >
               How it works
             </a>
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {!isAuthenticated ? (
               <>
                 <Button
@@ -68,16 +71,16 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white py-20 lg:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-ink)] py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block mb-4 rounded-full bg-blue-100 px-4 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
+          <span className="mb-4 inline-block rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-4 py-1 text-[var(--text-xs)] font-bold uppercase tracking-widest text-[var(--color-accent)]">
             Academic Learning Platform
           </span>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-7xl">
             Empowering Students{" "}
-            <span className="text-blue-600">&amp; Mentors</span>
+            <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-2)] bg-clip-text text-transparent">&amp; Mentors</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-2)]">
             A unified platform for collaboration, mentorship, and academic
             growth. Track your 4-year journey, upload materials, and connect
             with expert mentors.
@@ -99,7 +102,7 @@ export default function Home() {
           </div>
 
           {isAuthenticated && user && (
-            <p className="mt-6 text-sm text-slate-500">
+            <p className="mt-6 text-[var(--text-sm)] text-[var(--color-text-3)]">
               Welcome back, <strong>{user.name}</strong>! 👋
             </p>
           )}
@@ -107,7 +110,7 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="border-y border-slate-100 py-12">
+      <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]/40 py-12 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -117,8 +120,8 @@ export default function Home() {
               { value: "98%", label: "Success Rate" },
             ].map((s) => (
               <div key={s.label} className="text-center">
-                <p className="text-4xl font-black text-blue-600">{s.value}</p>
-                <p className="mt-1 text-sm font-medium text-slate-500">
+                <p className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-2)] bg-clip-text font-display text-4xl font-semibold tracking-tight text-transparent">{s.value}</p>
+                <p className="mt-1 text-sm font-medium text-[var(--color-text-3)]">
                   {s.label}
                 </p>
               </div>
@@ -131,10 +134,10 @@ export default function Home() {
       <section id="features" className="py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+            <h2 className="font-display text-3xl font-semibold text-[var(--color-text)] lg:text-4xl">
               Powerful Features for Everyone
             </h2>
-            <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-[var(--color-text-2)]">
               Designed to bridge the gap between learning and professional
               guidance.
             </p>
@@ -160,15 +163,15 @@ export default function Home() {
             ].map((f) => (
               <div
                 key={f.title}
-                className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all"
+                className="group rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-8 shadow-[var(--shadow-md)] backdrop-blur-md transition-[transform,border-color,box-shadow] duration-[var(--duration-normal)] hover:-translate-y-1 hover:border-[var(--color-border-2)] hover:shadow-[var(--shadow-xl)]"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)] text-2xl transition-transform duration-[var(--duration-normal)] group-hover:scale-110">
                   {f.icon}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-3">
+                <h3 className="mb-3 text-lg font-semibold text-[var(--color-text)]">
                   {f.title}
                 </h3>
-                <p className="text-slate-500">{f.desc}</p>
+                <p className="leading-relaxed text-[var(--color-text-2)]">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -176,10 +179,10 @@ export default function Home() {
       </section>
 
       {/* Roles */}
-      <section id="roles" className="bg-slate-50 py-20 lg:py-28">
+      <section id="roles" className="border-t border-[var(--color-border)] bg-[var(--color-surface)]/35 py-20 backdrop-blur-sm lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+            <h2 className="font-display text-3xl font-semibold text-[var(--color-text)] lg:text-4xl">
               Tailored for Your Role
             </h2>
           </div>
@@ -209,13 +212,13 @@ export default function Home() {
             ].map((r) => (
               <div
                 key={r.role}
-                className="bg-white rounded-2xl border border-slate-200 p-8 text-center hover:border-blue-200 hover:shadow-md transition-all"
+                className="rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface-2)]/60 p-8 text-center shadow-[var(--shadow-sm)] backdrop-blur-md transition-all duration-[var(--duration-normal)] hover:border-[var(--color-accent)]/30 hover:shadow-[var(--shadow-lg)]"
               >
                 <div className="text-5xl mb-4">{r.emoji}</div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
+                <h3 className="mb-3 text-xl font-semibold text-[var(--color-text)]">
                   {r.role}
                 </h3>
-                <p className="text-slate-500 mb-6">{r.desc}</p>
+                <p className="mb-6 text-[var(--color-text-2)]">{r.desc}</p>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -230,9 +233,9 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4">
-        <div className="mx-auto max-w-4xl rounded-3xl bg-blue-600 p-12 text-center">
-          <h2 className="text-3xl font-black text-white lg:text-4xl">
+      <section className="px-4 py-20">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-accent)] to-[#3d52e8] p-12 text-center shadow-[var(--shadow-xl)] ring-4 ring-[var(--color-accent)]/10">
+          <h2 className="font-display text-3xl font-semibold text-white lg:text-4xl">
             Ready to start your journey?
           </h2>
           <p className="mt-4 text-lg text-blue-100">
@@ -249,15 +252,15 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 py-12">
+      <footer className="border-t border-[var(--color-border)] py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-black">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--color-accent)] to-[#516dff] text-xs font-black text-white">
               E
             </div>
-            <span className="font-bold text-slate-700">EduHub</span>
+            <span className="font-semibold text-[var(--color-text-2)]">EduHub</span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-[var(--text-sm)] text-[var(--color-text-3)]">
             © {new Date().getFullYear()} EduHub Inc. All rights reserved.
           </p>
         </div>

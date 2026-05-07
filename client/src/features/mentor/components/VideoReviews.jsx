@@ -3,7 +3,8 @@ import { useAllMaterials } from "../../materials/hooks/useMaterials";
 import { usePagination } from "../../../hooks/usePagination";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
 import ReviewModal from "../../../components/common/ReviewModel";
-import DataTable from "../../admin/components/DataTable";
+import DataTable from "../../../components/ui/DataTable";
+import PageHeader from "../../../components/ui/PageHeader";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
 import { timeAgo } from "../../../lib/utils";
@@ -27,14 +28,14 @@ export default function VideoReviews() {
       key: "title",
       label: "Title",
       render: (m) => (
-        <span className="font-medium text-slate-900">{m.title}</span>
+        <span className="font-medium text-[var(--color-text)]">{m.title}</span>
       ),
     },
     {
       key: "uploadedBy",
       label: "Uploader",
       render: (m) => (
-        <span className="text-sm text-slate-600">
+        <span className="text-[var(--text-sm)] text-[var(--color-text-2)]">
           {m.uploadedBy?.name || "—"}
         </span>
       ),
@@ -53,7 +54,7 @@ export default function VideoReviews() {
       key: "createdAt",
       label: "Uploaded",
       render: (m) => (
-        <span className="text-xs text-slate-400">{timeAgo(m.createdAt)}</span>
+        <span className="text-[var(--text-xs)] text-[var(--color-text-3)] tabular-nums">{timeAgo(m.createdAt)}</span>
       ),
     },
     {
@@ -100,29 +101,27 @@ export default function VideoReviews() {
   ];
 
   return (
-    <>
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">
-            Material Reviews
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Review, approve, or reject student-uploaded materials.
-          </p>
-        </div>
+      <>
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="Mentor"
+          title="Material Reviews"
+          description="Review, approve, or reject student-uploaded materials."
+        />
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {["all", "pending", "approved", "rejected"].map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => {
                 setStatusFilter(s);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize ${
+              className={`rounded-[var(--radius-lg)] px-3 py-1.5 text-[var(--text-xs)] font-semibold capitalize transition-all duration-[var(--duration-fast)] ${
                 statusFilter === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600"
+                  ? "bg-[var(--color-accent)] text-white shadow-[var(--shadow-accent)]"
+                  : "border border-[var(--color-border)] bg-[var(--color-surface-2)]/80 text-[var(--color-text-2)] backdrop-blur-sm hover:border-[var(--color-border-2)]"
               }`}
             >
               {s}

@@ -9,6 +9,7 @@ const {
   errorHandler,
   notFoundHandler,
 } = require("./middleware/error.middleware");
+const { reqLogger } = require("./middleware/request-logger.middleware");
 
 const authRouter = require("./modules/auth/auth.router");
 const usersRouter = require("./modules/users/users.router");
@@ -73,6 +74,8 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+app.use(reqLogger());
 
 app.get("/health", (_req, res) => {
   res.json({

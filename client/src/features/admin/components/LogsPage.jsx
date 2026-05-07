@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { logsApi } from "../../../lib/api/logs.api";
 import { usePagination } from "../../../hooks/usePagination";
-import DataTable from "./DataTable";
+import DataTable from "../../../components/ui/DataTable";
 import Badge from "../../../components/ui/Badges";
-import { timeAgo, formatDateTime } from "../../../lib/utils";
+import { timeAgo } from "../../../lib/utils";
 
 const ACTION_COLORS = {
   CREATE: "green",

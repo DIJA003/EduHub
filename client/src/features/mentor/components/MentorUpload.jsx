@@ -5,7 +5,6 @@ import {
   useDeleteMaterial,
 } from "../../materials/hooks/useMaterials";
 import { useQuery } from "@tanstack/react-query";
-import api from "../../../lib/api/client";
 import { usePagination } from "../../../hooks/usePagination";
 import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";

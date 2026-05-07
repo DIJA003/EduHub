@@ -15,8 +15,6 @@ export default function ConfirmDialog({
 }) {
   const btnVariant = variant || confirmVariant || "danger";
 
-  if (!open) return null;
-
   return (
     <Modal
       open={open}
@@ -25,7 +23,7 @@ export default function ConfirmDialog({
       size="sm"
       footer={
         <>
-          <Button variant="secondary" onClick={onCancel} disabled={loading}>
+          <Button variant="ghost" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button variant={btnVariant} onClick={onConfirm} loading={loading}>
@@ -35,7 +33,9 @@ export default function ConfirmDialog({
       }
     >
       {message && (
-        <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
+        <p className="text-[var(--text-sm)] leading-relaxed text-[var(--color-text-2)]">
+          {message}
+        </p>
       )}
     </Modal>
   );

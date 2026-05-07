@@ -7,16 +7,14 @@ import DashboardShell from "../../../components/layout/DashboardShell";
 import { Skeleton } from "../../../components/common/LoadingSkeleton";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
-import { useUpdateProgress } from "../hooks/useEnrollments";
 import { useCreateMaterial } from "../../materials/hooks/useMaterials";
 import useAuthStore from "../../../stores/auth.store";
 import apiClient from "../../../lib/api/client";
-import { useToasts } from "../../../hooks/useToasts";
+import { toast } from "../../../hooks/useToasts";
 
 const MAX_FILE_MB = 50;
 
 function UploadModal({ course, yearId, onClose }) {
-  const { addToast } = useToasts();
   const createMaterial = useCreateMaterial();
   const fileRef = useRef(null);
 
@@ -77,7 +75,7 @@ function UploadModal({ course, yearId, onClose }) {
         mimeType: file.type,
       });
 
-      addToast("Material submitted for review!", "success");
+      toast.success("Material submitted for review!");
       onClose();
     } catch (err) {
       setError(err.message || "Upload failed.");
@@ -171,7 +169,6 @@ function UploadModal({ course, yearId, onClose }) {
 export default function CoursePlayer() {
   const { yearId, courseId } = useParams();
   const dbUser = useAuthStore((s) => s.dbUser);
-  const updateProgress = useUpdateProgress();
   const [showUpload, setShowUpload] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
 

@@ -1,9 +1,17 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useId } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
+import ThemeToggle from "./ThemeToggle";
+import BrandMark from "./BrandMark";
 import { initials } from "../../lib/utils";
+import {
+  staggerContainerProps,
+  staggerItemProps,
+  usePrefersReducedMotion,
+} from "../../lib/motion";
 
 /* ── Nav helpers ─────────────────────────── */
 export const STUDENT_NAV = [
@@ -50,6 +58,7 @@ function Avatar({ name, size = "sm", onClick }) {
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         sizeMap[size] ?? sizeMap.sm,
@@ -67,18 +76,19 @@ function Avatar({ name, size = "sm", onClick }) {
 }
 
 /* ── NavItem ─────────────────────────────── */
-function NavItem({ to, icon, label, end, collapsed }) {
+function NavItem({ to, icon, label, end, collapsed, onNavigate }) {
   return (
     <NavLink
       to={to}
       end={end}
+      onClick={onNavigate}
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-lg)]",
           "text-[var(--text-sm)] font-medium transition-all duration-[var(--duration-fast)]",
           "group relative",
           isActive
-            ? "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] border border-[var(--color-accent)] border-opacity-20"
+            ? "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] ring-1 ring-[var(--color-accent)] ring-opacity-20"
             : "text-[var(--color-text-3)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
         )
       }
@@ -91,14 +101,13 @@ function NavItem({ to, icon, label, end, collapsed }) {
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
       {collapsed && (
-        /* Tooltip on hover when collapsed */
         <span
           className={cn(
-            "absolute left-full ml-2.5 px-2.5 py-1.5 z-50",
+            "absolute left-full ml-2.5 px-2.5 py-1.5 z-[var(--z-dropdown)]",
             "bg-[var(--color-surface-3)] text-[var(--color-text)] text-[var(--text-xs)]",
             "rounded-[var(--radius-md)] whitespace-nowrap shadow-[var(--shadow-lg)]",
             "border border-[var(--color-border-2)]",
-            "pointer-events-none opacity-0 group-hover:opacity-100",
+            "pointer-events-none opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100",
             "transition-opacity duration-[var(--duration-fast)]",
           )}
           role="tooltip"
@@ -111,8 +120,15 @@ function NavItem({ to, icon, label, end, collapsed }) {
 }
 
 /* ── Main Shell ──────────────────────────── */
-export default function DashboardShell({ title, navItems, children }) {
+export default function DashboardShell({
+  title,
+  navItems,
+  portalTitle,
+  children,
+}) {
+  const reduced = usePrefersReducedMotion();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const logout = useAuthStore((s) => s.logout);
@@ -120,64 +136,105 @@ export default function DashboardShell({ title, navItems, children }) {
 
   const nav = navItems ?? NAV_BY_ROLE[role] ?? STUDENT_NAV;
 
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const unlock = () => {
+      if (mq.matches) setMobileOpen(false);
+    };
+    mq.addEventListener("change", unlock);
+    return () => mq.removeEventListener("change", unlock);
+  }, []);
+
   const handleLogout = useCallback(async () => {
     await logout();
     navigate("/login", { replace: true });
   }, [logout, navigate]);
 
-  const portalTitle =
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+  const sidebarId = useId();
+
+  const computedPortalTitle =
+    portalTitle ??
     {
       admin: "Admin Portal",
       mentor: "Mentor Portal",
       student: "Student Portal",
-    }[role] ?? "Portal";
+    }[role] ??
+    "Portal";
+
+  const mobileSlide = mobileOpen ? "translate-x-0" : "-translate-x-full";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-ink)] font-sans">
+    <div className="relative flex min-h-screen overflow-hidden bg-[var(--color-ink)] font-sans">
+      {/* Mobile backdrop */}
+      <button
+        type="button"
+        aria-label="Close menu"
+        tabIndex={-1}
+        className={cn(
+          "fixed inset-0 z-[var(--z-raised)] bg-black/55 backdrop-blur-sm transition-opacity md:hidden",
+          mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={closeMobile}
+      />
+
       {/* ── Sidebar ────────────────────── */}
       <aside
+        id={sidebarId}
+        role="navigation"
+        aria-label="Application"
         className={cn(
-          "flex flex-col flex-shrink-0 relative z-[var(--z-raised)]",
-          "bg-[var(--color-surface)] border-r border-[var(--color-border)]",
-          "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-          collapsed ? "w-[58px]" : "w-56",
+          "flex shrink-0 flex-col",
+          "fixed inset-y-0 left-0 z-[calc(var(--z-raised)+1)] border-r border-[var(--color-border)] md:relative md:z-[var(--z-raised)]",
+          "w-[min(288px,calc(100vw-48px))] bg-[var(--color-surface)]/85 backdrop-blur-xl md:max-w-none",
+          collapsed ? "md:w-[58px]" : "md:w-56",
+          "transition-[transform,width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+          mobileSlide,
+          "md:translate-x-0",
         )}
       >
         {/* Brand */}
         <div
           className={cn(
-            "flex items-center gap-2.5 px-3 py-4 border-b border-[var(--color-border)]",
-            collapsed && "justify-center",
+            "flex items-center gap-2.5 border-b border-[var(--color-border)] px-3 py-4",
+            collapsed ? "justify-center md:justify-between" : "",
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-white text-sm font-black">
-            E
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="text-[var(--text-sm)] font-black text-[var(--color-text)] leading-tight tracking-tight">
-                EduHub
-              </p>
-              <p className="text-[var(--text-xs)] text-[var(--color-text-3)] truncate">
-                {portalTitle}
-              </p>
+          {!collapsed ? (
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <motion.div layout={!reduced}>
+                <BrandMark animated />
+              </motion.div>
+              <div className="min-w-0 flex-1 md:block">
+                <p className="text-[var(--text-sm)] font-black leading-tight tracking-tight text-[var(--color-text)]">
+                  EduHub
+                </p>
+                <p className="truncate text-[var(--text-xs)] text-[var(--color-text-3)]">
+                  {computedPortalTitle}
+                </p>
+              </div>
             </div>
+          ) : (
+            <motion.div layout={!reduced} className="mx-auto md:mx-0">
+              <BrandMark animated />
+            </motion.div>
           )}
           <button
+            type="button"
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
-              "shrink-0 p-1 rounded-[var(--radius-sm)] text-[var(--color-text-3)]",
-              "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
+              "hidden shrink-0 rounded-[var(--radius-sm)] p-1 text-[var(--color-text-3)] md:block",
+              "hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]",
               "transition-colors duration-[var(--duration-fast)]",
-              collapsed && "ml-0",
             )}
           >
             <svg
-              className="w-3.5 h-3.5"
+              className="h-3.5 w-3.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -187,57 +244,102 @@ export default function DashboardShell({ title, navItems, children }) {
               />
             </svg>
           </button>
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={closeMobile}
+            className="rounded-[var(--radius-sm)] p-1.5 text-[var(--color-text-3)] hover:bg-[var(--color-surface-2)] md:hidden"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
 
         {/* Nav links */}
-        <nav
-          className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden"
-          aria-label="Main navigation"
-        >
-          {nav.map((item) => (
-            <NavItem key={item.to} {...item} collapsed={collapsed} />
-          ))}
-        </nav>
+        {reduced ? (
+          <nav
+            className={cn(
+              "flex flex-1 flex-col space-y-0.5 overflow-y-auto overflow-x-hidden px-2 py-3 no-scrollbar",
+            )}
+            aria-label="Main navigation"
+          >
+            {nav.map((item) => (
+              <NavItem
+                key={item.to}
+                {...item}
+                collapsed={collapsed}
+                onNavigate={closeMobile}
+              />
+            ))}
+          </nav>
+        ) : (
+          <motion.nav
+            className={cn(
+              "flex flex-1 flex-col space-y-0.5 overflow-y-auto overflow-x-hidden px-2 py-3",
+              "no-scrollbar",
+            )}
+            aria-label="Main navigation"
+            {...staggerContainerProps(false, 0.04)}
+          >
+            {nav.map((item) => (
+              <motion.div key={item.to} {...staggerItemProps(false)}>
+                <NavItem
+                  {...item}
+                  collapsed={collapsed}
+                  onNavigate={closeMobile}
+                />
+              </motion.div>
+            ))}
+          </motion.nav>
+        )}
 
         {/* User info */}
-        <div className="p-2 border-t border-[var(--color-border)]">
+        <div className="border-t border-[var(--color-border)] p-2">
           <div
             className={cn(
-              "flex items-center gap-2.5 px-2 py-2 rounded-[var(--radius-lg)]",
-              "hover:bg-[var(--color-surface-2)] transition-colors duration-[var(--duration-fast)]",
+              "flex items-center gap-2.5 rounded-[var(--radius-lg)] px-2 py-2 transition-colors duration-[var(--duration-fast)]",
+              "hover:bg-[var(--color-surface-2)]",
               collapsed ? "justify-center" : "",
             )}
           >
-            <Avatar
-              name={dbUser?.name}
-              onClick={() => navigate("/profile")}
-              size="sm"
-            />
+            <Avatar name={dbUser?.name} onClick={() => navigate("/profile")} />
             {!collapsed && (
               <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[var(--text-xs)] font-semibold text-[var(--color-text)] truncate">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[var(--text-xs)] font-semibold text-[var(--color-text)]">
                     {dbUser?.name}
                   </p>
-                  <p className="text-[var(--text-xs)] text-[var(--color-text-3)] capitalize">
+                  <p className="text-[var(--text-xs)] capitalize text-[var(--color-text-3)]">
                     {role}
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   title="Sign out"
                   aria-label="Sign out"
                   className={cn(
-                    "shrink-0 p-1 rounded-[var(--radius-sm)]",
+                    "shrink-0 rounded-[var(--radius-sm)] p-1 transition-colors duration-[var(--duration-fast)]",
                     "text-[var(--color-text-3)] hover:text-[var(--color-danger)]",
-                    "transition-colors duration-[var(--duration-fast)]",
                   )}
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="h-4 w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -254,15 +356,44 @@ export default function DashboardShell({ title, navItems, children }) {
       </aside>
 
       {/* ── Main content ───────────────── */}
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="h-14 flex items-center justify-between px-6 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
-          {title && (
-            <h1 className="text-[var(--text-base)] font-bold text-[var(--color-text)] truncate">
-              {title}
-            </h1>
-          )}
-          <div className="flex items-center gap-3 ml-auto">
+        <header className="glass sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]/70 px-4 backdrop-blur-md sm:gap-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex rounded-[var(--radius-md)] p-2 text-[var(--color-text-2)] transition-colors hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] md:hidden"
+              aria-expanded={mobileOpen}
+              aria-controls={sidebarId}
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            <div className="min-w-0">
+              {title && (
+                <h1 className="truncate text-[var(--text-base)] font-semibold tracking-tight text-[var(--color-text)] md:text-[var(--text-lg)]">
+                  {title}
+                </h1>
+              )}
+            </div>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <Avatar
               name={dbUser?.name}
@@ -273,8 +404,13 @@ export default function DashboardShell({ title, navItems, children }) {
         </header>
 
         {/* Scrollable body */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8">
-          {children}
+        <main id="dashboard-main" className="relative flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8">
+          {/* subtle grid for SaaS polish */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.12]"
+            aria-hidden="true"
+          />
+          <div className="relative">{children}</div>
         </main>
       </div>
     </div>

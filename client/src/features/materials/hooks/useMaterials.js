@@ -8,15 +8,6 @@ export const MATERIAL_KEYS = {
   pending: ["materials", "pending"],
   list: (params) => ["materials", "list", params],
 };
-const detectFileType = (mimeType) => {
-  if (mimeType === "application/pdf") return "PDF";
-  if (mimeType.startsWith("video/")) return "Video";
-  if (mimeType.startsWith("image/")) return "Image";
-  if (mimeType.includes("presentation") || mimeType.includes("powerpoint"))
-    return "Slides";
-  if (mimeType.includes("zip")) return "ZIP";
-  return "Other";
-};
 export const useMyMaterials = (params) =>
   useQuery({
     queryKey: [...MATERIAL_KEYS.my, params],

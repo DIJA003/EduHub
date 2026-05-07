@@ -9,6 +9,7 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          "DM Sans",
           "-apple-system",
           "BlinkMacSystemFont",
           '"Segoe UI"',
@@ -17,6 +18,10 @@ module.exports = {
           "Ubuntu",
           "sans-serif",
         ],
+        display: ["DM Serif Display", "Georgia", "serif"],
+      },
+      backdropBlur: {
+        xs: "2px",
       },
       animation: {
         in: "fadeIn 0.2s ease-out",

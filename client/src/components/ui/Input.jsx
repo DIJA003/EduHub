@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { cn } from "../../lib/utils";
 
 const Input = forwardRef(function Input(
@@ -11,16 +11,23 @@ const Input = forwardRef(function Input(
     required,
     className,
     containerClassName,
+    id,
+    disabled,
     ...props
   },
   ref,
 ) {
+  const autoId = useId();
+  const fieldId = id ?? `field-${autoId}`;
   const hasError = Boolean(error);
 
   return (
     <div className={cn("flex flex-col gap-1.5", containerClassName)}>
       {label && (
-        <label className="text-[var(--text-sm)] font-medium text-[var(--color-text-2)] flex items-center gap-1">
+        <label
+          htmlFor={fieldId}
+          className="text-[var(--text-sm)] font-medium text-[var(--color-text-2)] flex items-center gap-1"
+        >
           {label}
           {required && (
             <span
@@ -42,6 +49,8 @@ const Input = forwardRef(function Input(
 
         <input
           ref={ref}
+          id={fieldId}
+          disabled={disabled}
           className={cn(
             "w-full rounded-[var(--radius-md)] px-3.5 py-2.5",
             "bg-[var(--color-surface-2)] text-[var(--color-text)]",
@@ -57,7 +66,7 @@ const Input = forwardRef(function Input(
                 ],
             leftIcon && "pl-10",
             rightIcon && "pr-10",
-            props.disabled && "opacity-50 cursor-not-allowed",
+            disabled && "cursor-not-allowed opacity-50",
             className,
           )}
           {...props}
@@ -106,15 +115,22 @@ export const Textarea = forwardRef(function Textarea(
     className,
     containerClassName,
     rows = 4,
+    id,
+    disabled,
     ...props
   },
   ref,
 ) {
+  const autoId = useId();
+  const fieldId = id ?? `textarea-${autoId}`;
   const hasError = Boolean(error);
   return (
     <div className={cn("flex flex-col gap-1.5", containerClassName)}>
       {label && (
-        <label className="text-[var(--text-sm)] font-medium text-[var(--color-text-2)] flex items-center gap-1">
+        <label
+          htmlFor={fieldId}
+          className="text-[var(--text-sm)] font-medium text-[var(--color-text-2)] flex items-center gap-1"
+        >
           {label}
           {required && (
             <span
@@ -128,7 +144,9 @@ export const Textarea = forwardRef(function Textarea(
       )}
       <textarea
         ref={ref}
+        id={fieldId}
         rows={rows}
+        disabled={disabled}
         className={cn(
           "w-full rounded-[var(--radius-md)] px-3.5 py-2.5 resize-none",
           "bg-[var(--color-surface-2)] text-[var(--color-text)]",
@@ -138,7 +156,7 @@ export const Textarea = forwardRef(function Textarea(
           hasError
             ? "border-[var(--color-danger)] focus:ring-[var(--color-danger)] focus:ring-opacity-30"
             : "border-[var(--color-border-2)] focus:border-[var(--color-accent)] focus:ring-[var(--color-accent-glow)]",
-          props.disabled && "opacity-50 cursor-not-allowed",
+            props.disabled && "opacity-50 cursor-not-allowed",
           className,
         )}
         {...props}

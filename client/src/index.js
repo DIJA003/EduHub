@@ -6,7 +6,9 @@ import App from "./App";
 import ToastContainer from "./components/common/ToastContainer";
 import "./index.css";
 import { initAuthListener } from "./stores/auth.store";
+import { initThemeAttributes } from "./stores/theme.store";
 
+initThemeAttributes();
 const root = ReactDOM.createRoot(document.getElementById("root"));
 initAuthListener();
 root.render(

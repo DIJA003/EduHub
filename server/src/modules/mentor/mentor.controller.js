@@ -7,6 +7,7 @@ const User = require("../users/user.model");
 const { logAction } = require("../../shared/logger");
 const {
   success,
+  created,
   notFound,
   badRequest,
   forbidden,
@@ -84,9 +85,7 @@ const enrollStudentInCourse = async (req, res, next) => {
       },
     });
 
-    return res
-      .status(isNew ? 201 : 200)
-      .json({ success: true, data: enrollment });
+    return isNew ? created(res, enrollment) : success(res, enrollment);
   } catch (err) {
     next(err);
   }

@@ -2,8 +2,15 @@ import { Navigate } from "react-router-dom";
 import useAuthStore from "../stores/auth.store";
 
 const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-slate-50">
-    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--color-ink)] px-4">
+    <div
+      className="h-10 w-10 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)] shadow-[var(--shadow-glow)] animate-spin"
+      aria-hidden="true"
+    />
+    <p className="text-[var(--text-sm)] font-medium text-[var(--color-text-3)]">
+      Loading EduHub…
+    </p>
+    <span className="sr-only">Loading application</span>
   </div>
 );
 

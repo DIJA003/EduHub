@@ -6,7 +6,7 @@ import {
 import { usePagination } from "../../../hooks/usePagination";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
 import ReviewModal from "../../../components/common/ReviewModel";
-import DataTable from "./DataTable";
+import DataTable from "../../../components/ui/DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useCourses,
   useCreateCourse,
@@ -8,13 +7,12 @@ import {
   useRestoreCourse,
 } from "../../courses/hooks/useCourses";
 import { usePagination } from "../../../hooks/usePagination";
-import DataTable from "./DataTable";
+import DataTable from "../../../components/ui/DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-import { formatDate } from "../../../lib/utils";
 
 const EMPTY_FORM = {
   code: "",
