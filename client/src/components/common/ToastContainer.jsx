@@ -1,5 +1,6 @@
 import { useToasts } from "../../hooks/useToasts";
 import { cn } from "../../lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 const typeConfig = {
   success: {
@@ -33,15 +34,20 @@ export default function ToastContainer() {
 
   return (
     <div className="fixed bottom-4 right-4 z-[var(--z-toast)] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
-      {toasts.map((t) => {
+      <AnimatePresence mode="popLayout">
+        {toasts.map((t) => {
         const config = typeConfig[t.type] ?? typeConfig.info;
         return (
-          <div
+          <motion.div
             key={t.id}
+            initial={{ opacity: 0, x: 30, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 30, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
             className={cn(
               "pointer-events-auto flex items-start gap-3 rounded-[var(--radius-lg)] px-4 py-3",
               "bg-[var(--color-surface-2)] border border-[var(--color-border-2)]",
-              "shadow-[var(--shadow-xl)] animate-slide-right",
+              "shadow-[var(--shadow-xl)]",
               "relative overflow-hidden",
             )}
           >
@@ -73,9 +79,10 @@ export default function ToastContainer() {
                 config.bar,
               )}
             />
-          </div>
+          </motion.div>
         );
       })}
+      </AnimatePresence>
     </div>
   );
 }

@@ -29,9 +29,9 @@ export default function MyMaterials({ materials, loading }) {
   if (loading) return <TableSkeleton rows={3} cols={4} />;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-200">
-        <h2 className="text-sm font-bold text-slate-900">
+    <div className="surface overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--color-border)]">
+        <h2 className="text-sm font-bold text-[var(--color-text)]">
           My Uploaded Materials ({materials.length})
         </h2>
       </div>
@@ -44,32 +44,32 @@ export default function MyMaterials({ materials, loading }) {
         />
       ) : (
         <table className="w-full">
-          <thead className="bg-slate-50">
+          <thead className="bg-[var(--color-surface-2)]">
             <tr>
               {["Material", "Course", "Status", "Uploaded", ""].map((h) => (
                 <th
                   key={h}
-                  className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+                  className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--color-text-3)]"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--color-border)]">
             {materials.map((m) => (
-              <tr key={m._id} className="hover:bg-slate-50 transition-colors">
+              <tr key={m._id} className="hover:bg-[var(--color-surface-2)] transition-colors">
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{TYPE_ICON[m.type] || "📁"}</span>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-[var(--color-text)]">
                         {m.title}
                       </p>
                       {m.fileUrl && m.status === "approved" && (
                         <button
                           onClick={() => setViewMaterial(m)}
-                          className="text-xs text-blue-600 hover:underline text-left"
+                          className="text-xs text-[var(--color-accent)] hover:underline text-left"
                         >
                           View file ↗
                         </button>
@@ -89,7 +89,7 @@ export default function MyMaterials({ materials, loading }) {
                     {STATUS_LABEL[m.status] || m.status}
                   </span>
                 </td>
-                <td className="px-5 py-3.5 text-xs text-slate-400">
+                <td className="px-5 py-3.5 text-xs text-[var(--color-text-3)]">
                   {timeAgo(m.createdAt)}
                 </td>
                 <td className="px-5 py-3.5 text-right">

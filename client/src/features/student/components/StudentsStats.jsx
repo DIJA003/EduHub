@@ -46,10 +46,10 @@ export default function StudentStats({ enrollments, materials, loading }) {
       {stats.map((s) => (
         <div
           key={s.label}
-          className="bg-white rounded-xl border border-slate-200 p-5"
+          className="surface-2 p-5 hover-lift"
         >
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-bold uppercase tracking-wide text-[var(--color-text-3)]">
               {s.label}
             </p>
             <div
@@ -58,7 +58,7 @@ export default function StudentStats({ enrollments, materials, loading }) {
               {s.icon}
             </div>
           </div>
-          <p className="text-3xl font-black text-slate-900">{s.value}</p>
+          <p className="text-3xl font-black text-[var(--color-text)]">{s.value}</p>
         </div>
       ))}
     </div>

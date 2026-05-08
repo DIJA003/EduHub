@@ -16,7 +16,7 @@ const fetchDbUser = async () => {
     });
 
     return response.data?.data || response.data;
-  } catch (err) {
+  } catch {
     return null;
   }
 };
@@ -36,7 +36,7 @@ const useAuthStore = create(
 
       refreshDbUser: async () => {
         const dbUser = await fetchDbUser();
-        set({ dbUser });
+        set({ dbUser, error: dbUser ? null : "Failed to sync account profile." });
         return dbUser;
       },
 
@@ -69,10 +69,12 @@ export const initAuthListener = () => {
     state.setLoading(true);
     state.setFirebaseUser(firebaseUser ?? null);
     state.setDbUser(null);
+    state.setError(null);
 
     if (firebaseUser) {
       const dbUser = await fetchDbUser();
       state.setDbUser(dbUser);
+      if (!dbUser) state.setError("Failed to sync account profile.");
     }
 
     state.setLoading(false);

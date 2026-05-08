@@ -73,7 +73,7 @@ export default function YearDetail() {
             </svg>
             Academic Years
           </button>
-          <Button size="sm" onClick={() => navigate("/std-dashboard")}>
+          <Button size="sm" onClick={() => navigate("/student")}>
             Dashboard
           </Button>
         </div>

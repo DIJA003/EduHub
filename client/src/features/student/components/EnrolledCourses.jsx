@@ -16,9 +16,9 @@ export default function EnrolledCourses({ enrollments, loading }) {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-900">
+      <div className="surface overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+          <h2 className="text-sm font-bold text-[var(--color-text)]">
             My Courses ({enrollments.length})
           </h2>
           <Button
@@ -40,27 +40,27 @@ export default function EnrolledCourses({ enrollments, loading }) {
           />
         ) : (
           <table className="w-full">
-            <thead className="bg-slate-50">
+            <thead className="bg-[var(--color-surface-2)]">
               <tr>
                 {["Course", "Code", "Progress", "Next Up", ""].map((h) => (
                   <th
                     key={h}
-                    className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+                    className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--color-text-3)]"
                   >
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--color-border)]">
               {enrollments.map((e) => (
                 <tr
                   key={e.enrollmentId || e.courseId}
-                  className="hover:bg-slate-50 transition-colors"
+                  className="hover:bg-[var(--color-surface-2)] transition-colors"
                 >
                   <td className="px-5 py-3.5">
                     <button
-                      className="font-medium text-blue-600 hover:underline text-left"
+                      className="font-medium text-[var(--color-accent)] hover:underline text-left"
                       onClick={() =>
                         navigate(
                           `/academic-year/${e.yearId}/course/${e.courseId}`,
@@ -75,24 +75,24 @@ export default function EnrolledCourses({ enrollments, loading }) {
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden min-w-[60px]">
+                      <div className="flex-1 h-1.5 rounded-full bg-[var(--color-surface-3)] overflow-hidden min-w-[60px]">
                         <div
-                          className="h-full rounded-full bg-blue-600 transition-[width]"
+                          className="h-full rounded-full bg-[var(--color-accent)] transition-[width]"
                           style={{ width: `${e.progress}%` }}
                         />
                       </div>
                       <span
                         className={`text-xs font-mono ${
                           e.progress >= 100
-                            ? "text-emerald-600"
-                            : "text-slate-500"
+                            ? "text-[var(--color-success)]"
+                            : "text-[var(--color-text-3)]"
                         }`}
                       >
                         {e.progress}%
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-slate-400">
+                  <td className="px-5 py-3.5 text-xs text-[var(--color-text-3)]">
                     {e.progress >= 100 ? "✓ Completed" : e.nextItem}
                   </td>
                   <td className="px-5 py-3.5 text-right">

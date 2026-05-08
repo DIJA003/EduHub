@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { cn } from "../../lib/utils";
+import { toast } from "../../hooks/useToasts";
 
 const ACCEPT = "application/pdf,video/*,.ppt,.pptx,application/zip,image/*";
 
@@ -13,12 +14,22 @@ export default function FileDropZone({
 }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const maxBytes = maxMB * 1024 * 1024;
+
+  const validateAndSelect = (candidate) => {
+    if (!candidate) return;
+    if (candidate.size > maxBytes) {
+      toast.error(`File is too large. Max allowed size is ${maxMB} MB.`);
+      return;
+    }
+    onFile(candidate);
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
     const dropped = e.dataTransfer.files[0];
-    if (dropped) onFile(dropped);
+    if (dropped) validateAndSelect(dropped);
   };
 
   return (
@@ -47,7 +58,7 @@ export default function FileDropZone({
           type="file"
           className="hidden"
           accept={ACCEPT}
-          onChange={(e) => e.target.files[0] && onFile(e.target.files[0])}
+          onChange={(e) => validateAndSelect(e.target.files[0])}
         />
 
         {file ? (

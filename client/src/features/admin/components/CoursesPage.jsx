@@ -83,14 +83,6 @@ export default function CoursesPage() {
     setModal(true);
   };
   const openEdit = (c) => {
-    console.log("[DEBUG] openEdit - course:", {
-      id: c._id,
-      instructorRef: c.instructorRef,
-      instructorName: c.instructor,
-      mentorsLoaded: mentors.length > 0,
-      mentorCount: mentors.length,
-    });
-
     setForm({
       code: c.code || "",
       title: c.title || "",
@@ -115,14 +107,6 @@ export default function CoursesPage() {
       instructorId: form.instructor || undefined,
       instructor: selectedMentor?.name || form.instructor || "",
     };
-
-    console.log("[DEBUG] Saving course:", {
-      formInstructor: form.instructor,
-      selectedMentor: selectedMentor?._id,
-      payloadInstructorId: payload.instructorId,
-      payloadInstructor: payload.instructor,
-      isEdit: !!editTarget,
-    });
 
     if (editTarget)
       updateMutation.mutate(

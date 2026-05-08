@@ -37,11 +37,6 @@ const AdminDashboard = lazy(
 const MentorDashboard = lazy(
   () => import("../features/mentor/pages/MentorDashboard"),
 );
-const StudentDashboardCustom = lazy(() => import("../pages/StudentDashboard"));
-const StudentProfileCustom   = lazy(() => import("../pages/StudentProfile"));
-const AcademicYearCustom     = lazy(() => import("../pages/AcademicYear"));
-const YearDetailCustom       = lazy(() => import("../pages/YearDetail"));
-const DataScienceCourses     = lazy(() => import("../pages/DataScienceCourses"));
 
 const router = createBrowserRouter([
   { path: "/", element: <RoleRedirect /> },
@@ -84,13 +79,15 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/std-dashboard",
+    path: "/student/*",
     element: (
       <RequireAuth requireVerified roles={["student"]}>
         <StudentDashboard />
       </RequireAuth>
     ),
   },
+  { path: "/std-dashboard", element: <RoleRedirect /> },
+  { path: "/std-dashboard/*", element: <RoleRedirect /> },
   {
     path: "/profile",
     element: (

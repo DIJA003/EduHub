@@ -25,7 +25,10 @@ export default function EnrollmentsPage() {
     queryKey: ["admin-enrollments", { page, search }],
     queryFn: () => enrollmentsApi.getAll({ page, search }).then((r) => r.data),
   });
-  const enrollments = Array.isArray(data) ? data : data?.data || [];
+  const enrollments = useMemo(
+    () => (Array.isArray(data) ? data : data?.data || []),
+    [data],
+  );
   const meta = data?.meta;
 
   const { data: studentsData } = useQuery({
@@ -34,9 +37,10 @@ export default function EnrollmentsPage() {
     queryFn: () =>
       usersApi.getAll({ role: "student", limit: 200 }).then((r) => r.data),
   });
-  const students = Array.isArray(studentsData)
-    ? studentsData
-    : studentsData?.data || [];
+  const students = useMemo(
+    () => (Array.isArray(studentsData) ? studentsData : studentsData?.data || []),
+    [studentsData],
+  );
 
   // Filter out students already enrolled in the selected course
   const enrolledStudentIds = useMemo(() => {
@@ -60,9 +64,10 @@ export default function EnrollmentsPage() {
         .getAll({ status: "Published", limit: 200 })
         .then((r) => r.data),
   });
-  const courses = Array.isArray(coursesData)
-    ? coursesData
-    : coursesData?.data || [];
+  const courses = useMemo(
+    () => (Array.isArray(coursesData) ? coursesData : coursesData?.data || []),
+    [coursesData],
+  );
 
   const enrollMutation = useMutation({
     mutationFn: enrollmentsApi.adminEnroll,

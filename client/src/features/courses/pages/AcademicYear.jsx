@@ -58,7 +58,7 @@ export default function AcademicYear() {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => navigate("/std-dashboard")}
+              onClick={() => navigate("/student")}
             >
               Dashboard
             </Button>
@@ -83,12 +83,12 @@ export default function AcademicYear() {
               Select a year to view courses and track your progress.
             </p>
             <div className="flex gap-3 mt-4">
-              <Button onClick={() => navigate("/std-dashboard")} size="sm">
+              <Button onClick={() => navigate("/student")} size="sm">
                 Dashboard
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => navigate("/std-dashboard")}
+                onClick={() => navigate("/student/courses")}
                 size="sm"
               >
                 My Courses

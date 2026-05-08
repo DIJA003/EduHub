@@ -1,10 +1,13 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../../../hooks/useAuth";
 import Button from "../../../components/ui/Button";
 
 export default function Home() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, role } = useAuth();
+  const hasSyncIssue = searchParams.get("auth") === "sync-required";
 
   const handleGetStarted = () => {
     if (!isAuthenticated) return navigate("/register");
@@ -14,27 +17,27 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[var(--color-ink)] text-[var(--color-text)] transition-colors duration-300">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-100 backdrop-blur">
+      <header className="sticky top-0 z-50 glass-strong border-b border-[var(--color-border)] backdrop-blur">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black">
               E
             </div>
-            <span className="text-lg font-black text-blue-600">EduHub</span>
+            <span className="text-lg font-black text-[var(--color-accent)]">EduHub</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
             <a
               href="#features"
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
             >
               Features
             </a>
             <a
               href="#roles"
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
+              className="text-sm font-medium text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
             >
               How it works
             </a>
@@ -68,16 +71,25 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white py-20 lg:py-32">
+      <section className="relative overflow-hidden py-20 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          {hasSyncIssue ? (
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning)]">
+              We could not sync your account profile. Please sign in again or contact support if the issue persists.
+            </div>
+          ) : null}
           <span className="inline-block mb-4 rounded-full bg-blue-100 px-4 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
             Academic Learning Platform
           </span>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl font-black tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-7xl"
+          >
             Empowering Students{" "}
             <span className="text-blue-600">&amp; Mentors</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+          </motion.h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-2)]">
             A unified platform for collaboration, mentorship, and academic
             growth. Track your 4-year journey, upload materials, and connect
             with expert mentors.
@@ -107,7 +119,7 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="border-y border-slate-100 py-12">
+      <section className="border-y border-[var(--color-border)] py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -176,7 +188,7 @@ export default function Home() {
       </section>
 
       {/* Roles */}
-      <section id="roles" className="bg-slate-50 py-20 lg:py-28">
+      <section id="roles" className="bg-[var(--color-surface)] py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">

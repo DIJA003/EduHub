@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { notificationsApi } from "../../lib/api/notifications.api";
 import { cn } from "../../lib/utils";
 
@@ -131,8 +132,15 @@ export default function NotificationBell() {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
+    const escapeHandler = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", escapeHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", escapeHandler);
+    };
   }, []);
 
   return (
@@ -164,13 +172,18 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
           className={cn(
             "absolute right-0 top-full mt-2 w-80 z-[var(--z-dropdown)]",
             "bg-[var(--color-surface)] border border-[var(--color-border-2)]",
             "rounded-[var(--radius-xl)] shadow-[var(--shadow-xl)]",
-            "animate-scale-in overflow-hidden",
+            "overflow-hidden",
           )}
           role="dialog"
           aria-label="Notifications panel"
@@ -225,8 +238,9 @@ export default function NotificationBell() {
               ))
             )}
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

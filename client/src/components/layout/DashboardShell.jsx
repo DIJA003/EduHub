@@ -1,40 +1,12 @@
 import { useState, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 import { initials } from "../../lib/utils";
 import { useTheme } from "../../context/ThemeContext";
-
-/* ── Nav definitions ─────────────────── */
-export const STUDENT_NAV = [
-  { to: "/std-dashboard", label: "Dashboard", icon: "⬡", end: true },
-  { to: "/academic-year", label: "Academic Years", icon: "◈" },
-  { to: "/profile", label: "Profile", icon: "◉" },
-];
-
-export const MENTOR_NAV = [
-  { to: "/mentor", label: "Dashboard", icon: "⬡", end: true },
-  { to: "/mentor/reviews", label: "Review Queue", icon: "◈" },
-  { to: "/mentor/students", label: "My Students", icon: "◉" },
-  { to: "/mentor/upload", label: "Upload", icon: "⊕" },
-];
-
-export const ADMIN_NAV = [
-  { to: "/admin", label: "Overview", icon: "⬡", end: true },
-  { to: "/admin/colleges", label: "Colleges", icon: "◈" },
-  { to: "/admin/courses", label: "Courses", icon: "◈" },
-  { to: "/admin/materials", label: "Materials", icon: "◈" },
-  { to: "/admin/users", label: "Users", icon: "◉" },
-  { to: "/admin/enrollments", label: "Enrollments", icon: "◈" },
-  { to: "/admin/logs", label: "Audit Logs", icon: "◈" },
-];
-
-const NAV_BY_ROLE = {
-  admin: ADMIN_NAV,
-  mentor: MENTOR_NAV,
-  student: STUDENT_NAV,
-};
+import { NAV_BY_ROLE } from "../../constants/navigation";
 
 /* ── Avatar ──────────────────────────── */
 function Avatar({ name, photoURL, size = "sm", onClick }) {
@@ -162,12 +134,13 @@ function EduHubLogo({ className }) {
 /* ── Main Shell ──────────────────────── */
 export default function DashboardShell({ title, navItems, children }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const logout = useAuthStore((s) => s.logout);
   const { darkMode, toggleDarkMode } = useTheme();
   const role = dbUser?.role;
-  const nav = navItems ?? NAV_BY_ROLE[role] ?? STUDENT_NAV;
+  const nav = navItems ?? NAV_BY_ROLE[role] ?? NAV_BY_ROLE.student;
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -190,14 +163,28 @@ export default function DashboardShell({ title, navItems, children }) {
         <div className="aurora-bg__blob-3" />
       </div>
 
-      {/* ── Sidebar ────────────────────── */}
-      <aside
+      <AnimatePresence>
+        {mobileOpen ? (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/45 backdrop-blur-[1px] z-[var(--z-overlay)] lg:hidden"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu overlay"
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <motion.aside
         className={cn(
-          "flex flex-col flex-shrink-0 relative z-[var(--z-raised)]",
+          "fixed inset-y-0 left-0 lg:relative flex flex-col flex-shrink-0 z-[var(--z-overlay)] lg:z-[var(--z-raised)]",
           "glass-strong border-r border-[var(--color-border)]",
           "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-          collapsed ? "w-[58px]" : "w-56",
+          collapsed ? "w-[58px]" : "w-64",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
+        animate={{ x: mobileOpen ? 0 : undefined }}
       >
         {/* Brand */}
         <div
@@ -305,17 +292,26 @@ export default function DashboardShell({ title, navItems, children }) {
             )}
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* ── Main content ───────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Topbar */}
         <header className="h-14 flex items-center justify-between px-6 glass-strong border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
-          {title && (
-            <h1 className="text-[var(--text-base)] font-bold text-[var(--color-text)] truncate">
-              {title}
-            </h1>
-          )}
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="lg:hidden p-2 rounded-[var(--radius-md)] hover:bg-[var(--color-surface-2)] text-[var(--color-text-2)]"
+              aria-label={mobileOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              ☰
+            </button>
+            {title && (
+              <h1 className="text-[var(--text-base)] font-bold text-[var(--color-text)] truncate">
+                {title}
+              </h1>
+            )}
+          </div>
           <div className="flex items-center gap-3 ml-auto">
             <button
               onClick={toggleDarkMode}
@@ -348,9 +344,15 @@ export default function DashboardShell({ title, navItems, children }) {
         </header>
 
         {/* Scrollable body */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-8">
+        <motion.main
+          key={title || "dashboard-content"}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8"
+        >
           {children}
-        </main>
+        </motion.main>
       </div>
     </div>
   );
