@@ -99,8 +99,9 @@ export function Screen({ children, style }) {
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 export function Card({ children, style, bg }) {
+  const c = useColors();
   return (
-    <View style={[st.card, bg ? { backgroundColor: bg } : {}, style]}>
+    <View style={[{ backgroundColor: bg || c.card, borderWidth: 1, borderColor: c.border, borderRadius: 16, padding: 14, gap: 8 }, style]}>
       {children}
     </View>
   );
@@ -108,17 +109,9 @@ export function Card({ children, style, bg }) {
 
 // ── SectionLabel ──────────────────────────────────────────────────────────────
 export function SectionLabel({ children }) {
+  const c = useColors();
   return (
-    <Text
-      style={{
-        fontSize: 10,
-        fontWeight: '700',
-        color: C.textMuted,
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
-        marginBottom: 6,
-      }}
-    >
+    <Text style={{ fontSize: 10, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
       {children}
     </Text>
   );
@@ -126,175 +119,73 @@ export function SectionLabel({ children }) {
 
 // ── Tag ───────────────────────────────────────────────────────────────────────
 export function Tag({ label, color, bg }) {
+  const c = useColors();
   return (
-    <View
-      style={{
-        alignSelf: 'flex-start',
-        backgroundColor: bg || C.blueBg,
-        borderRadius: 99,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-      }}
-    >
-      <Text style={{ fontSize: 10, fontWeight: '700', color: color || C.blueLight }}>
-        {label}
-      </Text>
+    <View style={{ alignSelf: 'flex-start', backgroundColor: bg || c.blueBg, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+      <Text style={{ fontSize: 10, fontWeight: '700', color: color || c.blueLight }}>{label}</Text>
     </View>
   );
 }
 
 // ── Pill (stat) ───────────────────────────────────────────────────────────────
 export function Pill({ label, value, color }) {
+  const c = useColors();
   return (
     <View style={{ alignItems: 'center', flex: 1 }}>
-      <Text style={{ fontSize: 20, fontWeight: '800', color: color || C.blueLight }}>
-        {String(value)}
-      </Text>
-      <Text
-        style={{
-          fontSize: 10,
-          color: C.textMuted,
-          marginTop: 2,
-          textAlign: 'center',
-        }}
-      >
-        {label}
-      </Text>
+      <Text style={{ fontSize: 20, fontWeight: '800', color: color || c.blueLight }}>{String(value)}</Text>
+      <Text style={{ fontSize: 10, color: c.textMuted, marginTop: 2, textAlign: 'center' }}>{label}</Text>
     </View>
   );
 }
 
 // ── ProgressBar ───────────────────────────────────────────────────────────────
 export function ProgressBar({ value, height = 6 }) {
+  const c = useColors();
   const pct = Math.min(100, Math.max(0, value || 0));
-
   return (
-    <View
-      style={{
-        height,
-        backgroundColor: C.border,
-        borderRadius: 99,
-        overflow: 'hidden',
-      }}
-    >
-      <View
-        style={{
-          height,
-          width: `${pct}%`,
-          backgroundColor: pct >= 100 ? C.emerald : C.blue,
-          borderRadius: 99,
-        }}
-      />
+    <View style={{ height, backgroundColor: c.border, borderRadius: 99, overflow: 'hidden' }}>
+      <View style={{ height, width: `${pct}%`, backgroundColor: pct >= 100 ? c.emerald : c.blue, borderRadius: 99 }} />
     </View>
   );
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 export function Avatar({ name, size = 44, bg }) {
+  const c = useColors();
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: bg || C.blue,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>
-        {(name || '?')[0].toUpperCase()}
-      </Text>
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg || c.blue, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.38 }}>{(name || '?')[0].toUpperCase()}</Text>
     </View>
   );
 }
 
 // ── Btn ───────────────────────────────────────────────────────────────────────
 export function Btn({ label, onPress, variant = 'primary', small, disabled }) {
-  const bgColor =
-    variant === 'primary'
-      ? C.blue
-      : variant === 'danger'
-      ? C.rose
-      : variant === 'ghost'
-      ? 'transparent'
-      : C.card;
-
-  const textColor =
-    variant === 'ghost'
-      ? C.blueLight
-      : variant === 'outline'
-      ? C.text
-      : '#fff';
-
-  const borderStyle =
-    variant === 'outline'
-      ? { borderWidth: 1, borderColor: C.border }
-      : {};
-
+  const c = useColors();
+  const bgColor = variant === 'primary' ? c.blue : variant === 'danger' ? c.rose : variant === 'ghost' ? 'transparent' : c.card;
+  const textColor = variant === 'ghost' ? c.blueLight : variant === 'outline' ? c.text : '#fff';
+  const borderStyle = variant === 'outline' ? { borderWidth: 1, borderColor: c.border } : {};
   return (
     <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      style={[
-        {
-          backgroundColor: bgColor,
-          borderRadius: 99,
-          paddingHorizontal: small ? 12 : 16,
-          paddingVertical: small ? 7 : 10,
-          alignItems: 'center',
-        },
-        borderStyle,
-        disabled && { opacity: 0.5 },
-      ]}
+      onPress={onPress} disabled={disabled}
+      style={[{ backgroundColor: bgColor, borderRadius: 99, paddingHorizontal: small ? 12 : 16, paddingVertical: small ? 7 : 10, alignItems: 'center' }, borderStyle, disabled && { opacity: 0.5 }]}
     >
-      <Text
-        style={{
-          color: textColor,
-          fontWeight: '700',
-          fontSize: small ? 12 : 13,
-        }}
-      >
-        {label}
-      </Text>
+      <Text style={{ color: textColor, fontWeight: '700', fontSize: small ? 12 : 13 }}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 // ── Field ─────────────────────────────────────────────────────────────────────
-export function Field({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  secure,
-  multiline,
-  editable = true,
-  keyboardType,
-}) {
+export function Field({ label, value, onChangeText, placeholder, secure, multiline, editable = true, keyboardType }) {
+  const c = useColors();
   return (
     <View style={{ gap: 4 }}>
-      {label ? (
-        <Text style={{ fontSize: 12, fontWeight: '600', color: C.textSub }}>
-          {label}
-        </Text>
-      ) : null}
-
+      {label ? <Text style={{ fontSize: 12, fontWeight: '600', color: c.textSub }}>{label}</Text> : null}
       <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={C.textMuted}
-        secureTextEntry={secure}
-        multiline={multiline}
-        editable={editable}
-        autoCapitalize="none"
-        keyboardType={keyboardType}
-        style={[
-          st.input,
-          multiline && { height: 80, textAlignVertical: 'top' },
-          !editable && { opacity: 0.6 },
-        ]}
+        value={value} onChangeText={onChangeText} placeholder={placeholder}
+        placeholderTextColor={c.textMuted} secureTextEntry={secure}
+        multiline={multiline} editable={editable} autoCapitalize="none" keyboardType={keyboardType}
+        style={[{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: c.text }, multiline && { height: 80, textAlignVertical: 'top' }, !editable && { opacity: 0.6 }]}
       />
     </View>
   );
@@ -302,93 +193,47 @@ export function Field({
 
 // ── Divider ───────────────────────────────────────────────────────────────────
 export function Divider() {
-  return <View style={{ height: 1, backgroundColor: C.border, marginVertical: 4 }} />;
+  const c = useColors();
+  return <View style={{ height: 1, backgroundColor: c.border, marginVertical: 4 }} />;
 }
 
 // ── ErrorBox ──────────────────────────────────────────────────────────────────
 export function ErrorBox({ message }) {
+  const c = useColors();
   if (!message) return null;
-
   return (
-    <Card bg={C.roseBg} style={{ borderColor: C.rose, borderWidth: 1 }}>
-      <Text style={{ color: C.rose, fontWeight: '600', fontSize: 13 }}>
-        ⚠️ {message}
-      </Text>
+    <Card bg={c.roseBg} style={{ borderColor: c.rose, borderWidth: 1 }}>
+      <Text style={{ color: c.rose, fontWeight: '600', fontSize: 13 }}>⚠️ {message}</Text>
     </Card>
   );
 }
 
 // ── EmptyState ────────────────────────────────────────────────────────────────
 export function EmptyState({ icon = '📭', title, subtitle }) {
+  const c = useColors();
   return (
     <Card>
       <View style={{ alignItems: 'center', paddingVertical: 20 }}>
         <Text style={{ fontSize: 32, marginBottom: 8 }}>{icon}</Text>
-
-        <Text
-          style={{
-            fontWeight: '700',
-            color: C.text,
-            fontSize: 15,
-            textAlign: 'center',
-          }}
-        >
-          {title}
-        </Text>
-
-        {subtitle ? (
-          <Text
-            style={{
-              color: C.textSub,
-              fontSize: 13,
-              marginTop: 4,
-              textAlign: 'center',
-            }}
-          >
-            {subtitle}
-          </Text>
-        ) : null}
+        <Text style={{ fontWeight: '700', color: c.text, fontSize: 15, textAlign: 'center' }}>{title}</Text>
+        {subtitle ? <Text style={{ color: c.textSub, fontSize: 13, marginTop: 4, textAlign: 'center' }}>{subtitle}</Text> : null}
       </View>
     </Card>
   );
 }
 
 // ── ConfirmModal ──────────────────────────────────────────────────────────────
-export function ConfirmModal({
-  visible,
-  title,
-  message,
-  confirmLabel = 'Confirm',
-  onConfirm,
-  onCancel,
-  danger,
-}) {
+export function ConfirmModal({ visible, title, message, confirmLabel = 'Confirm', onConfirm, onCancel, danger }) {
+  const c = useColors();
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={st.overlay} onPress={onCancel}>
-        <Pressable style={st.modalCard}>
-          <Text style={{ fontWeight: '800', fontSize: 16, color: C.text }}>
-            {title}
-          </Text>
-
-          {message ? (
-            <Text style={{ color: C.textSub, fontSize: 13, marginTop: 4 }}>
-              {message}
-            </Text>
-          ) : null}
-
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }} onPress={onCancel}>
+        <Pressable style={{ backgroundColor: c.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 10, borderTopWidth: 1, borderColor: c.border }}>
+          <Text style={{ fontWeight: '800', fontSize: 16, color: c.text }}>{title}</Text>
+          {message ? <Text style={{ color: c.textSub, fontSize: 13, marginTop: 4 }}>{message}</Text> : null}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            <View style={{ flex: 1 }}>
-              <Btn label="Cancel" variant="outline" onPress={onCancel} />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Btn
-                label={confirmLabel}
-                variant={danger ? 'danger' : 'primary'}
-                onPress={onConfirm}
-              />
-            </View>
+            <View style={{ flex: 1 }}><Btn label="Cancel" variant="outline" onPress={onCancel} /></View>
+            <View style={{ flex: 1 }}><Btn label={confirmLabel} variant={danger ? 'danger' : 'primary'} onPress={onConfirm} /></View>
           </View>
         </Pressable>
       </Pressable>

@@ -13,7 +13,7 @@ export default function App() {
         <AuthProvider>
           <CourseProvider>
             <MaterialProvider>
-              <StatusBar style="light" />
+              <StatusBar style="auto" />
               <AppNavigator />
             </MaterialProvider>
           </CourseProvider>
