@@ -15,6 +15,8 @@ const academicYearRoutes = require("./routes/academicYearRoutes");
 const studentRoutes      = require("./routes/studentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const uploadRoutes       = require("./routes/uploadRoutes");
+const sectionRoutes      = require("./routes/sectionRoutes");
+const courseRoutes       = require("./routes/CourseRoutes");
 
 const app = express();
 
@@ -53,6 +55,8 @@ app.use("/api/mentor",         mentorRoutes);
 app.use("/api/student",        studentRoutes);
 app.use("/api/notifications",  notificationRoutes);
 app.use("/api/upload",         uploadRoutes);
+app.use("/api/sections",       sectionRoutes);
+app.use("/api/courses",        courseRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "EduHub API is running" });

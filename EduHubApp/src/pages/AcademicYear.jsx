@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
   Screen, Card, SectionLabel, Tag, Pill, ProgressBar,
-  Divider, ErrorBox, EmptyState, ConfirmModal, Btn, safeArray, C, s,
+  Divider, ErrorBox, EmptyState, ConfirmModal, Btn, safeArray, useColors,
 } from "../components/UI";
 
-// ─── Locking logic (mirrors web) ─────────────────────────────────────────────
+// ─── Locking logic ────────────────────────────────────────────────────────────
 const UNLOCK_THRESHOLDS = { 1: 0, 2: 39, 3: 78, 4: 117 };
 const YEAR_META = {
   1: { title: "Year One — Foundations",             desc: "Foundational concepts: computing, mathematics, and logic." },
@@ -45,11 +45,11 @@ function buildYearsState(dbYears, coursesPerYear, enrollments) {
         credits: c.creditHours || 3, instructor: c.instructor || "TBA",
         mongoId: String(c._id), yearId: yid,
       }));
-    const earnedCredits     = computeEarnedCredits(enrolled);
-    const totalEarnedSoFar  = Object.values(result).reduce((sum, y) => sum + (y.earnedCredits ?? 0), 0) + earnedCredits;
-    const threshold         = UNLOCK_THRESHOLDS[ynum] ?? 0;
-    const unlocked          = ynum === 1 || enrolled.length > 0 || totalEarnedSoFar >= threshold;
-    const status            = unlocked ? computeYearStatus(enrolled) : "Locked";
+    const earnedCredits    = computeEarnedCredits(enrolled);
+    const totalEarnedSoFar = Object.values(result).reduce((sum, y) => sum + (y.earnedCredits ?? 0), 0) + earnedCredits;
+    const threshold        = UNLOCK_THRESHOLDS[ynum] ?? 0;
+    const unlocked         = ynum === 1 || enrolled.length > 0 || totalEarnedSoFar >= threshold;
+    const status           = unlocked ? computeYearStatus(enrolled) : "Locked";
     result[yid] = {
       title: dbYear?.name || YEAR_META[ynum]?.title || `Year ${ynum}`,
       desc: YEAR_META[ynum]?.desc || "", status, unlocked, earnedCredits,
@@ -59,10 +59,13 @@ function buildYearsState(dbYears, coursesPerYear, enrollments) {
   return result;
 }
 
-// ─── CoursePlayer ─────────────────────────────────────────────────────────────
+// ─── CoursePlayer (inline) ────────────────────────────────────────────────────
 function CoursePlayer({ course, yearId, onBack }) {
+  const c = useColors();
+
   const [sections,        setSections]        = useState([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
+  const [sectionsError,   setSectionsError]   = useState("");
   const [viewIndex,       setViewIndex]       = useState(0);
   const [started,         setStarted]         = useState(false);
   const [mode,            setMode]            = useState("study");
@@ -71,31 +74,45 @@ function CoursePlayer({ course, yearId, onBack }) {
   const [uploadLoading,   setUploadLoading]   = useState(false);
   const [confirmUnenroll, setConfirmUnenroll] = useState(false);
 
-  const mongoId       = course.mongoId || course.courseId || course.id;
-  const progress      = course.progress || 0;
-  const secDone       = course.sectionsCompleted ?? Math.round((progress / 100) * Math.max(sections.length, 1));
+  const mongoId        = course.mongoId || course.courseId || course.id;
+  const progress       = course.progress || 0;
+  const secDone        = course.sectionsCompleted ?? Math.round((progress / 100) * Math.max(sections.length, 1));
   const courseComplete = progress >= 100;
-  const isStarted     = started || progress > 0;
-  const n             = sections.length;
+  const isStarted      = started || progress > 0;
+  const n              = sections.length;
 
+  // ── Fetch sections from backend ──────────────────────────────────────────
   useEffect(() => {
-    if (!mongoId) return;
+    if (!mongoId) { setSectionsLoading(false); return; }
     setSectionsLoading(true);
+    setSectionsError("");
     api.get(`/sections/course/${mongoId}`)
       .then((r) => {
+        // Backend returns { success, data: [...] }  OR  plain array
         const raw = safeArray(r?.data ?? r);
-        setSections(raw.map((sec) => ({ id: sec._id, title: sec.title, summary: sec.summary || "", body: sec.body || "" })));
+        setSections(raw.map((sec) => ({
+          id:      sec._id,
+          title:   sec.title   || "Untitled",
+          summary: sec.summary || "",
+          body:    sec.body    || "",
+        })));
       })
-      .catch(() => setSections([]))
+      .catch((e) => {
+        console.warn("sections fetch error:", e.message);
+        setSectionsError(e.message);
+        setSections([]);
+      })
       .finally(() => setSectionsLoading(false));
   }, [mongoId]);
 
+  // Cap viewIndex once sections load
   useEffect(() => {
     if (!n) return;
     const cap = courseComplete ? n - 1 : Math.max(0, Math.min(secDone, n - 1));
     setViewIndex((v) => Math.min(v, cap));
   }, [n, secDone, courseComplete]);
 
+  // Load student materials for this course
   useEffect(() => {
     api.get("/users/materials")
       .then((r) => {
@@ -137,7 +154,10 @@ function CoursePlayer({ course, yearId, onBack }) {
         sectionId: sec.id, sectionLabel: sec.title,
       });
       const m = res?.data || res;
-      setMyMaterials((prev) => [{ id: m._id, title: m.title, courseId: mongoId, sectionLabel: sec.title, status: m.status || "pending", createdAt: m.createdAt }, ...prev]);
+      setMyMaterials((prev) => [
+        { id: m._id, title: m.title, courseId: mongoId, sectionLabel: sec.title, status: m.status || "pending", createdAt: m.createdAt },
+        ...prev,
+      ]);
       Alert.alert("Uploaded!", "Material sent to mentor for review.");
     } catch (e) { Alert.alert("Upload failed", e.message); }
     finally { setUploadLoading(false); }
@@ -160,7 +180,7 @@ function CoursePlayer({ course, yearId, onBack }) {
   const showNext       = isStarted && !courseComplete && mode === "study" && viewIndex === secDone && secDone < n;
   const currentSection = sections[viewIndex];
   const sectionMats    = myMaterials.filter((m) => m.sectionLabel === sections[selectedSecIdx]?.title);
-  const STATUS_COLOR   = { pending: C.amber, approved: C.emerald, rejected: C.rose };
+  const STATUS_COLOR   = { pending: c.amber, approved: c.emerald, rejected: c.rose };
   const STATUS_LABEL   = { pending: "⏳ Pending", approved: "✅ Approved", rejected: "❌ Rejected" };
 
   return (
@@ -169,41 +189,46 @@ function CoursePlayer({ course, yearId, onBack }) {
         message={`Remove enrollment from "${course.name}"? You can re-enroll later.`}
         confirmLabel="Unenroll" onConfirm={handleUnenroll} onCancel={() => setConfirmUnenroll(false)} />
 
+      {/* Header */}
       <Card>
         <TouchableOpacity onPress={() => onBack({})} style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 }}>
-          <Text style={{ color: C.blue, fontWeight: "600", fontSize: 13 }}>← Back to year</Text>
+          <Text style={{ color: c.blue, fontWeight: "600", fontSize: 13 }}>← Back to year</Text>
         </TouchableOpacity>
         <SectionLabel>Year {yearId} / {course.code}</SectionLabel>
-        <Text style={s.pageTitle}>{course.name}</Text>
-        {course.instructor ? <Text style={{ fontSize: 12, color: C.slate500 }}>Instructor: {course.instructor}</Text> : null}
+        <Text style={{ fontSize: 22, fontWeight: "800", color: c.text }}>{course.name}</Text>
+        {course.instructor ? <Text style={{ fontSize: 12, color: c.textSub }}>Instructor: {course.instructor}</Text> : null}
         <Divider />
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View>
-            <Text style={{ fontSize: 11, color: C.slate500 }}>Progress</Text>
-            <Text style={{ fontSize: 18, fontWeight: "800", color: C.slate900 }}>{progress}%</Text>
+            <Text style={{ fontSize: 11, color: c.textSub }}>Progress</Text>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: c.text }}>{progress}%</Text>
           </View>
           <View style={{ flex: 1, marginHorizontal: 14 }}>
             <ProgressBar value={progress} height={8} />
-            <Text style={{ fontSize: 10, color: C.slate500, marginTop: 3 }}>Next: {course.nextItem || "Getting Started"}</Text>
+            <Text style={{ fontSize: 10, color: c.textSub, marginTop: 3 }}>Next: {course.nextItem || "Getting Started"}</Text>
           </View>
           <Btn label="Unenroll" variant="outline" small onPress={() => setConfirmUnenroll(true)} />
         </View>
-        <View style={{ flexDirection: "row", borderWidth: 1, borderColor: C.border, borderRadius: 99, overflow: "hidden", alignSelf: "flex-start", marginTop: 8 }}>
+        {/* Study / Upload toggle */}
+        <View style={{ flexDirection: "row", borderWidth: 1, borderColor: c.border, borderRadius: 99, overflow: "hidden", alignSelf: "flex-start", marginTop: 8 }}>
           {["study", "upload"].map((m) => (
             <TouchableOpacity key={m} onPress={() => setMode(m)}
-              style={{ paddingHorizontal: 16, paddingVertical: 7, backgroundColor: mode === m ? C.blue : "transparent" }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: mode === m ? "#fff" : C.slate500, textTransform: "capitalize" }}>{m}</Text>
+              style={{ paddingHorizontal: 16, paddingVertical: 7, backgroundColor: mode === m ? c.blue : "transparent" }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: mode === m ? "#fff" : c.textSub, textTransform: "capitalize" }}>{m}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </Card>
 
+      {/* Section list */}
       <Card>
         <SectionLabel>{sectionsLoading ? "Loading sections…" : `Sections (${n})`}</SectionLabel>
         {sectionsLoading ? (
-          <Text style={{ color: C.slate400 }}>Loading…</Text>
+          <Text style={{ color: c.textSub }}>Loading…</Text>
+        ) : sectionsError ? (
+          <Text style={{ color: c.rose, fontSize: 13 }}>⚠️ {sectionsError}</Text>
         ) : n === 0 ? (
-          <Text style={{ color: C.slate500, fontSize: 13 }}>No sections available yet.</Text>
+          <Text style={{ color: c.textSub, fontSize: 13 }}>No sections available yet. Check back later.</Text>
         ) : (
           sections.map((sec, idx) => {
             const done     = courseComplete || idx < secDone;
@@ -214,14 +239,14 @@ function CoursePlayer({ course, yearId, onBack }) {
                 onPress={() => { if (mode === "upload") { setSelectedSecIdx(idx); } else if (readable) { setViewIndex(idx); } }}
                 disabled={mode === "study" && !readable}
                 style={[{ flexDirection: "row", gap: 10, padding: 10, borderRadius: 12, marginBottom: 4, borderWidth: 1 },
-                  active ? { backgroundColor: C.blueBg, borderColor: "#93C5FD" } : { backgroundColor: C.slate50, borderColor: "transparent" },
+                  active ? { backgroundColor: c.blueBg, borderColor: c.blueLight + "88" } : { backgroundColor: c.surface, borderColor: "transparent" },
                   !readable && mode === "study" ? { opacity: 0.4 } : {}]}>
-                <Text style={{ fontSize: 14, color: done ? C.emerald : active ? C.blue : C.slate400, fontWeight: "700", width: 20 }}>
+                <Text style={{ fontSize: 14, color: done ? c.emerald : active ? c.blue : c.textMuted, fontWeight: "700", width: 20 }}>
                   {done ? "✓" : `${idx + 1}.`}
                 </Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "600", color: C.slate900, fontSize: 13 }}>{sec.title}</Text>
-                  {sec.summary ? <Text style={{ fontSize: 11, color: C.slate500, marginTop: 2 }}>{sec.summary}</Text> : null}
+                  <Text style={{ fontWeight: "600", color: c.text, fontSize: 13 }}>{sec.title}</Text>
+                  {sec.summary ? <Text style={{ fontSize: 11, color: c.textSub, marginTop: 2 }}>{sec.summary}</Text> : null}
                 </View>
               </TouchableOpacity>
             );
@@ -229,15 +254,18 @@ function CoursePlayer({ course, yearId, onBack }) {
         )}
       </Card>
 
+      {/* Study panel */}
       {mode === "study" && (
         <Card>
           {sectionsLoading ? (
-            <Text style={{ color: C.slate400, textAlign: "center" }}>Loading sections…</Text>
+            <Text style={{ color: c.textSub, textAlign: "center" }}>Loading sections…</Text>
+          ) : sectionsError ? (
+            <Text style={{ color: c.rose, fontSize: 13, textAlign: "center" }}>Could not load sections: {sectionsError}</Text>
           ) : n === 0 ? (
-            <Text style={{ color: C.slate500, textAlign: "center" }}>No sections yet.</Text>
+            <Text style={{ color: c.textSub, textAlign: "center" }}>No sections yet.</Text>
           ) : !isStarted && !courseComplete ? (
             <View style={{ alignItems: "center", paddingVertical: 20 }}>
-              <Text style={{ color: C.slate600, textAlign: "center", fontSize: 14 }}>
+              <Text style={{ color: c.textSub, textAlign: "center", fontSize: 14 }}>
                 This course has {n} section{n !== 1 ? "s" : ""}. When ready, start with the first section.
               </Text>
               <View style={{ marginTop: 16 }}>
@@ -247,15 +275,15 @@ function CoursePlayer({ course, yearId, onBack }) {
           ) : (
             <>
               {courseComplete && (
-                <Card bg={C.emeraldBg} style={{ borderColor: C.emeraldBorder, marginBottom: 8 }}>
+                <Card bg={c.emeraldBg} style={{ borderColor: c.emeraldBorder, marginBottom: 8 }}>
                   <Text style={{ color: "#065F46", fontWeight: "700" }}>🎉 Course complete — review any section below.</Text>
                 </Card>
               )}
               <SectionLabel>Section {viewIndex + 1} of {n}</SectionLabel>
-              <Text style={{ fontWeight: "700", fontSize: 17, color: C.slate900 }}>{currentSection?.title}</Text>
-              {currentSection?.summary ? <Text style={{ fontSize: 13, color: C.slate500, marginTop: 2 }}>{currentSection.summary}</Text> : null}
-              <View style={{ backgroundColor: C.slate50, borderRadius: 12, padding: 14, marginTop: 10 }}>
-                <Text style={{ fontSize: 14, color: C.slate700, lineHeight: 22 }}>{currentSection?.body}</Text>
+              <Text style={{ fontWeight: "700", fontSize: 17, color: c.text }}>{currentSection?.title}</Text>
+              {currentSection?.summary ? <Text style={{ fontSize: 13, color: c.textSub, marginTop: 2 }}>{currentSection.summary}</Text> : null}
+              <View style={{ backgroundColor: c.surface, borderRadius: 12, padding: 14, marginTop: 10 }}>
+                <Text style={{ fontSize: 14, color: c.text, lineHeight: 22 }}>{currentSection?.body || "No content yet."}</Text>
               </View>
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 16 }}>
                 <Btn label="← Previous" variant="outline" small disabled={viewIndex <= 0} onPress={() => setViewIndex((i) => Math.max(0, i - 1))} />
@@ -268,11 +296,12 @@ function CoursePlayer({ course, yearId, onBack }) {
         </Card>
       )}
 
+      {/* Upload panel */}
       {mode === "upload" && (
         <Card>
           <SectionLabel>Upload material</SectionLabel>
-          <Text style={{ fontSize: 13, color: C.slate600 }}>
-            Section: <Text style={{ fontWeight: "700", color: C.slate900 }}>{sections[selectedSecIdx]?.title || "—"}</Text>
+          <Text style={{ fontSize: 13, color: c.textSub }}>
+            Section: <Text style={{ fontWeight: "700", color: c.text }}>{sections[selectedSecIdx]?.title || "—"}</Text>
           </Text>
           <View style={{ marginTop: 10 }}>
             <Btn label={uploadLoading ? "Uploading…" : "📎 Upload for this section"}
@@ -283,15 +312,15 @@ function CoursePlayer({ course, yearId, onBack }) {
             <View style={{ marginTop: 12 }}>
               <SectionLabel>Files in this section</SectionLabel>
               {sectionMats.map((m, i) => (
-                <View key={m.id || i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, borderColor: C.borderLight }}>
+                <View key={m.id || i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, borderColor: c.borderLight }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: C.slate900, fontWeight: "600" }}>{m.title}</Text>
-                    <Text style={{ fontSize: 11, color: STATUS_COLOR[m.status] || C.slate400, marginTop: 2 }}>
+                    <Text style={{ fontSize: 13, color: c.text, fontWeight: "600" }}>{m.title}</Text>
+                    <Text style={{ fontSize: 11, color: STATUS_COLOR[m.status] || c.textMuted, marginTop: 2 }}>
                       {STATUS_LABEL[m.status] || m.status}
                     </Text>
                   </View>
                   <TouchableOpacity onPress={() => handleRemoveMaterial(m.id)}>
-                    <Text style={{ fontSize: 12, color: C.rose, fontWeight: "600" }}>Remove</Text>
+                    <Text style={{ fontSize: 12, color: c.rose, fontWeight: "600" }}>Remove</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -305,6 +334,8 @@ function CoursePlayer({ course, yearId, onBack }) {
 
 // ─── AcademicYear main screen ─────────────────────────────────────────────────
 export default function AcademicYear() {
+  const c = useColors();
+
   const [years,          setYears]          = useState({});
   const [dbYears,        setDbYears]        = useState([]);
   const [coursesPerYear, setCoursesPerYear] = useState({});
@@ -358,7 +389,7 @@ export default function AcademicYear() {
     } catch (e) { Alert.alert("Failed", e.message); }
   };
 
-  // CoursePlayer
+  // ── CoursePlayer view ──────────────────────────────────────────────────────
   if (playerCourse) {
     const enr = enrollments.find((e) => String(e.courseId) === String(playerCourse.mongoId));
     return (
@@ -370,12 +401,12 @@ export default function AcademicYear() {
     );
   }
 
-  // Year detail
+  // ── Year detail view ───────────────────────────────────────────────────────
   if (selectedYear) {
     const yid  = String(selectedYear);
     const year = years[yid];
     if (!year) return null;
-    const allDone = year.enrolled.length > 0 && year.enrolled.every((c) => c.progress >= 100);
+    const allDone = year.enrolled.length > 0 && year.enrolled.every((course) => course.progress >= 100);
 
     return (
       <Screen>
@@ -384,24 +415,24 @@ export default function AcademicYear() {
           confirmLabel="Unenroll" onConfirm={handleUnenroll} onCancel={() => setConfirmUnenroll(null)} />
 
         <TouchableOpacity onPress={() => setSelectedYear(null)}>
-          <Text style={{ color: C.blue, fontWeight: "600", fontSize: 13 }}>← Back to Years</Text>
+          <Text style={{ color: c.blue, fontWeight: "600", fontSize: 13 }}>← Back to Years</Text>
         </TouchableOpacity>
 
         <Card>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <SectionLabel>Year {yid}</SectionLabel>
-              <Text style={s.pageTitle}>{year.title}</Text>
-              <Text style={{ fontSize: 13, color: C.slate600, marginTop: 4, lineHeight: 18 }}>{year.desc}</Text>
+              <Text style={{ fontSize: 22, fontWeight: "800", color: c.text }}>{year.title}</Text>
+              <Text style={{ fontSize: 13, color: c.textSub, marginTop: 4, lineHeight: 18 }}>{year.desc}</Text>
             </View>
             <Tag label={year.status}
-              color={year.status === "Completed" ? C.emerald : year.status === "In Progress" ? C.amber : year.status === "Locked" ? C.slate400 : C.blue}
-              bg={year.status === "Completed" ? C.emeraldBg : year.status === "In Progress" ? C.amberBg : year.status === "Locked" ? C.slate100 : C.blueBg}
+              color={year.status === "Completed" ? c.emerald : year.status === "In Progress" ? c.amber : year.status === "Locked" ? c.textMuted : c.blue}
+              bg={year.status === "Completed" ? c.emeraldBg : year.status === "In Progress" ? c.amberBg : year.status === "Locked" ? c.surface : c.blueBg}
             />
           </View>
           <Divider />
-          <Text style={{ fontSize: 13, color: C.slate500 }}>
-            Credits earned: <Text style={{ fontWeight: "700", color: C.slate900 }}>{year.earnedCredits}</Text> / {year.totalCredits}
+          <Text style={{ fontSize: 13, color: c.textSub }}>
+            Credits earned: <Text style={{ fontWeight: "700", color: c.text }}>{year.earnedCredits}</Text> / {year.totalCredits}
           </Text>
         </Card>
 
@@ -416,12 +447,10 @@ export default function AcademicYear() {
         )}
 
         {allDone && year.unlocked && (
-          <Card bg={C.emeraldBg} style={{ borderColor: C.emeraldBorder }}>
+          <Card bg={c.emeraldBg} style={{ borderColor: c.emeraldBorder }}>
             <Text style={{ fontSize: 22, marginBottom: 6 }}>🎉</Text>
             <Text style={{ fontWeight: "800", color: "#065F46", fontSize: 15 }}>Year {yid} Complete!</Text>
-            <Text style={{ color: "#047857", fontSize: 13, marginTop: 4 }}>
-              You earned {year.earnedCredits} credits.
-            </Text>
+            <Text style={{ color: "#047857", fontSize: 13, marginTop: 4 }}>You earned {year.earnedCredits} credits.</Text>
           </Card>
         )}
 
@@ -431,18 +460,18 @@ export default function AcademicYear() {
             {year.enrolled.map((e, i) => {
               const passed = e.progress >= 100;
               return (
-                <Card key={e.id || i} style={passed ? { borderColor: C.emeraldBorder } : {}}>
+                <Card key={e.id || i} style={passed ? { borderColor: c.emeraldBorder } : {}}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <View style={{ flex: 1, marginRight: 8 }}>
-                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{e.name}</Text>
-                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{e.code} · {e.credits} credits</Text>
-                      {e.instructor ? <Text style={{ fontSize: 11, color: C.slate400 }}>Instructor: {e.instructor}</Text> : null}
+                      <Text style={{ fontWeight: "700", color: c.text, fontSize: 14 }}>{e.name}</Text>
+                      <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{e.code} · {e.credits} credits</Text>
+                      {e.instructor ? <Text style={{ fontSize: 11, color: c.textMuted }}>Instructor: {e.instructor}</Text> : null}
                     </View>
-                    {passed ? <Tag label="Passed ✓" color={C.emerald} bg={C.emeraldBg} /> :
-                      <Text style={{ fontWeight: "700", color: C.blue, fontSize: 13 }}>{e.progress}%</Text>}
+                    {passed ? <Tag label="Passed ✓" color={c.emerald} bg={c.emeraldBg} /> :
+                      <Text style={{ fontWeight: "700", color: c.blue, fontSize: 13 }}>{e.progress}%</Text>}
                   </View>
                   <ProgressBar value={e.progress} height={6} />
-                  <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>
+                  <Text style={{ fontSize: 11, color: c.textSub, marginTop: 4 }}>
                     {passed ? "Completed — open to review sections" : `Next: ${e.nextItem}`}
                   </Text>
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
@@ -472,20 +501,20 @@ export default function AcademicYear() {
           <>
             <SectionLabel>Available to Enroll</SectionLabel>
             {year.available.length === 0 ? (
-              <Card bg={C.slate50}>
-                <Text style={{ color: C.slate500, fontSize: 13 }}>
+              <Card bg={c.surface}>
+                <Text style={{ color: c.textSub, fontSize: 13 }}>
                   {year.enrolled.length > 0 ? "You are enrolled in all available courses." : "No courses published yet."}
                 </Text>
               </Card>
             ) : (
-              year.available.map((c) => (
-                <Card key={c.id}>
+              year.available.map((course) => (
+                <Card key={course.id}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{c.name}</Text>
-                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{c.code} · {c.credits} cr · {c.instructor}</Text>
+                      <Text style={{ fontWeight: "700", color: c.text, fontSize: 14 }}>{course.name}</Text>
+                      <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{course.code} · {course.credits} cr · {course.instructor}</Text>
                     </View>
-                    <Btn label="Enroll" small onPress={() => handleEnroll(c, yid)} />
+                    <Btn label="Enroll" small onPress={() => handleEnroll(course, yid)} />
                   </View>
                 </Card>
               ))
@@ -496,25 +525,26 @@ export default function AcademicYear() {
     );
   }
 
-  // Year list
+  // ── Year list view ─────────────────────────────────────────────────────────
   return (
     <Screen>
-      <Text style={s.pageTitle}>Academic Years</Text>
+      <Text style={{ fontSize: 22, fontWeight: "800", color: c.text }}>Academic Years</Text>
       <ErrorBox message={error} />
-      <Card bg={C.blueBg} style={{ borderColor: C.blueBorder }}>
+
+      <Card bg={c.blueBg} style={{ borderColor: c.blueBorder }}>
         <SectionLabel>Degree Progress</SectionLabel>
         <View style={{ flexDirection: "row", marginBottom: 10 }}>
-          <Pill label="Credits Earned" value={totalEarned} color={C.blue} />
-          <Pill label="Completed" value={enrollments.filter((e) => e.progress >= 100).length} color={C.emerald} />
+          <Pill label="Credits Earned" value={totalEarned}                                              color={c.blue}    />
+          <Pill label="Completed"      value={enrollments.filter((e) => e.progress >= 100).length}      color={c.emerald} />
         </View>
         <ProgressBar value={Math.round((totalEarned / 168) * 100)} height={8} />
-        <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>
+        <Text style={{ fontSize: 11, color: c.textSub, marginTop: 4 }}>
           {Math.round((totalEarned / 168) * 100)}% of degree completed (168 total credits)
         </Text>
       </Card>
 
       {loadingInit ? (
-        <Card><Text style={{ color: C.slate500 }}>Loading…</Text></Card>
+        <Card><Text style={{ color: c.textSub }}>Loading…</Text></Card>
       ) : (
         ["1", "2", "3", "4"].map((yid) => {
           const year = years[yid];
@@ -525,33 +555,33 @@ export default function AcademicYear() {
             <TouchableOpacity key={yid} onPress={() => setSelectedYear(yid)} activeOpacity={0.85}>
               <Card style={{
                 borderWidth: year.status === "Completed" ? 1.5 : 1,
-                borderColor: year.status === "Completed" ? C.emeraldBorder : !year.unlocked ? "#FCD34D" : C.border,
-                backgroundColor: !year.unlocked ? "#FFFBEB" : C.white,
+                borderColor: year.status === "Completed" ? c.emeraldBorder : !year.unlocked ? "#FCD34D" : c.border,
+                backgroundColor: !year.unlocked ? "#FFFBEB" : c.card,
               }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                   <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center",
-                    backgroundColor: !year.unlocked ? "#FEF3C7" : year.status === "Completed" ? C.emeraldBg : C.blueBg }}>
+                    backgroundColor: !year.unlocked ? "#FEF3C7" : year.status === "Completed" ? c.emeraldBg : c.blueBg }}>
                     <Text style={{ fontWeight: "800", fontSize: 20,
-                      color: !year.unlocked ? C.amber : year.status === "Completed" ? C.emerald : C.blue }}>
+                      color: !year.unlocked ? c.amber : year.status === "Completed" ? c.emerald : c.blue }}>
                       {!year.unlocked ? "🔒" : yid}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 15 }}>{year.title}</Text>
-                    <Text style={{ fontSize: 12, color: C.slate600, marginTop: 2 }} numberOfLines={2}>{year.desc}</Text>
+                    <Text style={{ fontWeight: "700", color: !year.unlocked ? "#92400E" : c.text, fontSize: 15 }}>{year.title}</Text>
+                    <Text style={{ fontSize: 12, color: !year.unlocked ? "#B45309" : c.textSub, marginTop: 2 }} numberOfLines={2}>{year.desc}</Text>
                   </View>
                 </View>
                 <Divider />
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <View style={{ width: 8, height: 8, borderRadius: 4,
-                      backgroundColor: year.status === "Completed" ? C.emerald : year.status === "In Progress" ? C.amber : !year.unlocked ? "#FCD34D" : C.slate300 }} />
+                      backgroundColor: year.status === "Completed" ? c.emerald : year.status === "In Progress" ? c.amber : !year.unlocked ? "#FCD34D" : c.textMuted }} />
                     <Text style={{ fontSize: 12, fontWeight: "700",
-                      color: year.status === "Completed" ? C.emerald : year.status === "In Progress" ? C.amber : !year.unlocked ? C.amber : C.slate500 }}>
+                      color: year.status === "Completed" ? c.emerald : year.status === "In Progress" ? c.amber : !year.unlocked ? c.amber : c.textSub }}>
                       {year.status}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: C.slate500 }}>
+                  <Text style={{ fontSize: 11, color: c.textSub }}>
                     {!year.unlocked ? `${creditsNeeded} more credits to unlock` : `${year.earnedCredits} credits earned →`}
                   </Text>
                 </View>

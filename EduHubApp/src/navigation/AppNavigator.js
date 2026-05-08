@@ -1,16 +1,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
-
-const BG_BASE    = "#0d1117";
-const BG_SURFACE = "#161b22";
-const ACCENT     = "#2563EB";
-const ACCENT_LT  = "#60A5FA";
-const BORDER     = "#30363d";
-const TEXT       = "#e6edf3";
-const TEXT_MUTED = "#8b949e";
+import { useTheme } from "../context/ThemeContext";
+import { darkColors, lightColors } from "../utils/theme";
 
 // ── Auth pages ────────────────────────────────────────────────────────────────
 import LoginScreen          from "../pages/auth/Login";
@@ -24,17 +18,17 @@ import StudentDashboard from "../pages/StudentDashboard";
 import Profile          from "../pages/StudentProfile";
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
-import AdminDashboard    from "../pages/admin/DashboardHome";      // ← correct filename
-import AdminAcademics    from "../pages/admin/AcademicManagement"; // ← correct filename
-import AdminCourses      from "../pages/admin/CourseManagement";   // ← correct filename
-import AdminMaterials    from "../pages/admin/MaterialsManagement";// ← correct filename
-import AdminUsers        from "../pages/admin/UsersManagement";    // ← correct filename
-import EnrollManagement  from "../pages/admin/EnrollManagement";
-import HistoryLogs       from "../pages/admin/HistoryLogs";
+import AdminDashboard   from "../pages/admin/DashboardHome";
+import AdminAcademics   from "../pages/admin/AcademicManagement";
+import AdminCourses     from "../pages/admin/CourseManagement";
+import AdminMaterials   from "../pages/admin/MaterialsManagement";
+import AdminUsers       from "../pages/admin/UsersManagement";
+import EnrollManagement from "../pages/admin/EnrollManagement";
+import HistoryLogs      from "../pages/admin/HistoryLogs";
 
 // ── Mentor pages ──────────────────────────────────────────────────────────────
-import MentorDashboard from "../pages/mentor/DashboardHome";   // ← correct filename
-import MentorUpload    from "../pages/mentor/UploadMaterial";  // ← correct filename
+import MentorDashboard from "../pages/mentor/DashboardHome";
+import MentorUpload    from "../pages/mentor/UploadMaterial";
 import MentorStudents  from "../pages/mentor/Students";
 import VideoReviews    from "../pages/mentor/VideoReviews";
 import EnrollStudents  from "../pages/mentor/EnrollStudents";
@@ -44,33 +38,18 @@ import MentorProfile   from "../pages/mentor/MentorProfile";
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
-const TAB_OPTS = {
-  headerShown: false,
-  tabBarStyle: {
-    backgroundColor: BG_SURFACE,
-    borderTopColor:  BORDER,
-    borderTopWidth:  1,
-    height:          60,
-    paddingBottom:   8,
-    paddingTop:      6,
-  },
-  tabBarActiveTintColor:   ACCENT_LT,
-  tabBarInactiveTintColor: TEXT_MUTED,
-  tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
-};
-
 function icon(emoji) {
   return ({ focused }) => (
     <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>{emoji}</Text>
   );
 }
 
-function AuthStack() {
+function AuthStack({ colors }) {
   return (
     <Stack.Navigator screenOptions={{
-      headerStyle:         { backgroundColor: BG_SURFACE },
-      headerTintColor:     TEXT,
-      headerTitleStyle:    { color: TEXT, fontWeight: "700" },
+      headerStyle:         { backgroundColor: colors.bgSurface },
+      headerTintColor:     colors.textPrimary,
+      headerTitleStyle:    { color: colors.textPrimary, fontWeight: "700" },
       headerShadowVisible: false,
     }}>
       <Stack.Screen name="Login"          component={LoginScreen}          options={{ title: "EduHub — Login" }} />
@@ -80,7 +59,25 @@ function AuthStack() {
   );
 }
 
-function StudentTabs() {
+function makeTabOpts(colors) {
+  return {
+    headerShown: false,
+    tabBarStyle: {
+      backgroundColor: colors.bgSurface,
+      borderTopColor:  colors.border,
+      borderTopWidth:  1,
+      height:          60,
+      paddingBottom:   8,
+      paddingTop:      6,
+    },
+    tabBarActiveTintColor:   colors.accentLight,
+    tabBarInactiveTintColor: colors.textMuted,
+    tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+  };
+}
+
+function StudentTabs({ colors }) {
+  const TAB_OPTS = makeTabOpts(colors);
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
       <Tab.Screen name="Home"      component={StudentHome}      options={{ tabBarIcon: icon("🏠"), title: "Home"      }} />
@@ -91,7 +88,8 @@ function StudentTabs() {
   );
 }
 
-function AdminTabs() {
+function AdminTabs({ colors }) {
+  const TAB_OPTS = makeTabOpts(colors);
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
       <Tab.Screen name="Overview"    component={AdminDashboard}   options={{ tabBarIcon: icon("🏠"),  title: "Overview"  }} />
@@ -105,7 +103,8 @@ function AdminTabs() {
   );
 }
 
-function MentorTabs() {
+function MentorTabs({ colors }) {
+  const TAB_OPTS = makeTabOpts(colors);
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
       <Tab.Screen name="Dashboard" component={MentorDashboard} options={{ tabBarIcon: icon("🏠"),  title: "Home"     }} />
@@ -121,14 +120,16 @@ function MentorTabs() {
 
 export default function AppNavigator() {
   const { loading, user, dbUser } = useAuth();
+  const { isDark } = useTheme();
+  const colors = isDark ? darkColors : lightColors;
 
   if (loading || user === undefined) {
     return (
-      <View style={st.splash}>
-        <Text style={st.logo}>
-          Edu<Text style={{ color: ACCENT_LT }}>Hub</Text>
+      <View style={{ flex: 1, backgroundColor: colors.bgBase, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ fontSize: 42, fontWeight: "700", color: colors.textPrimary, letterSpacing: -1.5 }}>
+          Edu<Text style={{ color: colors.accentLight }}>Hub</Text>
         </Text>
-        <ActivityIndicator color={ACCENT} size="large" style={{ marginTop: 24 }} />
+        <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -137,20 +138,23 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
-          <Stack.Screen name="Auth"    component={AuthStack}   />
+          <Stack.Screen name="Auth">
+            {() => <AuthStack colors={colors} />}
+          </Stack.Screen>
         ) : dbUser?.role === "admin" ? (
-          <Stack.Screen name="Admin"   component={AdminTabs}   />
+          <Stack.Screen name="Admin">
+            {() => <AdminTabs colors={colors} />}
+          </Stack.Screen>
         ) : dbUser?.role === "mentor" ? (
-          <Stack.Screen name="Mentor"  component={MentorTabs}  />
+          <Stack.Screen name="Mentor">
+            {() => <MentorTabs colors={colors} />}
+          </Stack.Screen>
         ) : (
-          <Stack.Screen name="Student" component={StudentTabs} />
+          <Stack.Screen name="Student">
+            {() => <StudentTabs colors={colors} />}
+          </Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
-const st = StyleSheet.create({
-  splash: { flex: 1, backgroundColor: BG_BASE, alignItems: "center", justifyContent: "center" },
-  logo:   { fontSize: 42, fontWeight: "700", color: TEXT, letterSpacing: -1.5 },
-});

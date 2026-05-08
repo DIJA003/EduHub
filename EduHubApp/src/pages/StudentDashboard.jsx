@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   Screen, Card, SectionLabel, Tag, Pill, ProgressBar,
   ErrorBox, EmptyState, ConfirmModal, Btn, Avatar,
-  safeArray, storeJson, loadJson, C, s,
+  safeArray, storeJson, loadJson, useColors,
 } from "../components/UI";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,6 +62,8 @@ function addActivity(setLog, entry) {
 
 export default function StudentDashboard() {
   const { dbUser } = useAuth();
+  const c = useColors();
+
   const [dbYears,        setDbYears]        = useState([]);
   const [coursesPerYear, setCoursesPerYear] = useState({});
   const [enrollments,    setEnrollments]    = useState([]);
@@ -102,18 +104,18 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (!isMounted.current) { prevEnrolled.current = enrollments; return; }
     const prev = prevEnrolled.current;
-    enrollments.forEach((c) => {
-      if (!prev.some((p) => p.courseId === c.courseId))
-        addActivity(setActivityLog, { icon: "📚", text: `Enrolled in "${c.name}"`, color: C.emerald });
+    enrollments.forEach((course) => {
+      if (!prev.some((p) => p.courseId === course.courseId))
+        addActivity(setActivityLog, { icon: "📚", text: `Enrolled in "${course.name}"`, color: c.emerald });
     });
     prev.forEach((p) => {
-      if (!enrollments.some((c) => c.courseId === p.courseId))
-        addActivity(setActivityLog, { icon: "🗑️", text: `Unenrolled from "${p.name}"`, color: C.rose });
+      if (!enrollments.some((course) => course.courseId === p.courseId))
+        addActivity(setActivityLog, { icon: "🗑️", text: `Unenrolled from "${p.name}"`, color: c.rose });
     });
-    enrollments.forEach((c) => {
-      const p = prev.find((p) => p.courseId === c.courseId);
-      if (p && c.progress === 100 && p.progress < 100)
-        addActivity(setActivityLog, { icon: "🎉", text: `Completed "${c.name}"! +${c.credits || 0} credits`, color: C.emerald });
+    enrollments.forEach((course) => {
+      const p = prev.find((p) => p.courseId === course.courseId);
+      if (p && course.progress === 100 && p.progress < 100)
+        addActivity(setActivityLog, { icon: "🎉", text: `Completed "${course.name}"! +${course.credits || 0} credits`, color: c.emerald });
     });
     prevEnrolled.current = enrollments;
   }, [enrollments]);
@@ -123,7 +125,7 @@ export default function StudentDashboard() {
     const prev = prevMaterials.current;
     myMaterials.forEach((m) => {
       if (!prev.some((p) => (p._id || p.id) === (m._id || m.id)))
-        addActivity(setActivityLog, { icon: "📎", text: `Uploaded "${m.title}" — awaiting review`, color: C.amber });
+        addActivity(setActivityLog, { icon: "📎", text: `Uploaded "${m.title}" — awaiting review`, color: c.amber });
     });
     prevMaterials.current = myMaterials;
   }, [myMaterials]);
@@ -144,12 +146,12 @@ export default function StudentDashboard() {
 
   const enrolledCourses  = Object.values(years).flatMap((y) => y.enrolled || []);
   const availableCourses = Object.entries(years).filter(([, y]) => y.unlocked).flatMap(([, y]) => y.available || []);
-  const inProgress       = enrolledCourses.filter((c) => c.progress > 0 && c.progress < 100);
-  const completed        = enrolledCourses.filter((c) => c.progress >= 100);
-  const totalCredits     = completed.reduce((s, c) => s + (c.credits || 0), 0);
+  const inProgress       = enrolledCourses.filter((course) => course.progress > 0 && course.progress < 100);
+  const completed        = enrolledCourses.filter((course) => course.progress >= 100);
+  const totalCredits     = completed.reduce((s, course) => s + (course.credits || 0), 0);
   const firstName        = dbUser?.name?.split(" ")[0] || "Student";
 
-  const STATUS_COLOR = { pending: C.amber, approved: C.emerald, rejected: C.rose };
+  const STATUS_COLOR = { pending: c.amber, approved: c.emerald, rejected: c.rose };
   const STATUS_LABEL = { pending: "⏳ Pending", approved: "✅ Approved", rejected: "❌ Rejected" };
 
   return (
@@ -161,8 +163,8 @@ export default function StudentDashboard() {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Avatar name={dbUser?.name || "S"} />
         <View>
-          <Text style={{ fontWeight: "800", fontSize: 16, color: C.slate900 }}>Welcome, {firstName} 👋</Text>
-          <Text style={{ fontSize: 12, color: C.slate500, marginTop: 1, textTransform: "capitalize" }}>{dbUser?.role || "student"}</Text>
+          <Text style={{ fontWeight: "800", fontSize: 16, color: c.text }}>Welcome, {firstName} 👋</Text>
+          <Text style={{ fontSize: 12, color: c.textSub, marginTop: 1, textTransform: "capitalize" }}>{dbUser?.role || "student"}</Text>
         </View>
       </View>
 
@@ -171,9 +173,9 @@ export default function StudentDashboard() {
           {DASH_TABS.map((tab) => (
             <TouchableOpacity key={tab.id} onPress={() => setActiveTab(tab.id)}
               style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99,
-                backgroundColor: activeTab === tab.id ? C.blue : C.white,
-                borderWidth: 1, borderColor: activeTab === tab.id ? C.blue : C.border }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: activeTab === tab.id ? "#fff" : C.slate500 }}>{tab.label}</Text>
+                backgroundColor: activeTab === tab.id ? c.blue : c.card,
+                borderWidth: 1, borderColor: activeTab === tab.id ? c.blue : c.border }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: activeTab === tab.id ? "#fff" : c.textSub }}>{tab.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -181,54 +183,56 @@ export default function StudentDashboard() {
 
       <ErrorBox message={error} />
 
-      {loading ? <Card><Text style={{ color: C.slate500, textAlign: "center" }}>Loading…</Text></Card> : (
+      {loading ? <Card><Text style={{ color: c.textSub, textAlign: "center" }}>Loading…</Text></Card> : (
         <>
           {activeTab === "dashboard" && (
             <>
               <Card>
                 <SectionLabel>Overview</SectionLabel>
                 <View style={{ flexDirection: "row" }}>
-                  <Pill label="Enrolled"    value={enrolledCourses.length} color={C.blue}    />
-                  <Pill label="In Progress" value={inProgress.length}      color={C.amber}   />
-                  <Pill label="Completed"   value={completed.length}       color={C.emerald} />
-                  <Pill label="Credits"     value={totalCredits}           color={C.blue}    />
+                  <Pill label="Enrolled"    value={enrolledCourses.length} color={c.blue}    />
+                  <Pill label="In Progress" value={inProgress.length}      color={c.amber}   />
+                  <Pill label="Completed"   value={completed.length}       color={c.emerald} />
+                  <Pill label="Credits"     value={totalCredits}           color={c.blue}    />
                 </View>
               </Card>
+
               {inProgress.length > 0 && (
                 <Card>
                   <SectionLabel>Continue Learning</SectionLabel>
                   {inProgress.slice(0, 3).map((e, i) => (
                     <View key={e.id || i} style={{ marginTop: i > 0 ? 12 : 4 }}>
                       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                        <Text style={{ fontWeight: "700", color: C.slate900, flex: 1, marginRight: 8 }} numberOfLines={1}>{e.name}</Text>
-                        <Text style={{ fontWeight: "700", color: C.blue, fontSize: 12 }}>{e.progress}%</Text>
+                        <Text style={{ fontWeight: "700", color: c.text, flex: 1, marginRight: 8 }} numberOfLines={1}>{e.name}</Text>
+                        <Text style={{ fontWeight: "700", color: c.blue, fontSize: 12 }}>{e.progress}%</Text>
                       </View>
                       <ProgressBar value={e.progress} />
-                      <Text style={{ fontSize: 11, color: C.slate500, marginTop: 3 }}>Next: {e.nextItem}</Text>
+                      <Text style={{ fontSize: 11, color: c.textSub, marginTop: 3 }}>Next: {e.nextItem}</Text>
                     </View>
                   ))}
                 </Card>
               )}
+
               <Card>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <SectionLabel>Activity Log</SectionLabel>
                   {activityLog.length > 0 && (
                     <TouchableOpacity onPress={() => { setActivityLog([]); storeJson(ACTIVITY_KEY, []); }}>
-                      <Text style={{ fontSize: 11, color: C.rose, fontWeight: "600" }}>Clear</Text>
+                      <Text style={{ fontSize: 11, color: c.rose, fontWeight: "600" }}>Clear</Text>
                     </TouchableOpacity>
                   )}
                 </View>
                 {activityLog.length === 0 ? (
-                  <Text style={{ color: C.slate500, fontSize: 13 }}>No activity yet.</Text>
+                  <Text style={{ color: c.textSub, fontSize: 13 }}>No activity yet.</Text>
                 ) : (
                   activityLog.slice(0, 15).map((entry) => (
-                    <View key={entry.id} style={{ flexDirection: "row", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderColor: C.borderLight }}>
-                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.slate100, alignItems: "center", justifyContent: "center" }}>
+                    <View key={entry.id} style={{ flexDirection: "row", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderColor: c.borderLight }}>
+                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
                         <Text style={{ fontSize: 15 }}>{entry.icon}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 13, color: entry.color, fontWeight: "600" }}>{entry.text}</Text>
-                        <Text style={{ fontSize: 11, color: C.slate400, marginTop: 1 }}>{entry.time}</Text>
+                        <Text style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>{entry.time}</Text>
                       </View>
                     </View>
                   ))
@@ -242,17 +246,17 @@ export default function StudentDashboard() {
               <SectionLabel>Enrolled ({enrolledCourses.length})</SectionLabel>
               {enrolledCourses.length === 0 ? <EmptyState icon="📚" title="No courses" subtitle="Enroll from available below." /> :
                 enrolledCourses.map((e, i) => (
-                  <Card key={e.id || i} style={e.progress >= 100 ? { borderColor: C.emeraldBorder } : {}}>
+                  <Card key={e.id || i} style={e.progress >= 100 ? { borderColor: c.emeraldBorder } : {}}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <View style={{ flex: 1, marginRight: 8 }}>
-                        <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{e.name}</Text>
-                        <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{e.code} · Year {e.yearId} · {e.credits} cr</Text>
+                        <Text style={{ fontWeight: "700", color: c.text, fontSize: 14 }}>{e.name}</Text>
+                        <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{e.code} · Year {e.yearId} · {e.credits} cr</Text>
                       </View>
-                      {e.progress >= 100 ? <Tag label="Done ✓" color={C.emerald} bg={C.emeraldBg} /> :
-                        <Text style={{ fontWeight: "700", color: C.blue, fontSize: 13 }}>{e.progress}%</Text>}
+                      {e.progress >= 100 ? <Tag label="Done ✓" color={c.emerald} bg={c.emeraldBg} /> :
+                        <Text style={{ fontWeight: "700", color: c.blue, fontSize: 13 }}>{e.progress}%</Text>}
                     </View>
                     <ProgressBar value={e.progress} height={6} />
-                    <Text style={{ fontSize: 11, color: C.slate500, marginTop: 4 }}>
+                    <Text style={{ fontSize: 11, color: c.textSub, marginTop: 4 }}>
                       {e.progress >= 100 ? "Completed ✓" : `Next: ${e.nextItem}`}
                     </Text>
                     {e.progress < 100 && (
@@ -264,18 +268,19 @@ export default function StudentDashboard() {
                   </Card>
                 ))
               }
+
               <SectionLabel>Available to Enroll ({availableCourses.length})</SectionLabel>
               {availableCourses.length === 0 ? (
-                <Card bg={C.slate50}><Text style={{ color: C.slate500, fontSize: 13 }}>No additional courses available.</Text></Card>
+                <Card bg={c.surface}><Text style={{ color: c.textSub, fontSize: 13 }}>No additional courses available.</Text></Card>
               ) : (
-                availableCourses.map((c) => (
-                  <Card key={c.id}>
+                availableCourses.map((course) => (
+                  <Card key={course.id}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{c.name}</Text>
-                        <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>Year {c.yearId} · {c.code} · {c.credits} cr</Text>
+                        <Text style={{ fontWeight: "700", color: c.text, fontSize: 14 }}>{course.name}</Text>
+                        <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>Year {course.yearId} · {course.code} · {course.credits} cr</Text>
                       </View>
-                      <Btn label="Enroll" small onPress={() => handleEnroll(c)} />
+                      <Btn label="Enroll" small onPress={() => handleEnroll(course)} />
                     </View>
                   </Card>
                 ))
@@ -286,7 +291,7 @@ export default function StudentDashboard() {
           {activeTab === "upload" && (
             enrolledCourses.length === 0 ? <EmptyState icon="📎" title="No courses enrolled" subtitle="Enroll first to upload materials." /> : (
               <>
-                <Text style={{ fontSize: 13, color: C.slate600 }}>
+                <Text style={{ fontSize: 13, color: c.textSub }}>
                   Open a course from Academic Years → Upload tab to submit materials by section.
                 </Text>
                 {enrolledCourses.map((e, i) => {
@@ -294,9 +299,9 @@ export default function StudentDashboard() {
                   const pendingCount = courseMats.filter((m) => m.status === "pending").length;
                   return (
                     <Card key={e.id || i}>
-                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 14 }}>{e.name}</Text>
-                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{e.code} · {courseMats.length} material{courseMats.length !== 1 ? "s" : ""}</Text>
-                      {pendingCount > 0 && <Text style={{ fontSize: 12, color: C.amber, marginTop: 2 }}>⏳ {pendingCount} pending review</Text>}
+                      <Text style={{ fontWeight: "700", color: c.text, fontSize: 14 }}>{e.name}</Text>
+                      <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{e.code} · {courseMats.length} material{courseMats.length !== 1 ? "s" : ""}</Text>
+                      {pendingCount > 0 && <Text style={{ fontSize: 12, color: c.amber, marginTop: 2 }}>⏳ {pendingCount} pending review</Text>}
                     </Card>
                   );
                 })}
@@ -310,13 +315,13 @@ export default function StudentDashboard() {
                 <Card key={m._id || m.id || i}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <View style={{ flex: 1, marginRight: 8 }}>
-                      <Text style={{ fontWeight: "700", color: C.slate900, fontSize: 13 }}>{m.title}</Text>
-                      <Text style={{ fontSize: 12, color: C.slate500, marginTop: 2 }}>{m.course} · {m.type}</Text>
-                      {m.mentorFeedback ? <Text style={{ fontSize: 11, color: C.slate600, marginTop: 2, fontStyle: "italic" }}>Feedback: {m.mentorFeedback}</Text> : null}
+                      <Text style={{ fontWeight: "700", color: c.text, fontSize: 13 }}>{m.title}</Text>
+                      <Text style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{m.course} · {m.type}</Text>
+                      {m.mentorFeedback ? <Text style={{ fontSize: 11, color: c.textSub, marginTop: 2, fontStyle: "italic" }}>Feedback: {m.mentorFeedback}</Text> : null}
                     </View>
                     <Tag label={STATUS_LABEL[m.status] || m.status}
-                      color={STATUS_COLOR[m.status] || C.slate500}
-                      bg={m.status === "approved" ? C.emeraldBg : m.status === "rejected" ? C.roseBg : C.amberBg} />
+                      color={STATUS_COLOR[m.status] || c.textSub}
+                      bg={m.status === "approved" ? c.emeraldBg : m.status === "rejected" ? c.roseBg : c.amberBg} />
                   </View>
                 </Card>
               ))

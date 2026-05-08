@@ -5,6 +5,18 @@ import { AuthProvider } from "./src/context/AuthContext";
 import { CourseProvider } from "./src/context/CourseContext";
 import { MaterialProvider } from "./src/context/MaterialContext";
 import { ThemeProvider } from "./src/context/ThemeContext";
+import { useTheme } from "./src/context/ThemeContext";
+
+// Inner component so useTheme() can access ThemeProvider
+function AppContent() {
+  const { isDark } = useTheme();
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <AppNavigator />
+    </>
+  );
+}
 
 export default function App() {
   return (
@@ -13,8 +25,7 @@ export default function App() {
         <AuthProvider>
           <CourseProvider>
             <MaterialProvider>
-              <StatusBar style="auto" />
-              <AppNavigator />
+              <AppContent />
             </MaterialProvider>
           </CourseProvider>
         </AuthProvider>

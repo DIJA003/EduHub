@@ -1,7 +1,10 @@
 /**
  * src/components/UI.jsx
- * Shared primitives used across all EduHubApp pages.
- * Design: dark theme matching colors from utils/theme.js
+ * Shared primitives — fully theme-reactive (dark ↔ light).
+ *
+ * Pages that imported the static `C` object still get dark-theme values for
+ * backward-compat with slate* keys. All components now call useColors() so
+ * they respond instantly when the theme toggles.
  */
 import React from 'react';
 import {
@@ -12,33 +15,45 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { darkColors, lightColors } from '../utils/theme';
 import { useTheme } from '../context/ThemeContext';
 
-// ── Design tokens hook — returns correct colors for current theme ──────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 function makeC(colors) {
   return {
-    bg:        colors.bgBase,
-    surface:   colors.bgSurface,
-    card:      colors.bgCard,
-    border:    colors.border,
-    blue:      colors.accent,
-    blueLight: colors.accentLight,
-    blueBg:    colors.accentGlow,
-    emerald:   colors.success,
-    emeraldBg: colors.successBg,
-    amber:     colors.warning,
-    amberBg:   colors.warningBg,
-    rose:      colors.danger,
-    roseBg:    colors.dangerBg,
-    text:      colors.textPrimary,
-    textSub:   colors.textSecondary,
-    textMuted: colors.textMuted,
-    white:     '#FFFFFF',
+    bg:            colors.bgBase,
+    surface:       colors.bgSurface,
+    card:          colors.bgCard,
+    border:        colors.border,
+    borderLight:   colors.border,
+    blue:          colors.accent,
+    blueLight:     colors.accentLight,
+    blueBg:        colors.accentGlow,
+    blueBorder:    colors.accentLight + '66',
+    emerald:       colors.success,
+    emeraldBg:     colors.successBg,
+    emeraldBorder: colors.success + '66',
+    amber:         colors.warning,
+    amberBg:       colors.warningBg,
+    rose:          colors.danger,
+    roseBg:        colors.dangerBg,
+    text:          colors.textPrimary,
+    textSub:       colors.textSecondary,
+    textMuted:     colors.textMuted,
+    // slate* aliases for backward-compat with existing pages
+    slate900:      colors.textPrimary,
+    slate700:      colors.textPrimary,
+    slate600:      colors.textSecondary,
+    slate500:      colors.textSecondary,
+    slate400:      colors.textMuted,
+    slate300:      colors.textMuted,
+    slate100:      colors.bgHover,
+    slate50:       colors.bgHover,
+    white:         colors.bgCard,
   };
 }
 
-// Static fallback for files that import C directly (uses dark)
+/** Static export — dark palette, kept for pages that use `import { C }`. */
 export const C = makeC(darkColors);
 
-// Hook to get theme-aware colors
+/** Hook — returns live colors that update when the theme toggles. */
 export function useColors() {
   const { isDark } = useTheme();
   return makeC(isDark ? darkColors : lightColors);
@@ -68,7 +83,11 @@ export async function loadJson(key) {
   }
 }
 
-// ── s (style shortcuts used by pages) ─────────────────────────────────────────
+/**
+ * s — style shortcuts. Now returns live colors.
+ * Usage: const c = useColors(); ... style={s.pageTitle(c)}
+ * Backward compat: s.pageTitle is also a StyleSheet object for old code.
+ */
 export const s = StyleSheet.create({
   pageTitle: { fontSize: 22, fontWeight: '800', color: C.text },
 });
@@ -77,17 +96,11 @@ export const s = StyleSheet.create({
 export function Screen({ children, style }) {
   const insets = useSafeAreaInsets();
   const c = useColors();
-
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: c.bg }}
       contentContainerStyle={[
-        {
-          padding: 16,
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 48,
-          gap: 12,
-        },
+        { padding: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 48, gap: 12 },
         style,
       ]}
       showsVerticalScrollIndicator={false}
@@ -101,7 +114,10 @@ export function Screen({ children, style }) {
 export function Card({ children, style, bg }) {
   const c = useColors();
   return (
-    <View style={[{ backgroundColor: bg || c.card, borderWidth: 1, borderColor: c.border, borderRadius: 16, padding: 14, gap: 8 }, style]}>
+    <View style={[
+      { backgroundColor: bg ?? c.card, borderWidth: 1, borderColor: c.border, borderRadius: 16, padding: 14, gap: 8 },
+      style,
+    ]}>
       {children}
     </View>
   );
@@ -127,7 +143,7 @@ export function Tag({ label, color, bg }) {
   );
 }
 
-// ── Pill (stat) ───────────────────────────────────────────────────────────────
+// ── Pill ──────────────────────────────────────────────────────────────────────
 export function Pill({ label, value, color }) {
   const c = useColors();
   return (
@@ -162,12 +178,20 @@ export function Avatar({ name, size = 44, bg }) {
 // ── Btn ───────────────────────────────────────────────────────────────────────
 export function Btn({ label, onPress, variant = 'primary', small, disabled }) {
   const c = useColors();
-  const bgColor = variant === 'primary' ? c.blue : variant === 'danger' ? c.rose : variant === 'ghost' ? 'transparent' : c.card;
-  const textColor = variant === 'ghost' ? c.blueLight : variant === 'outline' ? c.text : '#fff';
+  const bgColor =
+    variant === 'primary' ? c.blue :
+    variant === 'danger'  ? c.rose :
+    variant === 'ghost'   ? 'transparent' :
+    c.card;
+  const textColor =
+    variant === 'ghost'   ? c.blueLight :
+    variant === 'outline' ? c.text :
+    '#fff';
   const borderStyle = variant === 'outline' ? { borderWidth: 1, borderColor: c.border } : {};
   return (
     <TouchableOpacity
-      onPress={onPress} disabled={disabled}
+      onPress={onPress}
+      disabled={disabled}
       style={[{ backgroundColor: bgColor, borderRadius: 99, paddingHorizontal: small ? 12 : 16, paddingVertical: small ? 7 : 10, alignItems: 'center' }, borderStyle, disabled && { opacity: 0.5 }]}
     >
       <Text style={{ color: textColor, fontWeight: '700', fontSize: small ? 12 : 13 }}>{label}</Text>
@@ -182,10 +206,20 @@ export function Field({ label, value, onChangeText, placeholder, secure, multili
     <View style={{ gap: 4 }}>
       {label ? <Text style={{ fontSize: 12, fontWeight: '600', color: c.textSub }}>{label}</Text> : null}
       <TextInput
-        value={value} onChangeText={onChangeText} placeholder={placeholder}
-        placeholderTextColor={c.textMuted} secureTextEntry={secure}
-        multiline={multiline} editable={editable} autoCapitalize="none" keyboardType={keyboardType}
-        style={[{ backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: c.text }, multiline && { height: 80, textAlignVertical: 'top' }, !editable && { opacity: 0.6 }]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={c.textMuted}
+        secureTextEntry={secure}
+        multiline={multiline}
+        editable={editable}
+        autoCapitalize="none"
+        keyboardType={keyboardType}
+        style={[
+          { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: c.text },
+          multiline && { height: 80, textAlignVertical: 'top' },
+          !editable && { opacity: 0.6 },
+        ]}
       />
     </View>
   );
@@ -241,47 +275,40 @@ export function ConfirmModal({ visible, title, message, confirmLabel = 'Confirm'
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── ThemeToggle — drop-in toggle switch for any page ─────────────────────────
+export function ThemeToggle() {
+  const { isDark, toggleTheme } = useTheme();
+  const c = useColors();
+  return (
+    <TouchableOpacity
+      onPress={toggleTheme}
+      activeOpacity={0.8}
+      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 4 }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={{ fontSize: 18 }}>{isDark ? '🌙' : '☀️'}</Text>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: c.text }}>
+          {isDark ? 'Dark Mode' : 'Light Mode'}
+        </Text>
+      </View>
+      {/* Pill switch */}
+      <View style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: isDark ? c.blue : c.border, justifyContent: 'center', paddingHorizontal: 3 }}>
+        <View style={{
+          width: 22, height: 22, borderRadius: 11,
+          backgroundColor: '#fff',
+          transform: [{ translateX: isDark ? 22 : 0 }],
+          shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+        }} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ── st (legacy static styles for backward compat) ────────────────────────────
 export const st = StyleSheet.create({
-  card: {
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
-  },
-
-  input: {
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-    color: C.text,
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-
-  modalCard: {
-    backgroundColor: C.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    gap: 10,
-    borderTopWidth: 1,
-    borderColor: C.border,
-  },
-
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text,
-  },
+  card:      { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 14, gap: 8 },
+  input:     { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: C.text },
+  overlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: C.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 10, borderTopWidth: 1, borderColor: C.border },
+  pageTitle: { fontSize: 22, fontWeight: '800', color: C.text },
 });
