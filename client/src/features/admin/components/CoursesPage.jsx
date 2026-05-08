@@ -108,6 +108,9 @@ export default function CoursesPage() {
     else createMutation.mutate(payload, { onSuccess: () => setModal(false) });
   };
 
+  const handleCloseModal = useCallback(() => {
+    setModal(false);
+  }, []);
   const handleSearch = useCallback(
     (s) => {
       setSearch(s);
@@ -255,7 +258,7 @@ export default function CoursesPage() {
 
       <Modal
         open={modal}
-        onClose={() => setModal(false)}
+        onClose={handleCloseModal}
         title={editTarget ? "Edit Course" : "Add New Course"}
         size="lg"
         footer={

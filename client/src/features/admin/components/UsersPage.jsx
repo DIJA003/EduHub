@@ -116,6 +116,9 @@ export default function UsersPage() {
     else createMutation.mutate(form);
   };
 
+  const handleCloseModal = useCallback(() => {
+    setModal(false);
+  }, []);
   const handleSearch = useCallback(
     (s) => {
       setSearch(s);
@@ -279,7 +282,7 @@ export default function UsersPage() {
 
       <Modal
         open={modal}
-        onClose={() => setModal(false)}
+        onClose={handleCloseModal}
         title={editTarget ? "Edit User" : "Add New User"}
         footer={
           <>

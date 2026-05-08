@@ -112,6 +112,9 @@ export default function CollegesPage() {
     [setPage],
   );
 
+  const handleCloseModal = useCallback(() => {
+    setModal(false);
+  }, []);
   const COLUMNS = [
     {
       key: "name",
@@ -209,7 +212,7 @@ export default function CollegesPage() {
 
       <Modal
         open={modal}
-        onClose={() => setModal(false)}
+        onClose={handleCloseModal}
         title={editTarget ? "Edit College" : "Add New College"}
         footer={
           <>
