@@ -1,13 +1,28 @@
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useAuth } from "../../../hooks/useAuth";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../../context/AuthContext";
+import Header from "../../../components/common/Header";
 import Button from "../../../components/ui/Button";
 
 export default function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isAuthenticated, role } = useAuth();
-  const hasSyncIssue = searchParams.get("auth") === "sync-required";
+  const { user, isAuthenticated, role, loading } = useAuth();
+  const [hasSyncIssue, setHasSyncIssue] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    setHasSyncIssue(searchParams.get("auth") === "sync-required");
+
+    // Redirect authenticated users to their dashboard
+    if (isAuthenticated && role && !loading) {
+      if (role === "admin") navigate("/admin", { replace: true });
+      else if (role === "mentor") navigate("/mentor", { replace: true });
+      else if (role === "student") navigate("/student", { replace: true });
+    }
+  }, [searchParams, isAuthenticated, role, loading, navigate]);
 
   const handleGetStarted = () => {
     if (!isAuthenticated) return navigate("/register");
@@ -16,110 +31,96 @@ export default function Home() {
     return navigate("/academic-year");
   };
 
+  // Show loading state while checking auth
+  if (!isClient || loading) {
+    return (
+      <div className="min-h-screen bg-[var(--color-ink)] text-[var(--color-text)]">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full border-4 border-[var(--color-accent)] border-t-transparent animate-spin mx-auto mb-4"></div>
+            <p className="text-[var(--color-text-2)]">Checking authentication...</p>
+            <p className="text-sm text-[var(--color-text-3)] mt-2">This will only take a moment</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--color-ink)] text-[var(--color-text)] transition-colors duration-300">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 glass-strong border-b border-[var(--color-border)] backdrop-blur">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black">
-              E
-            </div>
-            <span className="text-lg font-black text-[var(--color-accent)]">EduHub</span>
-          </div>
+    <div className="min-h-screen bg-[var(--color-ink)] text-[var(--color-text)]">
+      <Header />
 
-          <div className="hidden md:flex items-center gap-8">
-            <a
-              href="#features"
-              className="text-sm font-medium text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              Features
-            </a>
-            <a
-              href="#roles"
-              className="text-sm font-medium text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              How it works
-            </a>
-          </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <AnimatePresence>
+            {hasSyncIssue && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-6 rounded-[var(--radius-lg)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning)]"
+              >
+                We could not sync your account profile. Please sign in again or contact support if the issue persists.
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div className="flex items-center gap-3">
-            {!isAuthenticated ? (
-              <>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="inline-block mb-4 rounded-full bg-[var(--color-accent-soft)] px-4 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-accent)]">
+              Academic Learning Platform
+            </span>
+            
+            <h1 className="text-4xl font-black tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-7xl">
+              Empowering Students{" "}
+              <span className="text-[var(--color-accent)]">&amp; Mentors</span>
+            </h1>
+            
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-2)]">
+              A unified platform for collaboration, mentorship, and academic
+              growth. Track your 4-year journey, upload materials, and connect
+              with expert mentors.
+            </p>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" onClick={handleGetStarted} className="px-8">
+                {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
+              </Button>
+              {!isAuthenticated && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  size="lg"
+                  variant="secondary"
                   onClick={() => navigate("/login")}
+                  className="px-8"
                 >
                   Sign In
                 </Button>
-                <Button size="sm" onClick={() => navigate("/register")}>
-                  Get Started
-                </Button>
-              </>
-            ) : (
-              <Button size="sm" onClick={handleGetStarted}>
-                {role === "admin"
-                  ? "Admin Dashboard"
-                  : role === "mentor"
-                    ? "Mentor Dashboard"
-                    : "My Courses"}
-              </Button>
-            )}
-          </div>
-        </nav>
-      </header>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden py-20 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          {hasSyncIssue ? (
-            <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--color-warning)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning)]">
-              We could not sync your account profile. Please sign in again or contact support if the issue persists.
+              )}
             </div>
-          ) : null}
-          <span className="inline-block mb-4 rounded-full bg-blue-100 px-4 py-1 text-xs font-bold uppercase tracking-widest text-blue-700">
-            Academic Learning Platform
-          </span>
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-black tracking-tight text-[var(--color-text)] sm:text-6xl lg:text-7xl"
-          >
-            Empowering Students{" "}
-            <span className="text-blue-600">&amp; Mentors</span>
-          </motion.h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-2)]">
-            A unified platform for collaboration, mentorship, and academic
-            growth. Track your 4-year journey, upload materials, and connect
-            with expert mentors.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" onClick={handleGetStarted} className="px-8">
-              {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
-            </Button>
-            {!isAuthenticated && (
-              <Button
-                size="lg"
-                variant="secondary"
-                onClick={() => navigate("/login")}
-                className="px-8"
-              >
-                Sign In
-              </Button>
-            )}
-          </div>
 
-          {isAuthenticated && user && (
-            <p className="mt-6 text-sm text-slate-500">
-              Welcome back, <strong>{user.name}</strong>! 👋
-            </p>
-          )}
+            <AnimatePresence>
+              {isAuthenticated && user && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-6 text-sm text-[var(--color-text-3)]"
+                >
+                  Welcome back, <strong>{user.name}</strong>! 👋
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-y border-[var(--color-border)] py-12">
+      {/* Stats Section */}
+      <section className="border-y border-[var(--color-border)] py-12 bg-[var(--color-surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -127,30 +128,41 @@ export default function Home() {
               { value: "1.2K+", label: "Expert Mentors" },
               { value: "200+", label: "Partner Colleges" },
               { value: "98%", label: "Success Rate" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-4xl font-black text-blue-600">{s.value}</p>
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  {s.label}
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="text-center"
+              >
+                <p className="text-4xl font-black text-[var(--color-accent)]">{stat.value}</p>
+                <p className="mt-1 text-sm font-medium text-[var(--color-text-3)]">
+                  {stat.label}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features Section */}
       <section id="features" className="py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl font-black text-[var(--color-text)] lg:text-4xl">
               Powerful Features for Everyone
             </h2>
-            <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-[var(--color-text-2)] max-w-2xl mx-auto">
               Designed to bridge the gap between learning and professional
               guidance.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid gap-8 md:grid-cols-3">
             {[
@@ -169,32 +181,42 @@ export default function Home() {
                 title: "Progress Tracking",
                 desc: "Real-time dashboards for students, mentors, and admins with detailed analytics and audit logs.",
               },
-            ].map((f) => (
-              <div
-                key={f.title}
-                className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all"
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 hover:shadow-lg hover:border-[var(--color-accent)] transition-all"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
-                  {f.icon}
+                <div className="w-12 h-12 rounded-xl bg-[var(--color-accent-soft)] flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
+                  {feature.icon}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-3">
-                  {f.title}
+                <h3 className="text-lg font-bold text-[var(--color-text)] mb-3">
+                  {feature.title}
                 </h3>
-                <p className="text-slate-500">{f.desc}</p>
-              </div>
+                <p className="text-[var(--color-text-2)]">{feature.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Roles */}
+      {/* Roles Section */}
       <section id="roles" className="bg-[var(--color-surface)] py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl font-black text-[var(--color-text)] lg:text-4xl">
               Tailored for Your Role
             </h2>
-          </div>
+          </motion.div>
+          
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
@@ -218,58 +240,68 @@ export default function Home() {
                 cta: "Admin Access",
                 path: "/login",
               },
-            ].map((r) => (
-              <div
-                key={r.role}
-                className="bg-white rounded-2xl border border-slate-200 p-8 text-center hover:border-blue-200 hover:shadow-md transition-all"
+            ].map((roleInfo, index) => (
+              <motion.div
+                key={roleInfo.role}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-[var(--color-surface-1)] rounded-2xl border border-[var(--color-border)] p-8 text-center hover:border-[var(--color-accent)] hover:shadow-md transition-all"
               >
-                <div className="text-5xl mb-4">{r.emoji}</div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">
-                  {r.role}
+                <div className="text-5xl mb-4">{roleInfo.emoji}</div>
+                <h3 className="text-xl font-bold text-[var(--color-text)] mb-3">
+                  {roleInfo.role}
                 </h3>
-                <p className="text-slate-500 mb-6">{r.desc}</p>
+                <p className="text-[var(--color-text-2)] mb-6">{roleInfo.desc}</p>
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => navigate(r.path)}
+                  onClick={() => navigate(roleInfo.path)}
                 >
-                  {r.cta}
+                  {roleInfo.cta}
                 </Button>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA Section */}
       <section className="py-20 px-4">
-        <div className="mx-auto max-w-4xl rounded-3xl bg-blue-600 p-12 text-center">
-          <h2 className="text-3xl font-black text-white lg:text-4xl">
-            Ready to start your journey?
-          </h2>
-          <p className="mt-4 text-lg text-blue-100">
-            Join thousands of students and mentors on EduHub today.
-          </p>
-          <Button
-            className="mt-8 bg-white text-blue-700 hover:bg-blue-50 px-10"
-            size="lg"
-            onClick={() => navigate("/register")}
+        <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-dark)] p-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
           >
-            Get Started Now
-          </Button>
+            <h2 className="text-3xl font-black text-white lg:text-4xl">
+              Ready to start your journey?
+            </h2>
+            <p className="mt-4 text-lg text-white/90">
+              Join thousands of students and mentors on EduHub today.
+            </p>
+            <Button
+              className="mt-8 bg-white text-[var(--color-accent)] hover:bg-gray-50 px-10"
+              size="lg"
+              onClick={() => navigate("/register")}
+            >
+              Get Started Now
+            </Button>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 py-12">
+      <footer className="border-t border-[var(--color-border)] py-12 bg-[var(--color-surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-black">
+            <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white text-xs font-black">
               E
             </div>
-            <span className="font-bold text-slate-700">EduHub</span>
+            <span className="font-bold text-[var(--color-text)]">EduHub</span>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--color-text-3)]">
             © {new Date().getFullYear()} EduHub Inc. All rights reserved.
           </p>
         </div>

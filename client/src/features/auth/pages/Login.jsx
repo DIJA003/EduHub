@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
 import { authApi } from "../../../lib/api/auth.api";
-import useAuthStore from "../../../stores/auth.store";
+import { useAuth } from "../../../context/AuthContext";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { EduHubLogo } from "../../../components/ui/Logo";
@@ -11,7 +11,7 @@ import { EduHubLogo } from "../../../components/ui/Logo";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setFirebaseUser, setDbUser } = useAuthStore();
+  const { forceRefresh } = useAuth();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -33,19 +33,29 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(
+      // Let Firebase handle the auth state change through the listener
+      await signInWithEmailAndPassword(
         auth,
         form.email,
         form.password,
       );
-      setFirebaseUser(cred.user);
-      await new Promise((r) => setTimeout(r, 300));
-      const { data: dbUser } = await authApi.getMe();
-      setDbUser(dbUser);
-      if (dbUser?.role === "admin")
-        return navigate("/admin", { replace: true });
-      if (dbUser?.role === "mentor")
-        return navigate("/mentor", { replace: true });
+      
+      // Wait a moment for the auth listener to update the state
+      await new Promise((r) => setTimeout(r, 500));
+      
+      // Force refresh to ensure state is synchronized
+      await forceRefresh();
+      
+      // Navigate after state is updated
+      const user = auth.currentUser;
+      if (user) {
+        const { data: dbUser } = await authApi.getMe();
+        if (dbUser?.role === "admin")
+          return navigate("/admin", { replace: true });
+        if (dbUser?.role === "mentor")
+          return navigate("/mentor", { replace: true });
+      }
+      
       navigate(from === "/" ? "/home" : from, { replace: true });
     } catch (err) {
       const messages = {

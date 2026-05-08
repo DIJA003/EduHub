@@ -1,18 +1,37 @@
 import { useNavigate } from "react-router-dom";
+import { EduHubLogo } from "../ui/Logo";
 
 export default function Header({ onAction }) {
   const navigate = useNavigate();
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-black text-white">E</div>
-          <span className="font-bold text-blue-600">EduHub</span>
-        </div>
+        <button
+          className="flex items-center gap-2 cursor-pointer group"
+          onClick={() => { navigate("/home"); onAction?.("Home"); }}
+        >
+          <EduHubLogo className="h-8 w-8 rounded-lg shadow-sm group-hover:shadow-md transition-shadow" />
+          <span className="font-bold text-[var(--color-accent)]">EduHub</span>
+        </button>
         <nav className="flex items-center gap-4">
-          <button onClick={() => { navigate("/home"); onAction?.("Home"); }} className="text-sm text-slate-600 hover:text-blue-600">Home</button>
-          <button onClick={() => { navigate("/academic-year"); onAction?.("Courses"); }} className="text-sm text-slate-600 hover:text-blue-600">Courses</button>
-          <button onClick={() => { navigate("/profile"); onAction?.("Profile"); }} className="text-sm text-slate-600 hover:text-blue-600">Profile</button>
+          <button
+            onClick={() => { navigate("/home"); onAction?.("Home"); }}
+            className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => { navigate("/academic-year"); onAction?.("Courses"); }}
+            className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            Courses
+          </button>
+          <button
+            onClick={() => { navigate("/profile"); onAction?.("Profile"); }}
+            className="text-sm text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            Profile
+          </button>
         </nav>
       </div>
     </header>

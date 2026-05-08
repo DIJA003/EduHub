@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion,  AnimatePresence } from "framer-motion";
 import { FileText, Video, Image, FileArchive, File, Trash2, Eye, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useDeleteMaterial } from "../../materials/hooks/useMaterials";
 import { SkeletonList } from "../../../components/ui/Skeleton";

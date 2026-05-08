@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion,  AnimatePresence } from "framer-motion";
 import { Upload, FileText, Info, Check } from "lucide-react";
 import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";

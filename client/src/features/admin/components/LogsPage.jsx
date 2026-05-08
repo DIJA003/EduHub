@@ -220,6 +220,8 @@ export default function LogsPage() {
         page={page}
         onPage={setPage}
         onSearch={handleSearch}
+        searchable={true}
+        searchPlaceholder="Search logs..."
         emptyIcon="📋"
         emptyTitle="No log entries found"
         emptyDescription="Try adjusting your filters."

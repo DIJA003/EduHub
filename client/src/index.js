@@ -5,6 +5,7 @@ import { queryClient } from "./lib/queryClient";
 import App from "./App";
 import ToastContainer from "./components/common/ToastContainer";
 import { ThemeProvider } from "./context/ThemeContext";
+import { AuthProvider } from "./context/AuthContext";
 import "./styles/globals.css";
 import { initAuthListener } from "./stores/auth.store";
 
@@ -14,8 +15,10 @@ root.render(
   <React.StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <App />
-        <ToastContainer />
+        <AuthProvider>
+          <App />
+          <ToastContainer />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>,

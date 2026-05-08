@@ -7,6 +7,7 @@ import MentorStudents from "../components/MentorStudents";
 import MentorUpload from "../components/MentorUpload";
 import MentorNotifications from "../components/MentorNotifications";
 import MentorAnalytics from "../components/MentorAnalytics";
+import MentorLogs from "../components/MentorLogs";
 
 export default function MentorDashboard() {
   return (
@@ -20,7 +21,7 @@ export default function MentorDashboard() {
         <Route path="uploads" element={<VideoReviews />} />
         <Route path="notifications" element={<MentorNotifications />} />
         <Route path="analytics" element={<MentorAnalytics />} />
-        <Route path="logs" element={<MentorNotifications />} />
+        <Route path="logs" element={<MentorLogs />} />
         <Route path="*" element={<Navigate to="/mentor" replace />} />
       </Routes>
     </DashboardShell>

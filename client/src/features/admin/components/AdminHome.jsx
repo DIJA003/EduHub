@@ -2,9 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Users,
   BookOpen,
-  Package,
   AlertCircle,
-  TrendingUp,
   Clock,
 } from "lucide-react";
 import { dashboardApi } from "../../../lib/api/dashboard.api";
@@ -45,30 +43,30 @@ export default function AdminHome() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Total Students"
+            label="Total Students"
             value={stats?.totalStudents}
-            icon={<Users size={20} />}
+            icon={Users}
             trend="up"
             color="accent"
           />
           <StatsCard
-            title="Total Mentors"
+            label="Total Mentors"
             value={stats?.totalMentors}
-            icon={<Users size={20} />}
+            icon={Users}
             trend="stable"
             color="success"
           />
           <StatsCard
-            title="Active Courses"
+            label="Active Courses"
             value={stats?.activeCourses}
-            icon={<BookOpen size={20} />}
+            icon={BookOpen}
             trend="up"
             color="warning"
           />
           <StatsCard
-            title="Pending Approvals"
+            label="Pending Approvals"
             value={stats?.pendingApprovals ?? 0}
-            icon={<AlertCircle size={20} />}
+            icon={AlertCircle}
             color="danger"
           />
         </div>

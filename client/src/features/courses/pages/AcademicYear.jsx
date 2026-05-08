@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useMyEnrollments } from "../../enrollment/hooks/useEnrollments";
-import { useAuth } from "../../../hooks/useAuth";
+import { useAuth } from "../../../context/AuthContext";
+import Header from "../../../components/common/Header";
 import Button from "../../../components/ui/Button";
 
 const YEAR_COPY = {
@@ -45,29 +46,7 @@ export default function AcademicYear() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Simple header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black">
-              E
-            </div>
-            <span className="font-bold text-slate-900">EduHub</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => navigate("/student")}
-            >
-              Dashboard
-            </Button>
-            <Button size="sm" onClick={() => navigate("/home")}>
-              Home
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         {/* Welcome Banner */}

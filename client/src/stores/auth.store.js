@@ -40,6 +40,37 @@ const useAuthStore = create(
         return dbUser;
       },
 
+      forceRefresh: async () => {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          set({ loading: true, dbUser: null, error: null });
+          try {
+            const dbUser = await fetchDbUser();
+            set({ 
+              firebaseUser: currentUser, 
+              dbUser, 
+              error: dbUser ? null : "Failed to sync account profile.",
+              loading: false
+            });
+            return dbUser;
+          } catch (error) {
+            set({ 
+              error: "Failed to sync account profile.",
+              loading: false
+            });
+            return null;
+          }
+        } else {
+          set({ 
+            firebaseUser: null, 
+            dbUser: null, 
+            loading: false, 
+            error: null 
+          });
+          return null;
+        }
+      },
+
       logout: async () => {
         try {
           await signOut(auth);
@@ -60,24 +91,54 @@ const useAuthStore = create(
 );
 
 let unsubscribe = null;
+let authTimeout = null;
+
 export const initAuthListener = () => {
   if (unsubscribe) return;
 
-  const state = useAuthStore.getState();
-
   unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-    state.setLoading(true);
-    state.setFirebaseUser(firebaseUser ?? null);
-    state.setDbUser(null);
-    state.setError(null);
-
-    if (firebaseUser) {
-      const dbUser = await fetchDbUser();
-      state.setDbUser(dbUser);
-      if (!dbUser) state.setError("Failed to sync account profile.");
+    // Clear any existing timeout
+    if (authTimeout) {
+      clearTimeout(authTimeout);
     }
 
-    state.setLoading(false);
+    // Set loading state immediately
+    useAuthStore.setState({ 
+      loading: true, 
+      firebaseUser: firebaseUser ?? null, 
+      dbUser: null, 
+      error: null 
+    });
+
+    if (firebaseUser) {
+      try {
+        const dbUser = await fetchDbUser();
+        
+        // Add a small delay to ensure UI updates properly
+        authTimeout = setTimeout(() => {
+          useAuthStore.setState({ 
+            dbUser, 
+            error: dbUser ? null : "Failed to sync account profile.",
+            loading: false
+          });
+        }, 100);
+        
+      } catch (error) {
+        authTimeout = setTimeout(() => {
+          useAuthStore.setState({ 
+            error: "Failed to sync account profile.",
+            loading: false
+          });
+        }, 100);
+      }
+    } else {
+      // Immediate update for logout
+      authTimeout = setTimeout(() => {
+        useAuthStore.setState({ 
+          loading: false
+        });
+      }, 50);
+    }
   });
 };
 

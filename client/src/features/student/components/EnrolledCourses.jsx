@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion,  AnimatePresence } from "framer-motion";
 import { BookOpen, Play, CheckCircle, ExternalLink, LogOut } from "lucide-react";
 import { useUnenroll } from "../../enrollment/hooks/useEnrollments";
 import { SkeletonCard } from "../../../components/ui/Skeleton";
