@@ -139,6 +139,21 @@
     /* ── Gradients ───────────────────────────────────────────── */
     --gradient-primary: linear-gradient(135deg, #6c63ff, #4fc3f7);
     --gradient-aurora: linear-gradient(135deg, #6c63ff, #4fc3f7, #f472b6);
+    --gradient-subtle: linear-gradient(135deg, rgba(108, 99, 255, 0.08), rgba(79, 195, 247, 0.08));
+    --gradient-card: linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-card) 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(108, 99, 255, 0.15) 0%, transparent 60%);
+    --gradient-mesh: radial-gradient(at 40% 20%, rgba(108, 99, 255, 0.08) 0px, transparent 50%), 
+                     radial-gradient(at 80% 0%, rgba(79, 195, 247, 0.06) 0px, transparent 50%),
+                     radial-gradient(at 0% 50%, rgba(244, 114, 182, 0.04) 0px, transparent 50%);
+
+    /* ── Elevation (Modern Shadow Stack) ─────────────────────── */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.25);
+    --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-ring: 0 0 0 3px var(--color-accent-glow);
+    --shadow-focus-ring: 0 0 0 2px var(--color-ink), 0 0 0 4px var(--color-accent);
 
     /* ── Motion ──────────────────────────────────────────────── */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -226,6 +241,23 @@
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
     --shadow-accent: 0 0 32px var(--color-accent-glow);
     --shadow-glow: 0 0 48px rgba(91, 79, 207, 0.15);
+    
+    /* Light mode elevation */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.06);
+    --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-ring: 0 0 0 3px var(--color-accent-glow);
+    --shadow-focus-ring: 0 0 0 2px var(--color-ink), 0 0 0 4px var(--color-accent);
+    
+    /* Light mode gradients */
+    --gradient-subtle: linear-gradient(135deg, rgba(91, 79, 207, 0.06), rgba(79, 195, 247, 0.06));
+    --gradient-card: linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-card) 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(91, 79, 207, 0.08) 0%, transparent 60%);
+    --gradient-mesh: radial-gradient(at 40% 20%, rgba(91, 79, 207, 0.05) 0px, transparent 50%), 
+                     radial-gradient(at 80% 0%, rgba(79, 195, 247, 0.04) 0px, transparent 50%),
+                     radial-gradient(at 0% 50%, rgba(244, 114, 182, 0.03) 0px, transparent 50%);
 }
 
 /* Also support Merger2's .light class on <html> */

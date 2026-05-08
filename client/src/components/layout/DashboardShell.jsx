@@ -1,6 +1,15 @@
 import { useState, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+  X,
+} from "lucide-react";
 import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
@@ -49,7 +58,7 @@ function Avatar({ name, photoURL, size = "sm", onClick }) {
 }
 
 /* ── NavItem ─────────────────────────── */
-function NavItem({ to, icon, label, end, collapsed }) {
+function NavItem({ to, icon: Icon, label, end, collapsed }) {
   return (
     <NavLink
       to={to}
@@ -65,12 +74,13 @@ function NavItem({ to, icon, label, end, collapsed }) {
         )
       }
     >
-      <span
-        className="shrink-0 text-base w-5 text-center leading-none"
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
+      {Icon && (
+        <Icon
+          className="shrink-0 w-[18px] h-[18px]"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
+      )}
       {!collapsed && <span className="truncate">{label}</span>}
       {collapsed && (
         <span
@@ -131,6 +141,38 @@ function EduHubLogo({ className }) {
   );
 }
 
+/* ── Theme Toggle ────────────────────── */
+function ThemeToggle({ darkMode, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={cn(
+        "relative w-14 h-7 rounded-full p-1",
+        "bg-[var(--color-surface-2)] border border-[var(--color-border)]",
+        "transition-colors duration-[var(--duration-normal)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
+      )}
+      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <motion.div
+        className={cn(
+          "absolute top-1 w-5 h-5 rounded-full flex items-center justify-center",
+          "bg-[var(--color-accent)] text-white shadow-[var(--shadow-sm)]",
+        )}
+        animate={{ left: darkMode ? "calc(100% - 24px)" : "4px" }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+      >
+        {darkMode ? (
+          <Moon className="w-3 h-3" strokeWidth={2} />
+        ) : (
+          <Sun className="w-3 h-3" strokeWidth={2} />
+        )}
+      </motion.div>
+    </button>
+  );
+}
+
 /* ── Main Shell ──────────────────────── */
 export default function DashboardShell({ title, navItems, children }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -146,6 +188,14 @@ export default function DashboardShell({ title, navItems, children }) {
     await logout();
     navigate("/login", { replace: true });
   }, [logout, navigate]);
+
+  const handleThemeToggle = useCallback(() => {
+    document.documentElement.classList.add("theme-transitioning");
+    toggleDarkMode();
+    setTimeout(() => {
+      document.documentElement.classList.remove("theme-transitioning");
+    }, 300);
+  }, [toggleDarkMode]);
 
   const portalTitle =
     {
@@ -169,7 +219,7 @@ export default function DashboardShell({ title, navItems, children }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/45 backdrop-blur-[1px] z-[var(--z-overlay)] lg:hidden"
+            className="fixed inset-0 bg-black/45 backdrop-blur-[2px] z-[var(--z-overlay)] lg:hidden"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu overlay"
           />
@@ -181,7 +231,7 @@ export default function DashboardShell({ title, navItems, children }) {
           "fixed inset-y-0 left-0 lg:relative flex flex-col flex-shrink-0 z-[var(--z-overlay)] lg:z-[var(--z-raised)]",
           "glass-strong border-r border-[var(--color-border)]",
           "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-          collapsed ? "w-[58px]" : "w-64",
+          collapsed ? "w-[68px]" : "w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
         animate={{ x: mobileOpen ? 0 : undefined }}
@@ -189,8 +239,8 @@ export default function DashboardShell({ title, navItems, children }) {
         {/* Brand */}
         <div
           className={cn(
-            "flex items-center gap-2.5 px-3 py-4 border-b border-[var(--color-border)]",
-            collapsed && "justify-center",
+            "flex items-center gap-2.5 px-4 py-4 border-b border-[var(--color-border)]",
+            collapsed && "justify-center px-3",
           )}
         >
           <EduHubLogo className="h-8 w-8 shrink-0 shadow-[var(--shadow-accent)] rounded-[var(--radius-md)]" />
@@ -208,30 +258,23 @@ export default function DashboardShell({ title, navItems, children }) {
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
-              "shrink-0 p-1 rounded-[var(--radius-sm)] text-[var(--color-text-3)]",
+              "shrink-0 p-1.5 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
               "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
               "transition-colors duration-[var(--duration-fast)]",
+              "hidden lg:flex items-center justify-center",
             )}
           >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={collapsed ? "M13 5l7 7-7 7" : "M11 19l-7-7 7-7"}
-              />
-            </svg>
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" strokeWidth={2} />
+            ) : (
+              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+            )}
           </button>
         </div>
 
         {/* Nav */}
         <nav
-          className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden no-scrollbar"
+          className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden no-scrollbar"
           aria-label="Main navigation"
         >
           {nav.map((item) => (
@@ -240,10 +283,10 @@ export default function DashboardShell({ title, navItems, children }) {
         </nav>
 
         {/* User bottom */}
-        <div className="p-2 border-t border-[var(--color-border)]">
+        <div className="p-3 border-t border-[var(--color-border)]">
           <div
             className={cn(
-              "flex items-center gap-2.5 px-2 py-2 rounded-[var(--radius-lg)]",
+              "flex items-center gap-2.5 px-2 py-2.5 rounded-[var(--radius-lg)]",
               "hover:bg-[var(--color-surface-2)] transition-colors duration-[var(--duration-fast)]",
               collapsed ? "justify-center" : "",
             )}
@@ -257,7 +300,7 @@ export default function DashboardShell({ title, navItems, children }) {
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[var(--text-xs)] font-semibold text-[var(--color-text)] truncate">
+                  <p className="text-[var(--text-sm)] font-semibold text-[var(--color-text)] truncate">
                     {dbUser?.name}
                   </p>
                   <p className="text-[var(--text-xs)] text-[var(--color-text-3)] capitalize">
@@ -269,24 +312,12 @@ export default function DashboardShell({ title, navItems, children }) {
                   title="Sign out"
                   aria-label="Sign out"
                   className={cn(
-                    "shrink-0 p-1 rounded-[var(--radius-sm)]",
-                    "text-[var(--color-text-3)] hover:text-[var(--color-danger)]",
+                    "shrink-0 p-1.5 rounded-[var(--radius-md)]",
+                    "text-[var(--color-text-3)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]",
                     "transition-colors duration-[var(--duration-fast)]",
                   )}
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
+                  <LogOut className="w-4 h-4" strokeWidth={2} />
                 </button>
               </>
             )}
@@ -297,14 +328,18 @@ export default function DashboardShell({ title, navItems, children }) {
       {/* ── Main content ───────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Topbar */}
-        <header className="h-14 flex items-center justify-between px-6 glass-strong border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 glass-strong border-b border-[var(--color-border)] shrink-0 gap-4 z-10">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileOpen((v) => !v)}
               className="lg:hidden p-2 rounded-[var(--radius-md)] hover:bg-[var(--color-surface-2)] text-[var(--color-text-2)]"
               aria-label={mobileOpen ? "Close sidebar" : "Open sidebar"}
             >
-              ☰
+              {mobileOpen ? (
+                <X className="w-5 h-5" strokeWidth={2} />
+              ) : (
+                <Menu className="w-5 h-5" strokeWidth={2} />
+              )}
             </button>
             {title && (
               <h1 className="text-[var(--text-base)] font-bold text-[var(--color-text)] truncate">
@@ -313,33 +348,16 @@ export default function DashboardShell({ title, navItems, children }) {
             )}
           </div>
           <div className="flex items-center gap-3 ml-auto">
-            <button
-              onClick={toggleDarkMode}
-              className={cn(
-                "p-2 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
-                "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
-                "transition-colors duration-[var(--duration-fast)]"
-              )}
-              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {darkMode ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
+            <ThemeToggle darkMode={darkMode} onToggle={handleThemeToggle} />
             <NotificationBell />
-            <Avatar
-              name={dbUser?.name}
-              photoURL={dbUser?.photoURL}
-              onClick={() => navigate("/profile")}
-              size="sm"
-            />
+            <div className="hidden sm:block">
+              <Avatar
+                name={dbUser?.name}
+                photoURL={dbUser?.photoURL}
+                onClick={() => navigate("/profile")}
+                size="sm"
+              />
+            </div>
           </div>
         </header>
 
@@ -348,8 +366,8 @@ export default function DashboardShell({ title, navItems, children }) {
           key={title || "dashboard-content"}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8"
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 custom-scrollbar"
         >
           {children}
         </motion.main>
