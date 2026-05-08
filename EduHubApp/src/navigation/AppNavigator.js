@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
 
-// ─── Design tokens (inline — avoids fontWeight.regular crash) ────────────────
 const BG_BASE    = "#0d1117";
 const BG_SURFACE = "#161b22";
 const ACCENT     = "#2563EB";
@@ -13,29 +12,29 @@ const BORDER     = "#30363d";
 const TEXT       = "#e6edf3";
 const TEXT_MUTED = "#8b949e";
 
-// ─── Auth pages ───────────────────────────────────────────────────────────────
+// ── Auth pages ────────────────────────────────────────────────────────────────
 import LoginScreen          from "../pages/auth/Login";
 import RegisterScreen       from "../pages/auth/Register";
 import ForgotPasswordScreen from "../pages/auth/ForgotPassword";
 
-// ─── Student pages ────────────────────────────────────────────────────────────
-import StudentHome      from "../pages/StudentHome";
+// ── Student pages ─────────────────────────────────────────────────────────────
+import StudentHome      from "../pages/Home";
 import AcademicYear     from "../pages/AcademicYear";
 import StudentDashboard from "../pages/StudentDashboard";
-import Profile          from "../pages/Profile";
+import Profile          from "../pages/StudentProfile";
 
-// ─── Admin pages ──────────────────────────────────────────────────────────────
-import AdminDashboard  from "../pages/admin/Dashboard";
-import AdminAcademics  from "../pages/admin/Academics";
-import AdminCourses    from "../pages/admin/Courses";
-import AdminMaterials  from "../pages/admin/Materials";
-import AdminUsers      from "../pages/admin/Users";
-import EnrollManagement from "../pages/admin/EnrollManagement";
-import HistoryLogs      from "../pages/admin/HistoryLogs";
+// ── Admin pages ───────────────────────────────────────────────────────────────
+import AdminDashboard    from "../pages/admin/DashboardHome";      // ← correct filename
+import AdminAcademics    from "../pages/admin/AcademicManagement"; // ← correct filename
+import AdminCourses      from "../pages/admin/CourseManagement";   // ← correct filename
+import AdminMaterials    from "../pages/admin/MaterialsManagement";// ← correct filename
+import AdminUsers        from "../pages/admin/UsersManagement";    // ← correct filename
+import EnrollManagement  from "../pages/admin/EnrollManagement";
+import HistoryLogs       from "../pages/admin/HistoryLogs";
 
-// ─── Mentor pages ─────────────────────────────────────────────────────────────
-import MentorDashboard from "../pages/mentor/Dashboard";
-import MentorUpload    from "../pages/mentor/Upload";
+// ── Mentor pages ──────────────────────────────────────────────────────────────
+import MentorDashboard from "../pages/mentor/DashboardHome";   // ← correct filename
+import MentorUpload    from "../pages/mentor/UploadMaterial";  // ← correct filename
 import MentorStudents  from "../pages/mentor/Students";
 import VideoReviews    from "../pages/mentor/VideoReviews";
 import EnrollStudents  from "../pages/mentor/EnrollStudents";
@@ -45,7 +44,6 @@ import MentorProfile   from "../pages/mentor/MentorProfile";
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
-// ─── Shared tab bar style ─────────────────────────────────────────────────────
 const TAB_OPTS = {
   headerShown: false,
   tabBarStyle: {
@@ -67,7 +65,6 @@ function icon(emoji) {
   );
 }
 
-// ─── Auth Stack ───────────────────────────────────────────────────────────────
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{
@@ -83,7 +80,6 @@ function AuthStack() {
   );
 }
 
-// ─── Student Tabs ─────────────────────────────────────────────────────────────
 function StudentTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
@@ -95,7 +91,6 @@ function StudentTabs() {
   );
 }
 
-// ─── Admin Tabs ───────────────────────────────────────────────────────────────
 function AdminTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
@@ -110,7 +105,6 @@ function AdminTabs() {
   );
 }
 
-// ─── Mentor Tabs ──────────────────────────────────────────────────────────────
 function MentorTabs() {
   return (
     <Tab.Navigator screenOptions={TAB_OPTS}>
@@ -125,7 +119,6 @@ function MentorTabs() {
   );
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AppNavigator() {
   const { loading, user, dbUser } = useAuth();
 
