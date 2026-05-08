@@ -1,16 +1,20 @@
-/**
- * pages/StudentProfile.jsx
- */
 import React, { useEffect, useState } from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
-import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, Avatar, C, st } from '../components/UI';
+import {
+  Screen, Card, SectionLabel, Tag, Pill, ProgressBar,
+  Btn, Divider, ErrorBox, Avatar, useColors, st,
+} from '../components/UI';
 
 function safeArray(d) { return Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []; }
 
 export default function StudentProfile() {
   const { dbUser, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const C = useColors();
+
   const [form, setForm] = useState({
     name:    dbUser?.name    || '',
     email:   dbUser?.email   || '',
@@ -29,6 +33,18 @@ export default function StudentProfile() {
       .catch(() => {});
   }, []);
 
+  // Refill form when dbUser loads
+  useEffect(() => {
+    if (dbUser) {
+      setForm({
+        name:    dbUser.name    || '',
+        email:   dbUser.email   || '',
+        college: dbUser.college || '',
+        phone:   dbUser.phone   || '',
+      });
+    }
+  }, [dbUser]);
+
   const completed    = enrollments.filter(e => e.progress >= 100);
   const totalCredits = completed.reduce((s, e) => s + (e.credits || 0), 0);
   const progressPct  = Math.min(100, Math.round((totalCredits / 168) * 100));
@@ -43,10 +59,12 @@ export default function StudentProfile() {
     finally { setSaving(false); }
   };
 
+  const inputStyle = [st.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text }];
+
   return (
     <Screen>
       {/* Profile card */}
-      <Card>
+      <Card style={{ backgroundColor: C.card, borderColor: C.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <Avatar name={form.name || 'S'} size={56} />
           <View style={{ flex: 1 }}>
@@ -54,7 +72,7 @@ export default function StudentProfile() {
               <TextInput
                 value={form.name}
                 onChangeText={v => setForm(p => ({ ...p, name: v }))}
-                style={[st.input, { fontWeight: '700', fontSize: 16 }]}
+                style={[inputStyle, { fontWeight: '700', fontSize: 16 }]}
               />
             ) : (
               <Text style={{ fontWeight: '800', fontSize: 17, color: C.text }}>{form.name || 'Student'}</Text>
@@ -79,8 +97,29 @@ export default function StudentProfile() {
 
       <ErrorBox message={error} />
 
+      {/* Preferences — Dark / Light mode */}
+      <Card style={{ backgroundColor: C.card, borderColor: C.border }}>
+        <SectionLabel>Preferences</SectionLabel>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 }}>
+          <View>
+            <Text style={{ fontWeight: '700', fontSize: 14, color: C.text }}>
+              {isDark ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            </Text>
+            <Text style={{ fontSize: 12, color: C.textSub, marginTop: 2 }}>
+              {isDark ? 'Switch to light interface' : 'Switch to dark interface'}
+            </Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#CBD5E1', true: C.blue }}
+            thumbColor={isDark ? C.blueLight : '#fff'}
+          />
+        </View>
+      </Card>
+
       {/* Academic overview */}
-      <Card>
+      <Card style={{ backgroundColor: C.card, borderColor: C.border }}>
         <SectionLabel>Academic Overview</SectionLabel>
         <View style={{ flexDirection: 'row', marginBottom: 12 }}>
           <Pill label="Credits Earned"    value={totalCredits}       color={C.blueLight} />
@@ -94,7 +133,7 @@ export default function StudentProfile() {
       </Card>
 
       {/* Personal info */}
-      <Card>
+      <Card style={{ backgroundColor: C.card, borderColor: C.border }}>
         <SectionLabel>Personal Information</SectionLabel>
         {[
           { label: 'Email',   key: 'email',   readOnly: true  },
@@ -107,7 +146,7 @@ export default function StudentProfile() {
               <TextInput
                 value={form[key]}
                 onChangeText={v => setForm(p => ({ ...p, [key]: v }))}
-                style={[st.input, { flex: 1, marginLeft: 8 }]}
+                style={[inputStyle, { flex: 1, marginLeft: 8 }]}
                 autoCapitalize="none"
               />
             ) : (
@@ -121,7 +160,7 @@ export default function StudentProfile() {
 
       {/* Completed courses */}
       {completed.length > 0 && (
-        <Card>
+        <Card style={{ backgroundColor: C.card, borderColor: C.border }}>
           <SectionLabel>Completed Courses</SectionLabel>
           {completed.slice(0, 5).map((e, i) => (
             <View key={e.courseId || i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: i > 0 ? 8 : 4 }}>

@@ -8,7 +8,7 @@ import { Alert, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } fro
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, EmptyState, ConfirmModal, C, st } from '../components/UI';
+import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, EmptyState, ConfirmModal, useColors, st } from '../components/UI';
 
 function safeArray(d) { return Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []; }
 
@@ -71,6 +71,9 @@ function buildYearsState(dbYears, coursesPerYear, enrollments) {
 
 // ── Course Player ─────────────────────────────────────────────────────────────
 function CoursePlayer({ course, yearId, onBack }) {
+  const C = useColors();
+  const STATUS_COLOR = { pending: C.amber, approved: C.emerald, rejected: C.rose };
+  const STATUS_LABEL = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
   const [sections,        setSections]        = useState([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
   const [viewIndex,       setViewIndex]       = useState(0);
@@ -169,8 +172,6 @@ function CoursePlayer({ course, yearId, onBack }) {
 
   const currentSection   = sections[viewIndex];
   const sectionMaterials = myMaterials.filter(m => m.sectionLabel === sections[selectedSecIdx]?.title);
-  const STATUS_COLOR = { pending: C.amber, approved: C.emerald, rejected: C.rose };
-  const STATUS_LABEL = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
 
   return (
     <Screen>
@@ -322,6 +323,7 @@ function CoursePlayer({ course, yearId, onBack }) {
 
 // ── Academic Year Screen ──────────────────────────────────────────────────────
 export default function AcademicYear() {
+  const C = useColors();
   const [years,          setYears]          = useState({});
   const [dbYears,        setDbYears]        = useState([]);
   const [coursesPerYear, setCoursesPerYear] = useState({});

@@ -5,11 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Divider, ErrorBox, EmptyState, C, st } from '../components/UI';
+import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Divider, ErrorBox, EmptyState, useColors, st } from '../components/UI';
 
 function safeArray(d) { return Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []; }
 
 export default function Home() {
+  const C = useColors();
   const { dbUser } = useAuth();
   const [enrollments, setEnrollments] = useState([]);
   const [loading,     setLoading]     = useState(true);

@@ -7,7 +7,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, EmptyState, ConfirmModal, Avatar, C, st } from '../components/UI';
+import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, EmptyState, ConfirmModal, Avatar, useColors, st } from '../components/UI';
 
 function safeArray(d) { return Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []; }
 
@@ -56,10 +56,12 @@ function addActivity(setLog, entry) {
   });
 }
 
-const STATUS_COLOR = { pending: C.amber, approved: C.emerald, rejected: C.rose };
-const STATUS_LABEL = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+
 
 export default function StudentDashboard() {
+  const C = useColors();
+  const STATUS_COLOR = { pending: C.amber, approved: C.emerald, rejected: C.rose };
+  const STATUS_LABEL = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
   const { dbUser } = useAuth();
   const [dbYears,       setDbYears]       = useState([]);
   const [coursesPerYear,setCoursesPerYear]= useState({});
