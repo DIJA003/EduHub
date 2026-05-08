@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { motion,  AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, Upload } from "lucide-react";
 import DashboardShell from "../../../components/layout/DashboardShell";
 import StudentStats from "../components/StudentsStats";
