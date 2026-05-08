@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAllMaterials } from "../../materials/hooks/useMaterials";
 import { usePagination } from "../../../hooks/usePagination";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
 import ReviewModal from "../../../components/common/ReviewModel";
+import MaterialViewer from "../../../components/common/MaterialViewer";
 import DataTable from "../../admin/components/DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
@@ -13,6 +14,12 @@ export default function VideoReviews() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const review = useMaterialReview();
+  const [viewMaterial, setViewMaterial] = useState(null);
+
+  // Stable callback to prevent modal defocusing on input
+  const handleCloseReview = useCallback(() => {
+    review.closeReview();
+  }, [review]);
 
   const { data, isLoading } = useAllMaterials({
     page,
@@ -27,7 +34,17 @@ export default function VideoReviews() {
       key: "title",
       label: "Title",
       render: (m) => (
-        <span className="font-medium text-slate-900">{m.title}</span>
+        <div>
+          <span className="font-medium text-slate-900">{m.title}</span>
+          {m.fileUrl && (
+            <button
+              onClick={() => setViewMaterial(m)}
+              className="block text-xs text-blue-600 hover:underline text-left"
+            >
+              View file ↗
+            </button>
+          )}
+        </div>
       ),
     },
     {
@@ -152,9 +169,14 @@ export default function VideoReviews() {
         action={review.reviewAction}
         feedback={review.feedback}
         onFeedbackChange={review.setFeedback}
-        onConfirm={review.submitReview}
-        onCancel={review.closeReview}
+        onConfirm={() => review.submitReview()}
+        onCancel={handleCloseReview}
         loading={review.isLoading}
+      />
+
+      <MaterialViewer
+        material={viewMaterial}
+        onClose={() => setViewMaterial(null)}
       />
     </>
   );

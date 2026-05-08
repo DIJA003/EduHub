@@ -1,9 +1,11 @@
 import { useDeleteMaterial } from "../../materials/hooks/useMaterials";
 import { TableSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
+import MaterialViewer from "../../../components/common/MaterialViewer";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
 import { timeAgo } from "../../../lib/utils";
+import { useState } from "react";
 
 const TYPE_ICON = {
   PDF: "📄",
@@ -22,6 +24,7 @@ const STATUS_LABEL = {
 
 export default function MyMaterials({ materials, loading }) {
   const deleteMutation = useDeleteMaterial();
+  const [viewMaterial, setViewMaterial] = useState(null);
 
   if (loading) return <TableSkeleton rows={3} cols={4} />;
 
@@ -64,14 +67,12 @@ export default function MyMaterials({ materials, loading }) {
                         {m.title}
                       </p>
                       {m.fileUrl && m.status === "approved" && (
-                        <a
-                          href={m.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
+                        <button
+                          onClick={() => setViewMaterial(m)}
+                          className="text-xs text-blue-600 hover:underline text-left"
                         >
                           View file ↗
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -117,6 +118,11 @@ export default function MyMaterials({ materials, loading }) {
           </tbody>
         </table>
       )}
+
+      <MaterialViewer
+        material={viewMaterial}
+        onClose={() => setViewMaterial(null)}
+      />
     </div>
   );
 }

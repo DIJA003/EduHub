@@ -89,6 +89,90 @@ app.use(
   }),
 );
 
+// Fallback: serve material files by looking up correct storagePath in database
+// This handles cases where fileUrl in DB doesn't match actual disk path
+// Use regex to match any path under /uploads/materials/
+app.get(/^\/uploads\/materials\/.+/, async (req, res, next) => {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const Material = require("./modules/materials/material.model");
+
+    // Get the path from URL (everything after /uploads/materials/)
+    const requestedPath = req.path.replace(/^\/uploads\/materials\//, "");
+    if (!requestedPath || typeof requestedPath !== "string") {
+      return res.status(404).json({ success: false, message: "Invalid path" });
+    }
+
+    // Try the direct path first
+    const directPath = path.join(__dirname, "../../uploads/materials", requestedPath);
+    if (fs.existsSync(directPath)) {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      return res.sendFile(directPath);
+    }
+
+    // Extract filename from URL
+    const filename = path.basename(requestedPath);
+
+    // Find material by filename
+    const material = await Material.findOne({
+      $or: [
+        { storagePath: { $regex: filename + "$" } },
+        { fileUrl: { $regex: filename + "$" } },
+      ],
+    }).select("storagePath fileUrl").lean();
+
+    // Try storagePath first
+    if (material?.storagePath) {
+      const storageFullPath = path.join(__dirname, "../../uploads/materials", material.storagePath);
+      if (fs.existsSync(storageFullPath)) {
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        return res.sendFile(storageFullPath);
+      }
+    }
+
+    // Try extracting from fileUrl
+    if (material?.fileUrl) {
+      const urlPath = material.fileUrl.replace(/^.*?\/uploads\/materials\//, "");
+      if (urlPath && urlPath !== material.fileUrl) {
+        const urlFullPath = path.join(__dirname, "../../uploads/materials", urlPath);
+        if (fs.existsSync(urlFullPath)) {
+          res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+          return res.sendFile(urlFullPath);
+        }
+      }
+    }
+
+    // Last resort: search all subdirectories for the filename
+    const uploadsDir = path.join(__dirname, "../../uploads/materials");
+    if (fs.existsSync(uploadsDir)) {
+      const dirs = fs.readdirSync(uploadsDir).filter(f =>
+        fs.statSync(path.join(uploadsDir, f)).isDirectory()
+      );
+
+      for (const dir of dirs) {
+        const dirPath = path.join(uploadsDir, dir);
+        const subDirs = fs.readdirSync(dirPath).filter(f =>
+          fs.statSync(path.join(dirPath, f)).isDirectory()
+        );
+
+        for (const subDir of subDirs) {
+          const possiblePath = path.join(dirPath, subDir, filename);
+          if (fs.existsSync(possiblePath)) {
+            res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+            return res.sendFile(possiblePath);
+          }
+        }
+      }
+    }
+
+    // If not found, return 404
+    res.status(404).json({ success: false, message: "File not found" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
   res.json({

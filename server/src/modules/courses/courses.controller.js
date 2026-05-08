@@ -82,6 +82,12 @@ const create = async (req, res, next) => {
     const payload = { ...req.body };
     if (req.user?.id) payload.createdBy = req.user.id;
 
+    // Map instructorId to instructorRef if provided
+    if (payload.instructorId !== undefined) {
+      payload.instructorRef = payload.instructorId || null;
+      delete payload.instructorId;
+    }
+
     const course = await Course.create(payload);
 
     await logAction({
@@ -103,7 +109,15 @@ const create = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
+    const updateData = { ...req.body };
+
+    // Map instructorId to instructorRef if provided
+    if (updateData.instructorId !== undefined) {
+      updateData.instructorRef = updateData.instructorId || null;
+      delete updateData.instructorId; // Remove the temporary field
+    }
+
+    const course = await Course.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });

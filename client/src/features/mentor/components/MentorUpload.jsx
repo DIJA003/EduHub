@@ -10,6 +10,7 @@ import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import EmptyState from "../../../components/common/EmptyStat";
+import MaterialViewer from "../../../components/common/MaterialViewer";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { toast } from "../../../hooks/useToasts";
 import { formatDate } from "../../../lib/utils";
@@ -34,6 +35,7 @@ export default function MentorUpload() {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewMaterial, setViewMaterial] = useState(null);
 
   const { data: materialsData, isLoading } = useMyMaterials({ page });
   const materials = Array.isArray(materialsData)
@@ -198,14 +200,12 @@ export default function MentorUpload() {
                             {m.title}
                           </p>
                           {m.fileUrl && (
-                            <a
-                              href={m.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline"
+                            <button
+                              onClick={() => setViewMaterial(m)}
+                              className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline text-left"
                             >
                               View file ↗
-                            </a>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -267,6 +267,11 @@ export default function MentorUpload() {
         }
         onCancel={() => setDeleteTarget(null)}
         loading={deleteMutation.isPending}
+      />
+
+      <MaterialViewer
+        material={viewMaterial}
+        onClose={() => setViewMaterial(null)}
       />
     </>
   );

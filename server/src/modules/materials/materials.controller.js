@@ -98,10 +98,17 @@ const getPending = async (req, res, next) => {
         instructorRef: req.user.id,
         isDeleted: { $ne: true },
       })
-        .select("_id")
+        .select("_id title")
         .lean();
+
+      console.log("[DEBUG] Mentor ID:", req.user.id);
+      console.log("[DEBUG] My courses:", myCourses.map(c => ({ id: c._id, title: c.title })));
+      console.log("[DEBUG] Course IDs for filter:", myCourses.map((c) => c._id.toString()));
+
       filter.courseRef = { $in: myCourses.map((c) => c._id) };
     }
+
+    console.log("[DEBUG] Material filter:", JSON.stringify(filter));
 
     const result = await paginate(Material, filter, {
       page: req.query.page || 1,
@@ -112,6 +119,9 @@ const getPending = async (req, res, next) => {
         { path: "courseRef", select: "title code" },
       ],
     });
+
+    console.log("[DEBUG] Result count:", result.data.length);
+    console.log("[DEBUG] Result meta:", result.meta);
 
     return success(res, result.data, 200, result.meta);
   } catch (err) {

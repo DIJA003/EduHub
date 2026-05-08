@@ -84,8 +84,17 @@ const coursesService = {
   },
 
   async update(id, data, performer) {
+    console.log("[DEBUG] Update course - received data:", {
+      id,
+      instructorId: data.instructorId,
+      instructor: data.instructor,
+      dataKeys: Object.keys(data),
+    });
+
     const course = await Course.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!course) throw new AppError("Course not found", 404);
+
+    console.log("[DEBUG] Current course instructorRef:", course.instructorRef);
 
     if (data.code && data.code !== course.code) {
       const dup = await Course.findOne({
@@ -102,6 +111,9 @@ const coursesService = {
       ...(data.instructor !== undefined && {
         instructor: data.instructor.trim(),
       }),
+      ...(data.instructorId !== undefined && {
+        instructorRef: data.instructorId || null,
+      }),
       ...(data.creditHours && { creditHours: Number(data.creditHours) }),
       ...(data.status && { status: data.status }),
       ...(data.academicYearId !== undefined && {
@@ -110,6 +122,9 @@ const coursesService = {
     });
 
     await course.save();
+
+    console.log("[DEBUG] Course saved - new instructorRef:", course.instructorRef);
+
     await logAction({
       action: "UPDATE",
       entity: "Course",

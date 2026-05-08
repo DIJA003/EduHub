@@ -29,6 +29,10 @@ const materialSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    originalName: {
+      type: String,
+      default: "",
+    },
     size: {
       type: String,
       default: "",

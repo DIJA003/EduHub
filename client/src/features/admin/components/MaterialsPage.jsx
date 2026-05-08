@@ -6,6 +6,7 @@ import {
 import { usePagination } from "../../../hooks/usePagination";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
 import ReviewModal from "../../../components/common/ReviewModel";
+import MaterialViewer from "../../../components/common/MaterialViewer";
 import DataTable from "./DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
@@ -17,7 +18,13 @@ export default function MaterialsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewMaterial, setViewMaterial] = useState(null);
   const review = useMaterialReview();
+
+  // Stable callback to prevent modal defocusing on input
+  const handleCloseReview = useCallback(() => {
+    review.closeReview();
+  }, [review]);
 
   const { data, isLoading } = useAllMaterials({
     page,
@@ -64,14 +71,12 @@ export default function MaterialsPage() {
               {m.title}
             </p>
             {m.fileUrl && (
-              <a
-                href={m.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline"
+              <button
+                onClick={() => setViewMaterial(m)}
+                className="text-[var(--text-xs)] text-[var(--color-accent)] hover:underline text-left"
               >
                 View file ↗
-              </a>
+              </button>
             )}
           </div>
         </div>
@@ -204,8 +209,8 @@ export default function MaterialsPage() {
         action={review.reviewAction}
         feedback={review.feedback}
         onFeedbackChange={review.setFeedback}
-        onConfirm={review.submitReview}
-        onCancel={review.closeReview}
+        onConfirm={() => review.submitReview()}
+        onCancel={handleCloseReview}
         loading={review.isLoading}
       />
       <ConfirmDialog
@@ -220,6 +225,11 @@ export default function MaterialsPage() {
         }
         onCancel={() => setDeleteTarget(null)}
         loading={deleteMutation.isPending}
+      />
+
+      <MaterialViewer
+        material={viewMaterial}
+        onClose={() => setViewMaterial(null)}
       />
     </>
   );

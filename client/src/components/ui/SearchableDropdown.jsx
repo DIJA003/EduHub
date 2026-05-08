@@ -25,6 +25,17 @@ export default function SearchableDropdown({
 
   const selected = options.find((o) => getOptionKey(o) === value);
 
+  // Debug: log when value exists but no matching option found
+  useEffect(() => {
+    if (value && !selected && options.length > 0) {
+      console.log("[DEBUG] Dropdown - value not found in options:", {
+        value,
+        optionKeys: options.slice(0, 3).map(getOptionKey),
+        label,
+      });
+    }
+  }, [value, selected, options, label, getOptionKey]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return options;
     const s = search.toLowerCase();

@@ -5,13 +5,36 @@ const User = require("../users/user.model");
 
 const mentorService = {
   async getMyCourses(mentorId) {
-    return Course.find({
+    console.log("[DEBUG] getMyCourses - mentorId:", mentorId, "type:", typeof mentorId);
+
+    // Try with string ID first
+    let courses = await Course.find({
       instructorRef: mentorId,
       isDeleted: { $ne: true },
     })
-      .select("title code creditHours status students")
+      .select("title code creditHours status students instructorRef")
       .sort({ title: 1 })
       .lean();
+
+    console.log("[DEBUG] Found courses (string ID):", courses.length);
+
+    // If no results, try with ObjectId
+    if (courses.length === 0) {
+      const mongoose = require("mongoose");
+      if (mongoose.isValidObjectId(mentorId)) {
+        const objectId = new mongoose.Types.ObjectId(mentorId);
+        courses = await Course.find({
+          instructorRef: objectId,
+          isDeleted: { $ne: true },
+        })
+          .select("title code creditHours status students instructorRef")
+          .sort({ title: 1 })
+          .lean();
+        console.log("[DEBUG] Found courses (ObjectId):", courses.length);
+      }
+    }
+
+    return courses;
   },
 
   async getMyStudents(mentorId) {

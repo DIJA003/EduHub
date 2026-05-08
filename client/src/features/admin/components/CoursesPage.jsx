@@ -50,11 +50,12 @@ export default function CoursesPage() {
   // Fetch mentors for instructor dropdown
   const { data: mentorsData } = useQuery({
     queryKey: ["users", "mentors"],
-    queryFn: () => usersApi.getAll({ role: "Mentor", limit: 1000 }),
+    queryFn: () => usersApi.getAll({ role: "mentor", limit: 1000 }),
     enabled: modal,
   });
   const mentors = useMemo(() => {
-    const data = mentorsData?.data || mentorsData;
+    // API returns { success: true, data: [...], meta: {...} }
+    const data = mentorsData?.data?.data || mentorsData?.data || mentorsData;
     return Array.isArray(data) ? data : [];
   }, [mentorsData]);
 
@@ -65,7 +66,8 @@ export default function CoursesPage() {
     enabled: modal,
   });
   const colleges = useMemo(() => {
-    const data = collegesData?.data || collegesData;
+    // API returns { success: true, data: [...], meta: {...} }
+    const data = collegesData?.data?.data || collegesData?.data || collegesData;
     return Array.isArray(data) ? data : [];
   }, [collegesData]);
 
@@ -81,6 +83,14 @@ export default function CoursesPage() {
     setModal(true);
   };
   const openEdit = (c) => {
+    console.log("[DEBUG] openEdit - course:", {
+      id: c._id,
+      instructorRef: c.instructorRef,
+      instructorName: c.instructor,
+      mentorsLoaded: mentors.length > 0,
+      mentorCount: mentors.length,
+    });
+
     setForm({
       code: c.code || "",
       title: c.title || "",
@@ -89,17 +99,31 @@ export default function CoursesPage() {
       yearId: c.yearId || "",
       creditHours: c.creditHours || 3,
       status: c.status || "Draft",
-      instructor: c.instructor || "",
+      instructor: c.instructorRef || "",
     });
     setEditTarget(c);
     setModal(true);
   };
   const handleSave = () => {
+    // Find selected mentor to get the name
+    const selectedMentor = mentors.find((m) => m._id === form.instructor);
     const payload = {
       ...form,
       yearId: form.yearId ? parseInt(form.yearId, 10) : undefined,
       creditHours: parseInt(form.creditHours, 10),
+      // Send both ID (for reference) and name (for display)
+      instructorId: form.instructor || undefined,
+      instructor: selectedMentor?.name || form.instructor || "",
     };
+
+    console.log("[DEBUG] Saving course:", {
+      formInstructor: form.instructor,
+      selectedMentor: selectedMentor?._id,
+      payloadInstructorId: payload.instructorId,
+      payloadInstructor: payload.instructor,
+      isEdit: !!editTarget,
+    });
+
     if (editTarget)
       updateMutation.mutate(
         { id: editTarget._id, data: payload },
@@ -170,6 +194,15 @@ export default function CoursesPage() {
       key: "status",
       label: "Status",
       render: (c) => <Badge variant={statusBadge(c.status)}>{c.status}</Badge>,
+    },
+    {
+      key: "instructor",
+      label: "Instructor",
+      render: (c) => (
+        <span className="text-[var(--color-text-3)] text-[var(--text-sm)]">
+          {c.instructor || "—"}
+        </span>
+      ),
     },
     {
       key: "actions",
@@ -351,7 +384,7 @@ export default function CoursesPage() {
             onChange={(val) => setForm((p) => ({ ...p, college: val }))}
             placeholder="Select a college..."
             options={colleges}
-            getOptionKey={(c) => c._id || c.name}
+            getOptionKey={(c) => c.name} // Use name as key since DB stores name
             getOptionLabel={(c) => c.name}
             emptyMessage="No colleges found"
           />

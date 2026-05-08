@@ -40,6 +40,7 @@ const confirmUpload = async ({ uploadedBy, uploaderRole, body }) => {
     size: formatBytes(fileSize),
     fileUrl,
     storagePath,
+    originalName: fileName,
     courseRef,
     uploadedBy,
     uploaderRole,
