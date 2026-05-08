@@ -647,11 +647,162 @@ html.theme-transitioning *::after {
     }
 }
 
-/* ── Reduced Motion ─────────────────────────────────────────── */
+/* ── Mobile-First Responsive Utilities ──────────────────────── */
+
+/* Small screens (default) */
+.container-responsive {
+    width: 100%;
+    padding: 0 var(--space-4);
+}
+
+.grid-responsive {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+}
+
+.flex-responsive {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Tablets and up */
+@media (min-width: 768px) {
+    .container-responsive {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 var(--space-6);
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
+
+/* Desktops and up */
+@media (min-width: 1024px) {
+    .container-responsive {
+        max-width: 960px;
+        padding: 0 var(--space-8);
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .flex-responsive {
+        flex-wrap: nowrap;
+    }
+}
+
+/* Large screens */
+@media (min-width: 1280px) {
+    .container-responsive {
+        max-width: 1200px;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Hide on mobile */
+@media (max-width: 767px) {
+    .hidden-mobile {
+        display: none !important;
+    }
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+    .hidden-desktop {
+        display: none !important;
+    }
+}
+
+/* Touch-friendly buttons */
+@media (hover: none) and (pointer: coarse) {
+    button, a, [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Reduced Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ── Font Size Scaling ──────────────────────────────────────── */
+/* Mobile: smaller font size */
+@media (max-width: 640px) {
+    html {
+        font-size: 15px;
+    }
+
+    h1 { font-size: clamp(1.5rem, 5vw, 2.5rem); }
+    h2 { font-size: clamp(1.25rem, 4vw, 2rem); }
+    h3 { font-size: clamp(1.1rem, 3vw, 1.5rem); }
+    h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
+}
+
+/* Tablet: medium font size */
+@media (min-width: 641px) and (max-width: 1023px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* Desktop: standard font size */
+@media (min-width: 1024px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* ── Responsive Spacing ─────────────────────────────────────── */
+.px-responsive {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .px-responsive {
+        padding-left: var(--space-6);
+        padding-right: var(--space-6);
+    }
+}
+
+@media (min-width: 1024px) {
+    .px-responsive {
+        padding-left: var(--space-8);
+        padding-right: var(--space-8);
+    }
+}
+
+/* ── Responsive Grid Gap ────────────────────────────────────── */
+.gap-responsive {
+    gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+    .gap-responsive {
+        gap: var(--space-4);
+    }
+}
+
+@media (min-width: 1024px) {
+    .gap-responsive {
+        gap: var(--space-6);
     }
 }

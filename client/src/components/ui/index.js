@@ -7,6 +7,7 @@ export { default as Input } from "./Input";
 // Layout & Cards
 export { default as Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./Card";
 export { default as StatsCard, StatsCardSkeleton, StatsGrid } from "./StatsCard";
+export { default as AnimatedCard } from "./AnimatedCard";
 
 // Navigation & Selection
 export { default as Dropdown, DropdownItem, DropdownDivider, DropdownLabel, Select } from "./Dropdown";

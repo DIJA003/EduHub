@@ -17,8 +17,10 @@ export function ThemeProvider({ children }) {
       localStorage.setItem("eduhub-theme", darkMode ? "dark" : "light");
     } catch {}
 
-    // Apply theme to document
+    // Apply theme to document with smooth transition
     const root = window.document.documentElement;
+    root.classList.add("theme-transitioning");
+    
     if (darkMode) {
       root.removeAttribute("data-theme");
       root.classList.remove("light");
@@ -26,6 +28,13 @@ export function ThemeProvider({ children }) {
       root.setAttribute("data-theme", "light");
       root.classList.add("light");
     }
+
+    // Remove transition class after animation completes
+    const timer = setTimeout(() => {
+      root.classList.remove("theme-transitioning");
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode((v) => !v);
