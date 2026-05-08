@@ -5,8 +5,8 @@ import { useCourses } from "../context/CourseContext";
 import { useTheme } from "../context/ThemeContext";
 import Header from "../components/fadyatef/Header";
 import Footer from "../components/fadyatef/Footer";
-import profileImage from "../assets/images/profile.jpg";
-import { profileApi, enrollmentApi2 } from "../services/api";
+import AvatarUpload from "../components/ui/AvatarUpload";
+import { profileApi, enrollmentApi2, avatarApi } from "../services/api";
 
 const PROFILE_STORAGE_KEY = "eduhub-profile-edits-v1";
 
@@ -65,7 +65,7 @@ const TOTAL_CREDITS = 168;
 
 export default function StudentProfile() {
   const navigate = useNavigate();
-  const { user, dbUser } = useAuth();
+  const { user, dbUser, refreshDbUser } = useAuth();
   const { years, lastCompletedCourse, currentYearId } = useCourses();
   const { darkMode, toggleDarkMode } = useTheme();
 
@@ -194,10 +194,20 @@ export default function StudentProfile() {
         <div className={`mb-6 rounded-2xl border p-6 shadow-sm ${card}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-5">
-              <img
-                src={user?.photoURL || profileImage}
-                alt=""
-                className="h-20 w-20 rounded-full object-cover ring-4 ring-blue-50"
+              <AvatarUpload
+                photoURL={dbUser?.photoURL || user?.photoURL}
+                name={form.name}
+                size="lg"
+                editable={editMode}
+                onUpload={async (file) => {
+                  const res = await avatarApi.upload(file);
+                  const photoURL = res.data?.data?.photoURL;
+                  if (photoURL) {
+                    await profileApi.update({ photoURL });
+                    // Refresh dbUser in auth store
+                    await refreshDbUser();
+                  }
+                }}
               />
               <div>
                 {editMode ? (

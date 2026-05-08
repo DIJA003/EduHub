@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   useCourses,
   useCreateCourse,
@@ -6,14 +6,17 @@ import {
   useDeleteCourse,
   useRestoreCourse,
 } from "../../courses/hooks/useCourses";
+import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "../../../hooks/usePagination";
 import DataTable from "./DataTable";
 import Badge, { statusBadge } from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
+import SearchableDropdown from "../../../components/ui/SearchableDropdown";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
-
+import { usersApi } from "../../../lib/api/users.api";
+import { collegesApi } from "../../../lib/api/college.api";
 const EMPTY_FORM = {
   code: "",
   title: "",
@@ -44,12 +47,34 @@ export default function CoursesPage() {
   const courses = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
 
+  // Fetch mentors for instructor dropdown
+  const { data: mentorsData } = useQuery({
+    queryKey: ["users", "mentors"],
+    queryFn: () => usersApi.getAll({ role: "Mentor", limit: 1000 }),
+    enabled: modal,
+  });
+  const mentors = useMemo(() => {
+    const data = mentorsData?.data || mentorsData;
+    return Array.isArray(data) ? data : [];
+  }, [mentorsData]);
+
+  // Fetch colleges for faculty dropdown
+  const { data: collegesData } = useQuery({
+    queryKey: ["colleges"],
+    queryFn: () => collegesApi.getAll({ limit: 1000 }),
+    enabled: modal,
+  });
+  const colleges = useMemo(() => {
+    const data = collegesData?.data || collegesData;
+    return Array.isArray(data) ? data : [];
+  }, [collegesData]);
+
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
   const deleteMutation = useDeleteCourse();
   const restoreMutation = useRestoreCourse();
 
-  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const set = useCallback((key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value })), []);
   const openAdd = () => {
     setForm(EMPTY_FORM);
     setEditTarget(null);
@@ -57,13 +82,13 @@ export default function CoursesPage() {
   };
   const openEdit = (c) => {
     setForm({
-      code: c.code,
-      title: c.title,
+      code: c.code || "",
+      title: c.title || "",
       description: c.description || "",
       college: c.college || "",
       yearId: c.yearId || "",
       creditHours: c.creditHours || 3,
-      status: c.status,
+      status: c.status || "Draft",
       instructor: c.instructor || "",
     });
     setEditTarget(c);
@@ -305,18 +330,27 @@ export default function CoursesPage() {
               min={1}
               max={6}
             />
-            <Input
+            <SearchableDropdown
               label="Instructor"
               value={form.instructor}
-              onChange={set("instructor")}
-              placeholder="Dr. Smith"
+              onChange={(val) => setForm((p) => ({ ...p, instructor: val }))}
+              placeholder="Select an instructor..."
+              options={mentors}
+              getOptionKey={(m) => m._id || m.name}
+              getOptionLabel={(m) => m.name}
+              getOptionSubtitle={(m) => m.email}
+              emptyMessage="No instructors found"
             />
           </div>
-          <Input
+          <SearchableDropdown
             label="College / Faculty"
             value={form.college}
-            onChange={set("college")}
-            placeholder="Faculty of Science"
+            onChange={(val) => setForm((p) => ({ ...p, college: val }))}
+            placeholder="Select a college..."
+            options={colleges}
+            getOptionKey={(c) => c._id || c.name}
+            getOptionLabel={(c) => c.name}
+            emptyMessage="No colleges found"
           />
           <Input
             label="Description"

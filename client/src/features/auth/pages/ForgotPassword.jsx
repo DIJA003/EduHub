@@ -4,6 +4,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { EduHubLogo } from "../../../components/ui/Logo";
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -54,7 +55,7 @@ export function ForgotPassword() {
           {sent ? (
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-success-soft)]">
-                <span className="text-2xl">✉️</span>
+                <EduHubLogo className="w-10 h-10 rounded-lg" />
               </div>
               <h1 className="text-xl font-bold text-[var(--color-text)]">
                 Check your inbox

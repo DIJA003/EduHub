@@ -72,7 +72,7 @@ export default function CollegesPage() {
     },
   });
 
-  const set = (key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
+  const set = useCallback((key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value })), []);
 
   const openAdd = () => {
     setForm(EMPTY_FORM);
@@ -80,7 +80,13 @@ export default function CollegesPage() {
     setModal(true);
   };
   const openEdit = (c) => {
-    setForm(c);
+    setForm({
+      name: c.name || "",
+      years: c.years || 4,
+      semesters: c.semesters || 2,
+      programs: c.programs || 0,
+      status: c.status || "Active",
+    });
     setEditTarget(c);
     setModal(true);
   };
@@ -98,7 +104,6 @@ export default function CollegesPage() {
     else createMutation.mutate(payload);
   };
 
-  // Stable callback — won't cause DataTable to re-run its search effect
   const handleSearch = useCallback(
     (s) => {
       setSearch(s);

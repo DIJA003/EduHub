@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    photoURL: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     status: {
       type: String,
       enum: ["Active", "Pending", "Suspended"],

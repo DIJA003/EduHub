@@ -8,6 +8,7 @@ const { logAction } = require("../../shared/logger");
 const { success, badRequest, created } = require("../../shared/response");
 
 const UPLOAD_DIR = path.join(__dirname, "../../../../uploads/materials");
+const AVATAR_DIR = path.join(__dirname, "../../../../uploads/avatars");
 
 const ALLOWED_MIMES = new Set([
   "application/pdf",
@@ -27,6 +28,8 @@ const ALLOWED_MIMES = new Set([
   "text/plain",
 ]);
 
+const ALLOWED_AVATAR_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     const courseId = req.body?.courseId || "general";
@@ -42,15 +45,39 @@ const storage = multer.diskStorage({
   },
 });
 
+const avatarStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const userId = req.user?.id || "unknown";
+    const dir = path.join(AVATAR_DIR, userId);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `avatar${ext}`);
+  },
+});
+
 const fileFilter = (req, file, cb) => {
   if (ALLOWED_MIMES.has(file.mimetype)) return cb(null, true);
   cb(new Error(`File type "${file.mimetype}" is not allowed.`));
+};
+
+const avatarFileFilter = (req, file, cb) => {
+  if (ALLOWED_AVATAR_MIMES.has(file.mimetype)) return cb(null, true);
+  cb(new Error(`Avatar must be JPEG, PNG, or WebP. Got: ${file.mimetype}`));
 };
 
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 100 * 1024 * 1024 },
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  fileFilter: avatarFileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max for avatars
 });
 
 const detectFileType = (mimeType) => {
@@ -142,6 +169,39 @@ const uploadsController = {
       if (!storagePath) return badRequest(res, "storagePath is required.");
       uploadsService.deleteFile(storagePath);
       return success(res, { deleted: true });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  avatarUploadMiddleware: avatarUpload.single("avatar"),
+
+  async handleAvatarUpload(req, res, next) {
+    try {
+      if (!req.file) return badRequest(res, "No avatar file uploaded.");
+
+      const userId = req.user.id;
+      const storagePath = `${userId}/${req.file.filename}`;
+
+      const serverOrigin = getServerOrigin();
+      const photoURL = `${serverOrigin}/uploads/avatars/${storagePath}`;
+
+      await logAction({
+        action: "AVATAR_UPLOAD",
+        entity: "User",
+        entityId: userId,
+        entityName: req.user?.name || "User",
+        performedBy: req.user,
+        req,
+        details: {
+          fileSize: formatBytes(req.file.size),
+          mimeType: req.file.mimetype,
+          storagePath,
+          photoURL,
+        },
+      });
+
+      return success(res, { photoURL, storagePath });
     } catch (err) {
       next(err);
     }

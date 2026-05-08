@@ -8,6 +8,7 @@ import { auth } from "../../../lib/firebase";
 import { authApi } from "../../../lib/api/auth.api";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { EduHubLogo } from "../../../components/ui/Logo";
 
 const ROLES = [
   { value: "student", label: "Student", emoji: "🎓", desc: "Learn & grow" },
@@ -85,8 +86,8 @@ export default function Register() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-[var(--radius-xl)] bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] text-white text-2xl font-black mb-5 shadow-[var(--shadow-accent)]">
-            E
+          <div className="inline-flex items-center justify-center mb-5">
+            <EduHubLogo className="w-14 h-14 rounded-[var(--radius-xl)] shadow-[var(--shadow-accent)]" />
           </div>
           <h1 className="text-2xl font-black text-[var(--color-text)] tracking-tight">
             Create your account

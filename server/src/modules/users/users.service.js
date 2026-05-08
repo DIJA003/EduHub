@@ -79,7 +79,7 @@ const usersService = {
     const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!user) throw new AppError("User not found", 404);
 
-    const allowed = ["name", "college", "bio", "role", "status"];
+    const allowed = ["name", "college", "bio", "photoURL", "role", "status"];
     allowed.forEach((key) => {
       if (data[key] !== undefined)
         user[key] =
@@ -99,7 +99,7 @@ const usersService = {
   },
 
   async updateProfile(firebaseUid, data) {
-    const allowed = { name: true, college: true, bio: true };
+    const allowed = { name: true, college: true, bio: true, photoURL: true };
     const user = await User.findOne({ firebaseUid, isDeleted: { $ne: true } });
     if (!user) throw new AppError("User not found", 404);
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { enrollmentsApi } from "../../../lib/api/enrollments.api";
 import { usersApi } from "../../../lib/api/users.api";
@@ -10,6 +10,7 @@ import Badge from "../../../components/ui/Badges";
 import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
+import SearchableDropdown from "../../../components/ui/SearchableDropdown";
 import { formatDate } from "../../../lib/utils";
 
 export default function EnrollmentsPage() {
@@ -36,6 +37,20 @@ export default function EnrollmentsPage() {
   const students = Array.isArray(studentsData)
     ? studentsData
     : studentsData?.data || [];
+
+  // Filter out students already enrolled in the selected course
+  const enrolledStudentIds = useMemo(() => {
+    if (!form.courseId) return new Set();
+    return new Set(
+      enrollments
+        .filter((e) => e.course?._id === form.courseId || e.course === form.courseId)
+        .map((e) => e.student?._id || e.student)
+    );
+  }, [enrollments, form.courseId]);
+
+  const availableStudents = useMemo(() => {
+    return students.filter((s) => !enrolledStudentIds.has(s._id));
+  }, [students, enrolledStudentIds]);
 
   const { data: coursesData } = useQuery({
     queryKey: ["courses-published"],
@@ -77,9 +92,6 @@ export default function EnrollmentsPage() {
     },
     [setPage],
   );
-
-  const selectClass =
-    "w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]";
 
   const COLUMNS = [
     {
@@ -169,11 +181,20 @@ export default function EnrollmentsPage() {
 
       <Modal
         open={modal}
-        onClose={() => setModal(false)}
+        onClose={() => {
+          setModal(false);
+          setForm({ studentId: "", courseId: "" });
+        }}
         title="Enroll Student"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setModal(false);
+                setForm({ studentId: "", courseId: "" });
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -187,44 +208,44 @@ export default function EnrollmentsPage() {
         }
       >
         <div className="space-y-4">
-          <div>
-            <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
-              Student <span className="text-[var(--color-danger)]">*</span>
-            </label>
-            <select
-              value={form.studentId}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, studentId: e.target.value }))
-              }
-              className={selectClass}
-            >
-              <option value="">Select student…</option>
-              {students.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name} — {s.email}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
-              Course <span className="text-[var(--color-danger)]">*</span>
-            </label>
-            <select
-              value={form.courseId}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, courseId: e.target.value }))
-              }
-              className={selectClass}
-            >
-              <option value="">Select course…</option>
-              {courses.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.code} — {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchableDropdown
+            label="Student"
+            required
+            showAvatar
+            options={availableStudents}
+            value={form.studentId}
+            onChange={(id) => setForm((p) => ({ ...p, studentId: id }))}
+            placeholder="Select a student…"
+            emptyMessage={form.courseId && availableStudents.length === 0 ? "All students already enrolled in this course" : "No students found"}
+            getOptionKey={(s) => s._id}
+            getOptionLabel={(s) => s.name}
+            getOptionSubtitle={(s) => s.email}
+            getOptionAvatar={(s) => s.photoURL}
+          />
+
+          <SearchableDropdown
+            label="Course"
+            required
+            options={courses}
+            value={form.courseId}
+            onChange={(id) => setForm((p) => ({ ...p, courseId: id }))}
+            placeholder="Select a course…"
+            emptyMessage="No courses found"
+            getOptionKey={(c) => c._id}
+            getOptionLabel={(c) => `${c.code}: ${c.title}`}
+            getOptionSubtitle={(c) => c.instructor || "No instructor"}
+          />
+
+          {form.studentId && form.courseId && (
+            <div className="p-3 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20">
+              <p className="text-[var(--text-sm)] text-[var(--color-text)]">
+                <span className="font-semibold">Ready to enroll:</span>{" "}
+                {students.find((s) => s._id === form.studentId)?.name} →{" "}
+                {courses.find((c) => c._id === form.courseId)?.title}
+              </p>
+            </div>
+          )}
+
           <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
             If a student was previously removed, they will be re-enrolled
             automatically.

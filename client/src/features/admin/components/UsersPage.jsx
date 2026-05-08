@@ -30,6 +30,7 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const qc = useQueryClient();
+  const set = useCallback((key) => (e) => setForm((p) => ({ ...p, [key]: e.target.value })), []);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -87,11 +88,11 @@ export default function UsersPage() {
   };
   const openEdit = (u) => {
     setForm({
-      name: u.name,
-      email: u.email,
-      role: u.role,
+      name: u.name || "",
+      email: u.email || "",
+      role: u.role || "student",
       college: u.college || "",
-      status: u.status,
+      status: u.status || "Active",
       password: "",
     });
     setEditTarget(u);
@@ -300,7 +301,7 @@ export default function UsersPage() {
               label="Full Name"
               required
               value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              onChange={set("name")}
               placeholder="Jane Smith"
             />
             <div>
@@ -309,9 +310,7 @@ export default function UsersPage() {
               </label>
               <select
                 value={form.role}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, role: e.target.value }))
-                }
+                onChange={set("role")}
                 className={selectClass}
               >
                 <option value="student">Student</option>
@@ -325,7 +324,7 @@ export default function UsersPage() {
             required
             type="email"
             value={form.email}
-            onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+            onChange={set("email")}
             placeholder="jane@university.edu"
             disabled={!!editTarget}
           />
@@ -335,9 +334,7 @@ export default function UsersPage() {
               required
               type="password"
               value={form.password}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, password: e.target.value }))
-              }
+              onChange={set("password")}
               placeholder="Min 8 characters"
             />
           )}
@@ -345,9 +342,7 @@ export default function UsersPage() {
             <Input
               label="College / Faculty"
               value={form.college}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, college: e.target.value }))
-              }
+              onChange={set("college")}
               placeholder="Faculty of Science"
             />
             <div>
@@ -356,9 +351,7 @@ export default function UsersPage() {
               </label>
               <select
                 value={form.status}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, status: e.target.value }))
-                }
+                onChange={set("status")}
                 className={selectClass}
               >
                 <option>Active</option>

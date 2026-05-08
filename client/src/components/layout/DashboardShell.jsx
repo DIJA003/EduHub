@@ -4,6 +4,7 @@ import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 import { initials } from "../../lib/utils";
+import { useTheme } from "../../context/ThemeContext";
 
 /* ── Nav definitions ─────────────────── */
 export const STUDENT_NAV = [
@@ -36,7 +37,7 @@ const NAV_BY_ROLE = {
 };
 
 /* ── Avatar ──────────────────────────── */
-function Avatar({ name, size = "sm", onClick }) {
+function Avatar({ name, photoURL, size = "sm", onClick }) {
   const ini = initials(name);
   const hash = [...(name ?? "")].reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const hue = hash % 360;
@@ -53,16 +54,24 @@ function Avatar({ name, size = "sm", onClick }) {
       onClick={onClick}
       className={cn(
         sizeMap[size] ?? sizeMap.sm,
-        "rounded-full flex items-center justify-center font-bold text-white shrink-0",
+        "rounded-full flex items-center justify-center font-bold text-white shrink-0 overflow-hidden",
         "transition-all duration-200",
         "hover:ring-2 hover:ring-offset-2",
         "hover:ring-[var(--color-accent)] hover:ring-offset-[var(--color-ink)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
       )}
-      style={{ background: `hsl(${hue},55%,45%)` }}
+      style={!photoURL ? { background: `hsl(${hue},55%,45%)` } : undefined}
       title={name}
     >
-      {ini}
+      {photoURL ? (
+        <img
+          src={photoURL}
+          alt={name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        ini
+      )}
     </button>
   );
 }
@@ -110,12 +119,53 @@ function NavItem({ to, icon, label, end, collapsed }) {
   );
 }
 
+/* ── Logo Component ─────────────────── */
+function EduHubLogo({ className }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="32" height="32" rx="8" fill="url(#edu-gradient)" />
+      <path
+        d="M8 10C8 9.44772 8.44772 9 9 9H23C23.5523 9 24 9.44772 24 10V11H8V10Z"
+        fill="white"
+        fillOpacity="0.9"
+      />
+      <path
+        d="M8 13H24V22C24 22.5523 23.5523 23 23 23H9C8.44772 23 8 22.5523 8 22V13Z"
+        fill="white"
+        fillOpacity="0.6"
+      />
+      <path
+        d="M12 16H20V17H12V16Z"
+        fill="white"
+        fillOpacity="0.8"
+      />
+      <path
+        d="M12 19H18V20H12V19Z"
+        fill="white"
+        fillOpacity="0.8"
+      />
+      <defs>
+        <linearGradient id="edu-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#6c63ff" />
+          <stop offset="1" stopColor="#4fc3f7" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
 /* ── Main Shell ──────────────────────── */
 export default function DashboardShell({ title, navItems, children }) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const logout = useAuthStore((s) => s.logout);
+  const { darkMode, toggleDarkMode } = useTheme();
   const role = dbUser?.role;
   const nav = navItems ?? NAV_BY_ROLE[role] ?? STUDENT_NAV;
 
@@ -156,9 +206,7 @@ export default function DashboardShell({ title, navItems, children }) {
             collapsed && "justify-center",
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] text-white text-sm font-black shadow-[var(--shadow-accent)]">
-            E
-          </div>
+          <EduHubLogo className="h-8 w-8 shrink-0 shadow-[var(--shadow-accent)] rounded-[var(--radius-md)]" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-[var(--text-sm)] font-black text-[var(--color-text)] leading-tight tracking-tight">
@@ -215,6 +263,7 @@ export default function DashboardShell({ title, navItems, children }) {
           >
             <Avatar
               name={dbUser?.name}
+              photoURL={dbUser?.photoURL}
               onClick={() => navigate("/profile")}
               size="sm"
             />
@@ -268,9 +317,30 @@ export default function DashboardShell({ title, navItems, children }) {
             </h1>
           )}
           <div className="flex items-center gap-3 ml-auto">
+            <button
+              onClick={toggleDarkMode}
+              className={cn(
+                "p-2 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
+                "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
+                "transition-colors duration-[var(--duration-fast)]"
+              )}
+              title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {darkMode ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
             <NotificationBell />
             <Avatar
               name={dbUser?.name}
+              photoURL={dbUser?.photoURL}
               onClick={() => navigate("/profile")}
               size="sm"
             />

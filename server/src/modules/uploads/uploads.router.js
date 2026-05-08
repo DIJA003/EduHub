@@ -13,4 +13,10 @@ router.post(
 
 router.delete("/file", uploadsController.deleteFile);
 
+router.post(
+  "/avatar",
+  uploadsController.avatarUploadMiddleware,
+  uploadsController.handleAvatarUpload,
+);
+
 module.exports = router;

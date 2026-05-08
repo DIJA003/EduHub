@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { sendEmailVerification, reload, signOut } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
 import Button from "../../../components/ui/Button";
+import { EduHubLogo } from "../../../components/ui/Logo";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -68,23 +69,16 @@ export default function EmailVerification() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
+    <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="aurora-bg" aria-hidden="true">
+        <div className="aurora-bg__blob-1" />
+        <div className="aurora-bg__blob-2" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="glass-strong rounded-[var(--radius-2xl)] p-8 shadow-[var(--shadow-xl)] text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center">
+            <EduHubLogo className="w-16 h-16 rounded-xl shadow-[var(--shadow-accent)]" />
           </div>
 
           <h1 className="text-xl font-black text-center text-slate-900">

@@ -5,7 +5,8 @@ import { useCourses, sumEnrolledCredits } from "../context/CourseContext";
 import { useMaterials } from "../context/MaterialContext";
 import { useTheme } from "../context/ThemeContext";
 import ConfirmDialog from "../components/common/ConfirmDialog";
-import logo from "../assets/images/logo.png";
+import { EduHubLogo } from "../components/ui/Logo";
+import { initials } from "../lib/utils";
 
 const SIDEBAR_LINKS = [
   { id: "dashboard",        label: "Dashboard"        },
@@ -188,7 +189,7 @@ export default function StudentDashboard() {
       <aside className={`flex w-56 flex-col border-r ${sidebar}`}>
         <div className="flex flex-col gap-0.5 border-b border-slate-700 p-4">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="EduHub" className="h-8 w-8 object-contain" />
+            <EduHubLogo className="h-8 w-8 rounded-lg" />
             <span className="font-semibold text-white">EduHub Student</span>
           </div>
           <p className="pl-10 text-[10px] font-medium uppercase tracking-wide text-slate-500">
@@ -216,8 +217,16 @@ export default function StudentDashboard() {
         </nav>
         <div className="border-t border-slate-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
-              {dbUser?.name?.[0]?.toUpperCase() || "S"}
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-[var(--color-accent)] to-[#4fc3f7] flex items-center justify-center shrink-0">
+              {dbUser?.photoURL ? (
+                <img
+                  src={dbUser.photoURL}
+                  alt={dbUser?.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-bold text-white">{initials(dbUser?.name)}</span>
+              )}
             </div>
             <span className="text-sm font-medium text-white">{firstName}</span>
             <button onClick={() => navigate("/academic-year")} className="ml-auto text-slate-400 hover:text-white" aria-label="Back">←</button>

@@ -4,7 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const connectDB = require("./src/config/db");
 
-const dirs = [path.join(__dirname, "uploads", "materials")];
+const dirs = [
+  path.join(__dirname, "uploads", "materials"),
+  path.join(__dirname, "uploads", "avatars"),
+];
 dirs.forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
