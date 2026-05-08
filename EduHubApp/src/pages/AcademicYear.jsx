@@ -60,8 +60,13 @@ function buildYearsState(dbYears, coursesPerYear, enrollments) {
 }
 
 // ─── CoursePlayer (inline) ────────────────────────────────────────────────────
-function CoursePlayer({ course, yearId, onBack }) {
+function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
   const c = useColors();
+
+  // Local progress so Next/Finish updates in-place without leaving the player
+  const [localProgress,    setLocalProgress]    = useState(course.progress || 0);
+  const [localSecDone,     setLocalSecDone]     = useState(course.sectionsCompleted || 0);
+  const [localNextItem,    setLocalNextItem]     = useState(course.nextItem || "Getting Started");
 
   const [sections,        setSections]        = useState([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
@@ -75,9 +80,9 @@ function CoursePlayer({ course, yearId, onBack }) {
   const [confirmUnenroll, setConfirmUnenroll] = useState(false);
 
   const mongoId        = course.mongoId || course.courseId || course.id;
-  const progress       = course.progress || 0;
-  const secDone        = course.sectionsCompleted ?? Math.round((progress / 100) * Math.max(sections.length, 1));
-  const courseComplete = progress >= 100;
+  const progress       = localProgress;
+  const secDone        = localSecDone;
+  const courseComplete = localProgress >= 100;
   const isStarted      = started || progress > 0;
   const n              = sections.length;
 
@@ -139,8 +144,14 @@ function CoursePlayer({ course, yearId, onBack }) {
         progress: newProgress, nextItem: nextLabel, sectionsCompleted: nextDone,
       });
     } catch {}
+    // Update local state — stay inside the player
+    setLocalProgress(newProgress);
+    setLocalSecDone(nextDone);
+    setLocalNextItem(nextLabel);
+    setStarted(true);
     setViewIndex(done ? n - 1 : Math.min(nextDone, n - 1));
-    onBack({ refresh: true });
+    // Notify parent so the year list stays in sync (no navigation)
+    if (onProgressUpdate) onProgressUpdate({ progress: newProgress, sectionsCompleted: nextDone, nextItem: nextLabel });
   };
 
   const handleUploadMaterial = async () => {
@@ -396,6 +407,14 @@ export default function AcademicYear() {
       <CoursePlayer
         course={{ ...playerCourse, progress: enr?.progress || 0, sectionsCompleted: enr?.sectionsCompleted || 0, nextItem: enr?.nextItem || "Getting Started" }}
         yearId={playerCourse.yearId}
+        onProgressUpdate={({ progress, sectionsCompleted, nextItem }) => {
+          // Update enrollments in the background so year list stays in sync
+          setEnrollments((prev) => prev.map((e) =>
+            String(e.courseId) === String(playerCourse.mongoId)
+              ? { ...e, progress, sectionsCompleted, nextItem }
+              : e
+          ));
+        }}
         onBack={async ({ refresh }) => { if (refresh) await loadData(); setPlayerCourse(null); }}
       />
     );
