@@ -1,4 +1,5 @@
 import {
+  Home,
   LayoutDashboard,
   BookOpen,
   Upload,
@@ -24,6 +25,7 @@ export const ROLE_HOME = {
 
 export const NAV_BY_ROLE = {
   student: [
+    { to: "/", label: "Home", icon: Home, end: true },
     { to: "/student", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/student/courses", label: "My Courses", icon: BookOpen },
     { to: "/student/upload", label: "Upload Center", icon: Upload },
@@ -33,15 +35,16 @@ export const NAV_BY_ROLE = {
     { to: "/profile", label: "Profile", icon: User },
   ],
   mentor: [
+    { to: "/", label: "Home", icon: Home, end: true },
     { to: "/mentor", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/mentor/courses", label: "Assigned Courses", icon: BookOpen },
     { to: "/mentor/reviews", label: "Review Queue", icon: ClipboardList },
-    { to: "/mentor/uploads", label: "Student Uploads", icon: Upload },
     { to: "/mentor/notifications", label: "Notifications", icon: Bell },
     { to: "/mentor/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/mentor/logs", label: "Logs", icon: Activity },
   ],
   admin: [
+    { to: "/", label: "Home", icon: Home, end: true },
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/admin/users", label: "User Management", icon: Users },
     { to: "/admin/moderation", label: "Moderation", icon: Shield },

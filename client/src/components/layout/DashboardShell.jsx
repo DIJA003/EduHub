@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
@@ -9,14 +9,13 @@ import {
   Moon,
   Sun,
   X,
-  Home,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 import { initials } from "../../lib/utils";
 import { useTheme } from "../../context/ThemeContext";
-import { NAV_BY_ROLE, ROLE_HOME } from "../../constants/navigation";
+import { NAV_BY_ROLE } from "../../constants/navigation";
 import { EduHubLogo } from "../ui/Logo";
 
 /* ── Avatar ──────────────────────────── */
@@ -100,47 +99,6 @@ function NavItem({ to, icon: Icon, label, end, collapsed }) {
         </span>
       )}
     </NavLink>
-  );
-}
-
-/* ── Home Button Component ─────────── */
-function HomeButton({ role, collapsed }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const homePath = ROLE_HOME[role] || "/student";
-  const isActive = location.pathname === homePath || location.pathname === `${homePath}/`;
-
-  return (
-    <button
-      onClick={() => navigate(homePath)}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-lg)] w-full",
-        "text-[var(--text-sm)] font-medium transition-all duration-[var(--duration-fast)]",
-        "group relative",
-        isActive
-          ? "bg-[var(--color-accent-soft)] text-[var(--color-accent-2)] border border-[var(--color-accent)] border-opacity-25 shadow-[0_0_12px_var(--color-accent-glow)]"
-          : "text-[var(--color-text-3)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
-      )}
-      title="Go to Dashboard Home"
-    >
-      <Home className="shrink-0 w-[18px] h-[18px]" strokeWidth={1.75} />
-      {!collapsed && <span className="truncate">Home</span>}
-      {collapsed && (
-        <span
-          className={cn(
-            "absolute left-full ml-2.5 px-2.5 py-1.5 z-50",
-            "glass-strong text-[var(--color-text)] text-[var(--text-xs)]",
-            "rounded-[var(--radius-md)] whitespace-nowrap shadow-[var(--shadow-lg)]",
-            "border border-[var(--color-border-2)]",
-            "pointer-events-none opacity-0 group-hover:opacity-100",
-            "transition-opacity duration-[var(--duration-fast)]",
-          )}
-          role="tooltip"
-        >
-          Home
-        </span>
-      )}
-    </button>
   );
 }
 
@@ -247,9 +205,9 @@ export default function DashboardShell({ title, navItems, children }) {
           )}
         >
           <button
-            onClick={() => navigate(ROLE_HOME[role] || "/student")}
+            onClick={() => navigate(role === "admin" ? "/admin" : role === "mentor" ? "/mentor" : "/student")}
             className="shrink-0 hover:scale-105 transition-transform"
-            title="Go to Dashboard Home"
+            title="Go to Dashboard"
           >
             <EduHubLogo className="h-8 w-8 shrink-0 shadow-[var(--shadow-accent)] rounded-[var(--radius-md)]" />
           </button>
@@ -286,8 +244,6 @@ export default function DashboardShell({ title, navItems, children }) {
           className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden no-scrollbar"
           aria-label="Main navigation"
         >
-          <HomeButton role={role} collapsed={collapsed} />
-          <div className="border-t border-[var(--color-border)] my-2" />
           {nav.map((item) => (
             <NavItem key={item.to} {...item} collapsed={collapsed} />
           ))}

@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Clock, CheckCircle, XCircle, Users, BookOpen, FileText } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Users, BookOpen, FileText, Upload } from "lucide-react";
 import { usePendingMaterials } from "../../materials/hooks/useMaterials";
 import { useAuth } from "../../../context/AuthContext";
 import { mentorApi } from "../../../lib/api/mentor.api";
@@ -13,6 +13,7 @@ import { SkeletonList } from "../../../components/ui/Skeleton";
 import { timeAgo } from "../../../lib/utils";
 import { useMaterialReview } from "../../../hooks/useMaterialReview";
 import ReviewModal from "../../../components/common/ReviewModel";
+import MentorUploadModal from "./MentorUploadModal";
 
 function WelcomeSection({ name }) {
   const hour = new Date().getHours();
@@ -138,6 +139,7 @@ function StudentCard({ student }) {
 export default function MentorHome() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] || "Mentor";
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const review = useMaterialReview();
 
@@ -216,6 +218,14 @@ export default function MentorHome() {
                   </span>
                 )}
               </div>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => setUploadModalOpen(true)}
+                leftIcon={<Upload className="w-4 h-4" />}
+              >
+                Upload Material
+              </Button>
             </div>
 
             {isLoading ? (
@@ -306,6 +316,13 @@ export default function MentorHome() {
         onConfirm={handleConfirmReview}
         onCancel={handleCloseReview}
         loading={review.isLoading}
+      />
+
+      {/* Upload Modal */}
+      <MentorUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        courses={myCourses}
       />
     </div>
   );
