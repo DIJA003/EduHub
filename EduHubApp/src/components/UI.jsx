@@ -8,6 +8,7 @@ import {
   Modal, Pressable, ScrollView, StyleSheet,
   Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../utils/theme';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -33,10 +34,11 @@ export const C = {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export function Screen({ children, style }) {
+  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: C.bg }}
-      contentContainerStyle={[{ padding: 16, paddingBottom: 48, gap: 12 }, style]}
+      contentContainerStyle={[{ padding: 16, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 48, gap: 12 }, style]}
       showsVerticalScrollIndicator={false}
     >
       {children}

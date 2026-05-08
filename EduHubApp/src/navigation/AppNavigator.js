@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, Text, View, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../utils/theme";
 
@@ -124,12 +125,12 @@ export default function AppNavigator() {
 
   if (loading || user === undefined) {
     return (
-      <View style={st.splash}>
+      <SafeAreaView style={st.splash}>
         <Text style={st.logo}>
           Edu<Text style={{ color: colors.accentLight }}>Hub</Text>
         </Text>
         <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 24 }} />
-      </View>
+      </SafeAreaView>
     );
   }
 
