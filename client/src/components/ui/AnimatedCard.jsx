@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { scaleIn, hoverLift } from '../../lib/animations';
 
 /**
  * AnimatedCard - Card component with entrance and hover animations
