@@ -1,173 +1,146 @@
 /**
  * pages/StudentProfile.jsx
- * Same logic as web Studentprofile.jsx — AsyncStorage instead of localStorage
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import React, { useEffect, useState } from 'react';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { useCourses } from '../context/CourseContext';
-import { profileApi } from '../services/api';
-import { Badge, BtnPrimary, BtnSecondary, FormGroup, FormInput } from '../components/admin/adminUtils';
-import { colors, spacing, radius, fontSize, fontWeight } from '../utils/theme';
+import { api } from '../services/api';
+import { Screen, Card, SectionLabel, Tag, Pill, ProgressBar, Btn, Divider, ErrorBox, Avatar, C, st } from '../components/UI';
 
-const STORAGE_KEY = 'eduhub-profile-edits-v1';
-
-async function loadProfileEdits()       { try { const r = await AsyncStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
-async function saveProfileEdits(form)   { try { await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(form)); } catch {} }
-
-function buildBase(dbUser, user, currentYearId, years) {
-  const mongoId   = dbUser?._id ?? dbUser?.id;
-  const studentId = mongoId ? `…${String(mongoId).slice(-8)}` : user?.uid?.slice(0, 8) || '—';
-  const activeYear  = currentYearId && years?.[currentYearId];
-  const shortTitle  = activeYear?.meta?.title?.split(':')?.[0]?.trim();
-  const yearLevel   = currentYearId && shortTitle
-    ? `${shortTitle} — in progress (Year ${currentYearId})`
-    : currentYearId ? `Year ${currentYearId} — in progress` : '—';
-  return {
-    name:         dbUser?.name    || user?.displayName    || '',
-    email:        dbUser?.email   || user?.email          || '',
-    phone:        dbUser?.phone   || '',
-    studentId,
-    college:      dbUser?.college || '',
-    yearLevel,
-    gpa:          dbUser?.gpa     || '',
-    bio:          dbUser?.bio     || '',
-    linkedin:     dbUser?.linkedin || '',
-    github:       dbUser?.github  || '',
-  };
-}
+function safeArray(d) { return Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []; }
 
 export default function StudentProfile() {
-  const { user, dbUser } = useAuth();
-  const { years, currentYearId } = useCourses();
-  const [editMode, setEditMode] = useState(false);
-  const [form,     setForm]     = useState(null);
-  const [saving,   setSaving]   = useState(false);
+  const { dbUser, logout } = useAuth();
+  const [form, setForm] = useState({
+    name:    dbUser?.name    || '',
+    email:   dbUser?.email   || '',
+    college: dbUser?.college || '',
+    phone:   dbUser?.phone   || '',
+  });
+  const [editMode,    setEditMode]    = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [error,       setError]       = useState('');
+  const [enrollments, setEnrollments] = useState([]);
 
   useEffect(() => {
-    const init = async () => {
-      const base   = buildBase(dbUser, user, currentYearId, years);
-      const stored = await loadProfileEdits();
-      setForm(stored ? { ...base, ...stored } : base);
-    };
-    init();
-  }, [dbUser, user, currentYearId, years]);
+    api.get('/users/enrollments')
+      .then(r => setEnrollments(safeArray(r)))
+      .catch(() => {});
+  }, []);
+
+  const completed    = enrollments.filter(e => e.progress >= 100);
+  const totalCredits = completed.reduce((s, e) => s + (e.credits || 0), 0);
+  const progressPct  = Math.min(100, Math.round((totalCredits / 168) * 100));
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaving(true); setError('');
     try {
-      await profileApi.update({ name: form.name, college: form.college, bio: form.bio, phone: form.phone, linkedin: form.linkedin, github: form.github });
-      await saveProfileEdits(form);
-      setEditMode(false);
-    } catch (err) { Alert.alert('Error', err.message); }
+      await api.put('/users/profile', { name: form.name, phone: form.phone, college: form.college });
+      setSaved(true); setEditMode(false);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
 
-  const handleLogout = () => Alert.alert('Sign Out', 'Are you sure?', [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Sign Out', style: 'destructive', onPress: () => signOut(auth) },
-  ]);
-
-  const set = field => val => setForm(f => ({ ...f, [field]: val }));
-
-  const initials = form?.name ? form.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'S';
-
-  const enrolled = Object.values(years).flatMap(y => y.enrolled || []);
-  const completed = enrolled.filter(c => c.progress >= 100).length;
-  const inProgress = enrolled.length - completed;
-
-  if (!form) return <View style={st.loading}><Text style={{ color: colors.textMuted }}>Loading…</Text></View>;
-
   return (
-    <ScrollView style={st.container} contentContainerStyle={st.content}>
+    <Screen>
       {/* Profile card */}
-      <View style={st.profileCard}>
-        <View style={st.banner} />
-        <View style={st.avatarRow}>
-          <View style={st.avatarCircle}><Text style={st.avatarTxt}>{initials}</Text></View>
+      <Card>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Avatar name={form.name || 'S'} size={56} />
+          <View style={{ flex: 1 }}>
+            {editMode ? (
+              <TextInput
+                value={form.name}
+                onChangeText={v => setForm(p => ({ ...p, name: v }))}
+                style={[st.input, { fontWeight: '700', fontSize: 16 }]}
+              />
+            ) : (
+              <Text style={{ fontWeight: '800', fontSize: 17, color: C.text }}>{form.name || 'Student'}</Text>
+            )}
+            <Text style={{ fontSize: 12, color: C.blueLight, fontWeight: '600', marginTop: 2 }}>{form.email}</Text>
+            <Text style={{ fontSize: 11, color: C.textSub, textTransform: 'capitalize' }}>{dbUser?.role || 'student'}</Text>
+          </View>
+        </View>
+        <Divider />
+        {saved && <Text style={{ fontSize: 12, color: C.emerald, fontWeight: '600' }}>✓ Saved!</Text>}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
           {editMode ? (
-            <View style={st.editActions}>
-              <BtnSecondary onPress={() => setEditMode(false)}>Cancel</BtnSecondary>
-              <BtnPrimary   onPress={handleSave} loading={saving}>Save</BtnPrimary>
-            </View>
+            <>
+              <View style={{ flex: 1 }}><Btn label="Cancel" variant="outline" small onPress={() => setEditMode(false)} /></View>
+              <View style={{ flex: 1 }}><Btn label={saving ? 'Saving…' : 'Save'} small disabled={saving} onPress={handleSave} /></View>
+            </>
           ) : (
-            <BtnSecondary onPress={() => setEditMode(true)}>✏️ Edit</BtnSecondary>
+            <Btn label="✏️  Edit Profile" variant="outline" small onPress={() => setEditMode(true)} />
           )}
         </View>
+      </Card>
 
-        {editMode ? (
-          <View style={st.formBlock}>
-            <FormGroup label="Full Name">    <FormInput value={form.name}     onChangeText={set('name')}     placeholder="Full name" /></FormGroup>
-            <FormGroup label="Phone">        <FormInput value={form.phone}    onChangeText={set('phone')}    placeholder="+20 xxx" keyboardType="phone-pad" /></FormGroup>
-            <FormGroup label="College">      <FormInput value={form.college}  onChangeText={set('college')}  placeholder="Faculty" /></FormGroup>
-            <FormGroup label="Bio">          <FormInput value={form.bio}      onChangeText={set('bio')}      placeholder="Short bio…" multiline numberOfLines={3} /></FormGroup>
-            <FormGroup label="LinkedIn URL"> <FormInput value={form.linkedin} onChangeText={set('linkedin')} placeholder="https://linkedin.com/in/…" /></FormGroup>
-            <FormGroup label="GitHub URL">   <FormInput value={form.github}   onChangeText={set('github')}  placeholder="https://github.com/…" /></FormGroup>
-          </View>
-        ) : (
-          <View style={st.infoBlock}>
-            <View style={st.nameRow}>
-              <Text style={st.profileName}>{form.name || 'Student'}</Text>
-              <Badge variant="blue">Student</Badge>
-            </View>
-            <Text style={st.profileEmail}>{form.email}</Text>
-            {form.college   ? <Text style={st.profileMeta}>🏫 {form.college}</Text>      : null}
-            {form.yearLevel ? <Text style={st.profileMeta}>📅 {form.yearLevel}</Text>    : null}
-            {form.studentId ? <Text style={st.profileMeta}>🆔 ID: {form.studentId}</Text>: null}
-            {form.bio       ? <Text style={st.profileBio}>{form.bio}</Text>              : null}
-            {form.linkedin  ? <Text style={st.profileLink}>🔗 LinkedIn</Text>            : null}
-            {form.github    ? <Text style={st.profileLink}>💻 GitHub</Text>              : null}
-          </View>
-        )}
-      </View>
+      <ErrorBox message={error} />
 
-      {/* Quick stats */}
-      <View style={st.statsRow}>
+      {/* Academic overview */}
+      <Card>
+        <SectionLabel>Academic Overview</SectionLabel>
+        <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+          <Pill label="Credits Earned"    value={totalCredits}       color={C.blueLight} />
+          <Pill label="Courses Completed" value={completed.length}   color={C.emerald}   />
+          <Pill label="Total Enrolled"    value={enrollments.length} color={C.amber}     />
+        </View>
+        <Text style={{ fontSize: 12, color: C.textSub, marginBottom: 6 }}>
+          Degree Progress · <Text style={{ fontWeight: '700', color: C.text }}>{progressPct}%</Text>
+        </Text>
+        <ProgressBar value={progressPct} height={8} />
+      </Card>
+
+      {/* Personal info */}
+      <Card>
+        <SectionLabel>Personal Information</SectionLabel>
         {[
-          { label: 'Enrolled',    value: String(enrolled.length) },
-          { label: 'Completed',   value: String(completed) },
-          { label: 'In Progress', value: String(inProgress) },
-        ].map(s => (
-          <View key={s.label} style={st.statItem}>
-            <Text style={st.statValue}>{s.value}</Text>
-            <Text style={st.statLabel}>{s.label}</Text>
+          { label: 'Email',   key: 'email',   readOnly: true  },
+          { label: 'College', key: 'college', readOnly: false },
+          { label: 'Phone',   key: 'phone',   readOnly: false },
+        ].map(({ label, key, readOnly }) => (
+          <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontSize: 12, color: C.textSub, width: 70 }}>{label}</Text>
+            {editMode && !readOnly ? (
+              <TextInput
+                value={form[key]}
+                onChangeText={v => setForm(p => ({ ...p, [key]: v }))}
+                style={[st.input, { flex: 1, marginLeft: 8 }]}
+                autoCapitalize="none"
+              />
+            ) : (
+              <Text style={{ fontSize: 13, fontWeight: '600', color: C.text, flex: 1, textAlign: 'right' }}>
+                {form[key] || '—'}
+              </Text>
+            )}
           </View>
         ))}
-      </View>
+      </Card>
 
-      {/* Logout */}
-      <TouchableOpacity style={st.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-        <Text style={st.logoutTxt}>🚪 Sign Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      {/* Completed courses */}
+      {completed.length > 0 && (
+        <Card>
+          <SectionLabel>Completed Courses</SectionLabel>
+          {completed.slice(0, 5).map((e, i) => (
+            <View key={e.courseId || i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: i > 0 ? 8 : 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '600', color: C.text, fontSize: 13 }} numberOfLines={1}>{e.name}</Text>
+                <Text style={{ fontSize: 11, color: C.textSub }}>{e.code} · Year {e.yearId} · {e.credits || 0} cr</Text>
+              </View>
+              <Tag label="✓" color={C.emerald} bg={C.emeraldBg} />
+            </View>
+          ))}
+          {completed.length > 5 && (
+            <Text style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>+{completed.length - 5} more</Text>
+          )}
+        </Card>
+      )}
+
+      <View style={{ marginTop: 8 }}>
+        <Btn label="Logout" variant="danger" onPress={logout} />
+      </View>
+    </Screen>
   );
 }
-
-const st = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: colors.bgBase },
-  content:       { padding: spacing.xl, gap: spacing.xl, paddingBottom: 60 },
-  loading:       { flex: 1, backgroundColor: colors.bgBase, alignItems: 'center', justifyContent: 'center' },
-  profileCard:   { backgroundColor: colors.bgSurface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  banner:        { height: 90, backgroundColor: colors.accent },
-  avatarRow:     { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: spacing.xl, marginTop: -36, marginBottom: spacing.md },
-  avatarCircle:  { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.accent, borderWidth: 4, borderColor: colors.bgSurface, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt:     { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.white },
-  editActions:   { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  formBlock:     { padding: spacing.xl, paddingTop: 0 },
-  infoBlock:     { padding: spacing.xl, paddingTop: 0, gap: spacing.sm },
-  nameRow:       { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  profileName:   { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  profileEmail:  { fontSize: fontSize.md, color: colors.textSecondary },
-  profileMeta:   { fontSize: fontSize.sm, color: colors.textMuted },
-  profileBio:    { fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 22 },
-  profileLink:   { fontSize: fontSize.sm, color: colors.accentLight },
-  statsRow:      { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: colors.bgSurface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, padding: spacing.xl },
-  statItem:      { alignItems: 'center', gap: spacing.xs },
-  statValue:     { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary, fontFamily: 'monospace' },
-  statLabel:     { fontSize: fontSize.xs, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.7 },
-  logoutBtn:     { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.md, padding: spacing.lg, alignItems: 'center' },
-  logoutTxt:     { color: colors.danger, fontSize: fontSize.base, fontWeight: fontWeight.semibold },
-});
