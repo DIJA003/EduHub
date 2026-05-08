@@ -11,9 +11,12 @@
     "install-all": "npm install && npm install --prefix client && npm install --prefix server"
   },
   "dependencies": {
+    "emoji-regex": "^10.6.0",
+    "is-fullwidth-code-point": "^5.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "yargs-parser": "^22.0.0"
   },
   "homepage": "https://github.com/DIJA003/EduHub#readme",
   "devDependencies": {
