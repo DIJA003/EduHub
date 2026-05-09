@@ -13,7 +13,45 @@ export default function Register() {
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading,         setLoading]         = useState(false);
+  const [done,            setDone]            = useState(false);
 
+  // ── Success screen ─────────────────────────────────────────────────────────
+  if (done) {
+    return (
+      <Screen>
+        <Card bg={c.emeraldBg} style={{ borderColor: c.emerald, borderWidth: 1 }}>
+          <Text style={{ fontSize: 40, textAlign: 'center' }}>📧</Text>
+          <Text style={{ fontWeight: '800', fontSize: 18, color: c.emerald, textAlign: 'center', marginTop: 8 }}>
+            Check your inbox!
+          </Text>
+          <Text style={{ color: c.text, fontSize: 14, textAlign: 'center', lineHeight: 22, marginTop: 8 }}>
+            We sent a verification link to{'\n'}
+            <Text style={{ fontWeight: '700' }}>{email}</Text>
+          </Text>
+          <Text style={{ color: c.textSub, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+            Tap the link in the email to verify your account, then come back and log in.
+          </Text>
+        </Card>
+        <Card>
+          <Text style={{ color: c.textSub, fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
+            Already verified?
+          </Text>
+          <Btn label="Go to Login" onPress={() => navigation.navigate('Login')} />
+        </Card>
+        <Btn
+          label="Use a different email"
+          variant="ghost"
+          small
+          onPress={() => {
+            setDone(false);
+            setName(''); setEmail(''); setPassword(''); setConfirmPassword('');
+          }}
+        />
+      </Screen>
+    );
+  }
+
+  // ── Register form ──────────────────────────────────────────────────────────
   return (
     <Screen>
       <Card>
@@ -36,6 +74,7 @@ export default function Register() {
             try {
               setLoading(true);
               await register({ name, email, password });
+              setDone(true); // ← triggers verification notice
             } catch (e) {
               Alert.alert('Register failed', e.message);
             } finally {
