@@ -104,6 +104,7 @@ export function Screen({ children, style }) {
         style,
       ]}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {children}
     </ScrollView>

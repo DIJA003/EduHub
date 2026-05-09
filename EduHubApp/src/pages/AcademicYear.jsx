@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -73,10 +73,6 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
   const [sectionsError,   setSectionsError]   = useState("");
   const [viewIndex,       setViewIndex]       = useState(0);
   const [started,         setStarted]         = useState(false);
-  const [mode,            setMode]            = useState("study");
-  const [selectedSecIdx,  setSelectedSecIdx]  = useState(0);
-  const [myMaterials,     setMyMaterials]     = useState([]);
-  const [uploadLoading,   setUploadLoading]   = useState(false);
   const [confirmUnenroll, setConfirmUnenroll] = useState(false);
 
   const mongoId        = course.mongoId || course.courseId || course.id;
@@ -117,15 +113,6 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
     setViewIndex((v) => Math.min(v, cap));
   }, [n, secDone, courseComplete]);
 
-  // Load student materials for this course
-  useEffect(() => {
-    api.get("/users/materials")
-      .then((r) => {
-        const all = safeArray(r?.data ?? r);
-        setMyMaterials(all.filter((m) => String(m.courseId) === String(mongoId) || String(m.courseRef) === String(mongoId)));
-      })
-      .catch(() => {});
-  }, [mongoId]);
 
   const isSectionReadable = (idx) => {
     if (!isStarted && !courseComplete) return false;
@@ -154,33 +141,6 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
     if (onProgressUpdate) onProgressUpdate({ progress: newProgress, sectionsCompleted: nextDone, nextItem: nextLabel });
   };
 
-  const handleUploadMaterial = async () => {
-    const sec = sections[selectedSecIdx];
-    if (!sec) return;
-    setUploadLoading(true);
-    try {
-      const res = await api.post("/users/materials", {
-        title: `Material for ${sec.title}`, course: course.name,
-        type: "Other", courseId: mongoId, yearId,
-        sectionId: sec.id, sectionLabel: sec.title,
-      });
-      const m = res?.data || res;
-      setMyMaterials((prev) => [
-        { id: m._id, title: m.title, courseId: mongoId, sectionLabel: sec.title, status: m.status || "pending", createdAt: m.createdAt },
-        ...prev,
-      ]);
-      Alert.alert("Uploaded!", "Material sent to mentor for review.");
-    } catch (e) { Alert.alert("Upload failed", e.message); }
-    finally { setUploadLoading(false); }
-  };
-
-  const handleRemoveMaterial = async (id) => {
-    try {
-      await api.delete(`/users/materials/${id}`);
-      setMyMaterials((prev) => prev.filter((m) => m.id !== id));
-    } catch (e) { Alert.alert("Failed", e.message); }
-  };
-
   const handleUnenroll = async () => {
     try {
       await api.delete(`/users/enrollments/${mongoId}`);
@@ -188,11 +148,8 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
     } catch (e) { Alert.alert("Failed", e.message); }
   };
 
-  const showNext       = isStarted && !courseComplete && mode === "study" && viewIndex === secDone && secDone < n;
+  const showNext       = isStarted && !courseComplete && viewIndex === secDone && secDone < n;
   const currentSection = sections[viewIndex];
-  const sectionMats    = myMaterials.filter((m) => m.sectionLabel === sections[selectedSecIdx]?.title);
-  const STATUS_COLOR   = { pending: c.amber, approved: c.emerald, rejected: c.rose };
-  const STATUS_LABEL   = { pending: "⏳ Pending", approved: "✅ Approved", rejected: "❌ Rejected" };
 
   return (
     <Screen>
@@ -216,18 +173,9 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
           </View>
           <View style={{ flex: 1, marginHorizontal: 14 }}>
             <ProgressBar value={progress} height={8} />
-            <Text style={{ fontSize: 10, color: c.textSub, marginTop: 3 }}>Next: {course.nextItem || "Getting Started"}</Text>
+            <Text style={{ fontSize: 10, color: c.textSub, marginTop: 3 }}>Next: {localNextItem}</Text>
           </View>
           <Btn label="Unenroll" variant="outline" small onPress={() => setConfirmUnenroll(true)} />
-        </View>
-        {/* Study / Upload toggle */}
-        <View style={{ flexDirection: "row", borderWidth: 1, borderColor: c.border, borderRadius: 99, overflow: "hidden", alignSelf: "flex-start", marginTop: 8 }}>
-          {["study", "upload"].map((m) => (
-            <TouchableOpacity key={m} onPress={() => setMode(m)}
-              style={{ paddingHorizontal: 16, paddingVertical: 7, backgroundColor: mode === m ? c.blue : "transparent" }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: mode === m ? "#fff" : c.textSub, textTransform: "capitalize" }}>{m}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </Card>
 
@@ -244,14 +192,14 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
           sections.map((sec, idx) => {
             const done     = courseComplete || idx < secDone;
             const readable = isSectionReadable(idx);
-            const active   = mode === "upload" ? selectedSecIdx === idx : viewIndex === idx;
+            const active   = viewIndex === idx;
             return (
               <TouchableOpacity key={sec.id}
-                onPress={() => { if (mode === "upload") { setSelectedSecIdx(idx); } else if (readable) { setViewIndex(idx); } }}
-                disabled={mode === "study" && !readable}
+                onPress={() => { if (readable) setViewIndex(idx); }}
+                disabled={!readable}
                 style={[{ flexDirection: "row", gap: 10, padding: 10, borderRadius: 12, marginBottom: 4, borderWidth: 1 },
                   active ? { backgroundColor: c.blueBg, borderColor: c.blueLight + "88" } : { backgroundColor: c.surface, borderColor: "transparent" },
-                  !readable && mode === "study" ? { opacity: 0.4 } : {}]}>
+                  !readable ? { opacity: 0.4 } : {}]}>
                 <Text style={{ fontSize: 14, color: done ? c.emerald : active ? c.blue : c.textMuted, fontWeight: "700", width: 20 }}>
                   {done ? "✓" : `${idx + 1}.`}
                 </Text>
@@ -266,7 +214,7 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
       </Card>
 
       {/* Study panel */}
-      {mode === "study" && (
+      {true && (
         <Card>
           {sectionsLoading ? (
             <Text style={{ color: c.textSub, textAlign: "center" }}>Loading sections…</Text>
@@ -307,38 +255,6 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
         </Card>
       )}
 
-      {/* Upload panel */}
-      {mode === "upload" && (
-        <Card>
-          <SectionLabel>Upload material</SectionLabel>
-          <Text style={{ fontSize: 13, color: c.textSub }}>
-            Section: <Text style={{ fontWeight: "700", color: c.text }}>{sections[selectedSecIdx]?.title || "—"}</Text>
-          </Text>
-          <View style={{ marginTop: 10 }}>
-            <Btn label={uploadLoading ? "Uploading…" : "📎 Upload for this section"}
-              disabled={uploadLoading || !sections[selectedSecIdx]}
-              onPress={handleUploadMaterial} />
-          </View>
-          {sectionMats.length > 0 && (
-            <View style={{ marginTop: 12 }}>
-              <SectionLabel>Files in this section</SectionLabel>
-              {sectionMats.map((m, i) => (
-                <View key={m.id || i} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, borderColor: c.borderLight }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: c.text, fontWeight: "600" }}>{m.title}</Text>
-                    <Text style={{ fontSize: 11, color: STATUS_COLOR[m.status] || c.textMuted, marginTop: 2 }}>
-                      {STATUS_LABEL[m.status] || m.status}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={() => handleRemoveMaterial(m.id)}>
-                    <Text style={{ fontSize: 12, color: c.rose, fontWeight: "600" }}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-        </Card>
-      )}
     </Screen>
   );
 }
@@ -351,6 +267,7 @@ export default function AcademicYear() {
   const [dbYears,        setDbYears]        = useState([]);
   const [coursesPerYear, setCoursesPerYear] = useState({});
   const [enrollments,    setEnrollments]    = useState([]);
+  const enrollmentsRef = useRef([]);
   const [selectedYear,   setSelectedYear]   = useState(null);
   const [playerCourse,   setPlayerCourse]   = useState(null);
   const [loadingInit,    setLoadingInit]    = useState(true);
@@ -376,6 +293,9 @@ export default function AcademicYear() {
   }, []);
 
   useEffect(() => { loadData(); }, []);
+
+  // Keep a ref so onBack closure always sees the latest enrollments
+  useEffect(() => { enrollmentsRef.current = enrollments; }, [enrollments]);
 
   const totalEarned = Object.values(years).reduce((s, y) => s + (y.earnedCredits ?? 0), 0);
 
@@ -415,7 +335,15 @@ export default function AcademicYear() {
               : e
           ));
         }}
-        onBack={async ({ refresh }) => { if (refresh) await loadData(); setPlayerCourse(null); }}
+        onBack={async ({ refresh }) => {
+          if (refresh) {
+            await loadData();
+          } else {
+            // Rebuild years from current enrollments so the list shows updated progress
+            setYears(buildYearsState(dbYears, coursesPerYear, enrollmentsRef.current));
+          }
+          setPlayerCourse(null);
+        }}
       />
     );
   }

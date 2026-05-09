@@ -1,15 +1,13 @@
-/**
- * pages/auth/Register.jsx
- */
 import React, { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import { Screen, Card, Field, Btn, C, st } from '../../components/UI';
+import { Screen, Card, Field, Btn, useColors } from '../../components/UI';
 
 export default function Register() {
   const navigation = useNavigation();
   const { register } = useAuth();
+  const c = useColors();
   const [name,            setName]            = useState('');
   const [email,           setEmail]           = useState('');
   const [password,        setPassword]        = useState('');
@@ -19,11 +17,11 @@ export default function Register() {
   return (
     <Screen>
       <Card>
-        <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: C.blueBg, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-          <Text style={{ color: C.blueLight, fontSize: 26, fontWeight: '800' }}>E</Text>
+        <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: c.blueBg, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+          <Text style={{ color: c.blueLight, fontSize: 26, fontWeight: '800' }}>E</Text>
         </View>
-        <Text style={st.pageTitle}>Create account</Text>
-        <Text style={{ color: C.textSub, fontSize: 14 }}>Register to get started with EduHub</Text>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: c.text }}>Create account</Text>
+        <Text style={{ color: c.textSub, fontSize: 14 }}>Register to get started with EduHub</Text>
       </Card>
       <Card>
         <Field label="Full name"        value={name}            onChangeText={setName}            placeholder="Full name" />
