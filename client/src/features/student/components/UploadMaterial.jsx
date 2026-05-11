@@ -5,12 +5,14 @@ import FileDropZone from "../../../components/common/FileDropZone";
 import Button from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/Dropdown";
 import { useFirebaseUpload } from "../../materials/hooks/useMaterials";
+import { Folder } from "lucide-react";
 import { toast } from "../../../hooks/useToasts";
 import { cn } from "../../../lib/utils";
 
 export default function UploadMaterial({ enrollments }) {
   const [file, setFile] = useState(null);
   const [courseId, setCourseId] = useState("");
+  const [sectionLabel, setSectionLabel] = useState("");
   const [title, setTitle] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -30,13 +32,14 @@ export default function UploadMaterial({ enrollments }) {
       return toast.error("Please select a file, course, and title.");
     setUploading(true);
     try {
-      await upload({ file, courseId, title: title.trim() }, setProgress);
+      await upload({ file, courseId, title: title.trim(), sectionLabel: sectionLabel || "General" }, setProgress);
       toast.success("Material submitted for review");
       setUploadSuccess(true);
       setTimeout(() => {
         setFile(null);
         setTitle("");
         setCourseId("");
+        setSectionLabel("");
         setUploadSuccess(false);
       }, 2000);
     } catch (err) {
@@ -51,6 +54,24 @@ export default function UploadMaterial({ enrollments }) {
     value: e.courseId,
     label: e.name,
   }));
+
+  const sectionOptions = [
+    { value: "", label: "General" },
+    { value: "Lecture 1", label: "Lecture 1" },
+    { value: "Lecture 2", label: "Lecture 2" },
+    { value: "Lecture 3", label: "Lecture 3" },
+    { value: "Lecture 4", label: "Lecture 4" },
+    { value: "Lecture 5", label: "Lecture 5" },
+    { value: "Lecture 6", label: "Lecture 6" },
+    { value: "Lecture 7", label: "Lecture 7" },
+    { value: "Lecture 8", label: "Lecture 8" },
+    { value: "Section A", label: "Section A" },
+    { value: "Section B", label: "Section B" },
+    { value: "Labs", label: "Labs" },
+    { value: "Assignments", label: "Assignments" },
+    { value: "Exams", label: "Exams" },
+    { value: "Resources", label: "Resources" },
+  ];
 
   return (
     <motion.div
@@ -100,9 +121,9 @@ export default function UploadMaterial({ enrollments }) {
               progress={progress}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Title */}
-              <div>
+              <div className="sm:col-span-1">
                 <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
                   Title
                 </label>
@@ -134,6 +155,22 @@ export default function UploadMaterial({ enrollments }) {
                   onChange={setCourseId}
                   options={courseOptions}
                   placeholder="Select course..."
+                />
+              </div>
+
+              {/* Section/Folder select */}
+              <div>
+                <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
+                  <span className="flex items-center gap-1">
+                    <Folder className="w-3 h-3" />
+                    Folder
+                  </span>
+                </label>
+                <Select
+                  value={sectionLabel}
+                  onChange={setSectionLabel}
+                  options={sectionOptions}
+                  placeholder="Select folder..."
                 />
               </div>
             </div>

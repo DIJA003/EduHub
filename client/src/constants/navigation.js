@@ -15,6 +15,8 @@ import {
   FileText,
   Building2,
   GraduationCap,
+  FolderTree,
+  MessageSquare,
 } from "lucide-react";
 
 export const ROLE_HOME = {
@@ -38,10 +40,12 @@ export const NAV_BY_ROLE = {
     { to: "/", label: "Home", icon: Home, end: true },
     { to: "/mentor", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/mentor/courses", label: "Assigned Courses", icon: BookOpen },
+    { to: "/mentor/enrollments", label: "Enrollments", icon: Users },
     { to: "/mentor/reviews", label: "Review Queue", icon: ClipboardList },
     { to: "/mentor/notifications", label: "Notifications", icon: Bell },
     { to: "/mentor/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/mentor/logs", label: "Logs", icon: Activity },
+    { to: "/mentor/profile", label: "Profile", icon: User },
   ],
   admin: [
     { to: "/", label: "Home", icon: Home, end: true },
@@ -50,11 +54,14 @@ export const NAV_BY_ROLE = {
     { to: "/admin/moderation", label: "Moderation", icon: Shield },
     { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     { to: "/admin/logs", label: "Audit Logs", icon: Activity },
+    { to: "/admin/requests", label: "Requests", icon: MessageSquare },
     { to: "/admin/settings", label: "Platform Settings", icon: Settings },
     { to: "/admin/notifications", label: "Notifications", icon: Bell },
-    { to: "/admin/colleges", label: "Colleges", icon: Building2 },
+    { to: "/admin/faculties", label: "Faculties", icon: Building2 },
+    { to: "/admin/programs", label: "Programs", icon: FolderTree },
     { to: "/admin/courses", label: "Courses", icon: GraduationCap },
     { to: "/admin/materials", label: "Materials", icon: FileText },
+    { to: "/admin/profile", label: "Profile", icon: User },
   ],
 };
 

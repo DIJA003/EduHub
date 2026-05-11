@@ -21,9 +21,13 @@ export default function MaterialsPage() {
   const [viewMaterial, setViewMaterial] = useState(null);
   const review = useMaterialReview();
 
-  // Stable callback to prevent modal defocusing on input
+  // Stable callbacks to prevent modal defocusing on input
   const handleCloseReview = useCallback(() => {
     review.closeReview();
+  }, [review]);
+
+  const handleConfirmReview = useCallback(() => {
+    review.submitReview();
   }, [review]);
 
   const { data, isLoading } = useAllMaterials({
@@ -209,7 +213,7 @@ export default function MaterialsPage() {
         action={review.reviewAction}
         feedback={review.feedback}
         onFeedbackChange={review.setFeedback}
-        onConfirm={() => review.submitReview()}
+        onConfirm={handleConfirmReview}
         onCancel={handleCloseReview}
         loading={review.isLoading}
       />

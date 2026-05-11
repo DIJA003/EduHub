@@ -4,6 +4,7 @@ import { NAV_BY_ROLE } from "../../../constants/navigation";
 import MentorHome from "../components/MentorHome";
 import VideoReviews from "../components/VideoReviews";
 import MentorStudents from "../components/MentorStudents";
+import MentorEnrollments from "../components/MentorEnrollments";
 import MentorUpload from "../components/MentorUpload";
 import MentorNotifications from "../components/MentorNotifications";
 import MentorAnalytics from "../components/MentorAnalytics";
@@ -16,6 +17,7 @@ export default function MentorDashboard() {
         <Route index element={<MentorHome />} />
         <Route path="reviews" element={<VideoReviews />} />
         <Route path="students" element={<MentorStudents />} />
+        <Route path="enrollments" element={<MentorEnrollments />} />
         <Route path="upload" element={<MentorUpload />} />
         <Route path="courses" element={<MentorStudents />} />
         <Route path="uploads" element={<VideoReviews />} />

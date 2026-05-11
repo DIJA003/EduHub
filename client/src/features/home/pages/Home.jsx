@@ -126,7 +126,7 @@ export default function Home() {
             {[
               { value: "50K+", label: "Active Students" },
               { value: "1.2K+", label: "Expert Mentors" },
-              { value: "200+", label: "Partner Colleges" },
+              { value: "200+", label: "Partner Faculties" },
               { value: "98%", label: "Success Rate" },
             ].map((stat, index) => (
               <motion.div
@@ -236,7 +236,7 @@ export default function Home() {
               {
                 emoji: "🏛️",
                 role: "For Admins",
-                desc: "Full platform control: manage users, courses, colleges, academic years, enrollments, and view detailed audit logs.",
+                desc: "Full platform control: manage users, courses, faculties, programs, academic years, enrollments, and view detailed audit logs.",
                 cta: "Admin Access",
                 path: "/login",
               },

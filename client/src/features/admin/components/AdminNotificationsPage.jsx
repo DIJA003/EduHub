@@ -14,7 +14,7 @@ export default function AdminNotificationsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-notifications"],
     queryFn: () => notificationsApi.getAll({ limit: 120 }).then((r) => r.data),
-    refetchInterval: 30_000,
+    refetchInterval: 600_000, // 10 minutes
   });
 
   const notifications = useMemo(

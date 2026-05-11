@@ -9,7 +9,7 @@ const authService = {
   },
 
   async register(
-    { firebaseUid, name, email, role, college },
+    { firebaseUid, name, email, role, faculty, program, year, university },
     { ip = "", userAgent = "" } = {},
   ) {
     const allowedRoles = ["student", "mentor"];
@@ -17,14 +17,24 @@ const authService = {
     const existing = await User.findOne({ firebaseUid });
     if (existing) return existing;
 
-    const user = await User.create({
+    const userData = {
       firebaseUid,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       role: safeRole,
-      college: (college || "").trim(),
       status: "Active",
-    });
+    };
+
+    if (faculty) userData.faculty = faculty;
+    if (safeRole === "student") {
+      if (program) userData.program = program;
+      if (year) userData.year = year;
+    }
+    if (safeRole === "mentor" && university) {
+      userData.university = university;
+    }
+
+    const user = await User.create(userData);
 
     await logAction({
       action: "REGISTER",
@@ -39,7 +49,7 @@ const authService = {
       },
       ip,
       userAgent,
-      details: { role: safeRole, college },
+      details: { role: safeRole, faculty, program, year, university },
     });
 
     return user;

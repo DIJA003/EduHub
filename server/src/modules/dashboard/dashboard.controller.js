@@ -2,6 +2,9 @@ const User = require("../users/user.model");
 const Course = require("../courses/course.model");
 const Material = require("../materials/material.model");
 const Enrollment = require("../enrollments/enrollment.model");
+const Request = require("../requests/request.model");
+const Faculty = require("../faculties/faculty.model");
+const Program = require("../programs/program.model");
 const Log = require("../logs/log.model");
 const { success } = require("../../shared/response");
 
@@ -14,8 +17,11 @@ const getStats = async (req, res, next) => {
       totalMentors,
       totalAdmins,
       activeCourses,
-      pendingApprovals,
+      pendingMaterials,
       totalEnrollments,
+      pendingRequests,
+      totalFaculties,
+      totalPrograms,
     ] = await Promise.all([
       User.countDocuments({ ...ACTIVE_FILTER, role: "student" }),
       User.countDocuments({ ...ACTIVE_FILTER, role: "mentor" }),
@@ -23,6 +29,9 @@ const getStats = async (req, res, next) => {
       Course.countDocuments({ ...ACTIVE_FILTER, status: "Published" }),
       Material.countDocuments({ ...ACTIVE_FILTER, status: "pending" }),
       Enrollment.countDocuments({ status: "active" }),
+      Request.countDocuments({ status: "pending", isDeleted: { $ne: true } }),
+      Faculty.countDocuments({ isDeleted: { $ne: true } }),
+      Program.countDocuments({ isDeleted: { $ne: true } }),
     ]);
 
     return success(res, {
@@ -30,7 +39,10 @@ const getStats = async (req, res, next) => {
       totalMentors,
       totalAdmins,
       activeCourses,
-      pendingApprovals,
+      pendingMaterials,
+      pendingRequests,
+      totalFaculties,
+      totalPrograms,
       totalEnrollments,
     });
   } catch (err) {

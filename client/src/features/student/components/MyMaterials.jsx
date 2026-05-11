@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { FileText, Video, Image, FileArchive, File, Trash2, Eye, Clock, CheckCircle, XCircle } from "lucide-react";
+import { FileText, Video, Image, FileArchive, File, Trash2, Eye, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useDeleteMaterial } from "../../materials/hooks/useMaterials";
 import { SkeletonList } from "../../../components/ui/Skeleton";
 import EmptyState from "../../../components/common/EmptyStat";
@@ -10,6 +10,8 @@ import Badge from "../../../components/ui/Badges";
 import { ConfirmDialog } from "../../../components/ui/Modal";
 import { timeAgo } from "../../../lib/utils";
 import { cn } from "../../../lib/utils";
+
+const ITEMS_PER_PAGE = 5;
 
 const TYPE_ICONS = {
   PDF: FileText,
@@ -114,6 +116,13 @@ export default function MyMaterials({ materials, loading }) {
   const deleteMutation = useDeleteMaterial();
   const [viewMaterial, setViewMaterial] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.ceil(materials.length / ITEMS_PER_PAGE);
+  const paginatedMaterials = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return materials.slice(start, start + ITEMS_PER_PAGE);
+  }, [materials, page]);
 
   if (loading) {
     return (
@@ -153,22 +162,54 @@ export default function MyMaterials({ materials, loading }) {
             description="Upload your first material to get started."
           />
         ) : (
-          <div className="space-y-3">
-            {materials.map((material, i) => (
-              <motion.div
-                key={material._id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-              >
-                <MaterialCard
-                  material={material}
-                  onView={setViewMaterial}
-                  onDelete={setDeleteTarget}
-                />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {paginatedMaterials.map((material, i) => (
+                <motion.div
+                  key={material._id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                >
+                  <MaterialCard
+                    material={material}
+                    onView={setViewMaterial}
+                    onDelete={setDeleteTarget}
+                  />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
+                <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+                  Showing {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, materials.length)} of {materials.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-[var(--text-sm)] text-[var(--color-text)]">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

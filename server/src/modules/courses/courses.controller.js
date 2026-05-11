@@ -18,6 +18,8 @@ const getAll = async (req, res, next) => {
       search = "",
       status = "",
       yearId = "",
+      faculty = "",
+      semester = "",
       showDeleted = "false",
     } = req.query;
 
@@ -25,6 +27,10 @@ const getAll = async (req, res, next) => {
     if (showDeleted !== "true") filter.isDeleted = { $ne: true };
     if (status && status !== "all") filter.status = status;
     if (yearId) filter.yearId = parseInt(yearId, 10);
+    if (semester) filter.semester = parseInt(semester, 10);
+    if (faculty && mongoose.Types.ObjectId.isValid(faculty)) {
+      filter.faculty = faculty;
+    }
     if (search.trim()) {
       filter.$or = [
         { title: { $regex: search.trim(), $options: "i" } },
@@ -36,6 +42,10 @@ const getAll = async (req, res, next) => {
       page,
       limit,
       sort: { createdAt: -1 },
+      populate: [
+        { path: "faculty", select: "code name" },
+        { path: "program", select: "code name" },
+      ],
     });
     return success(res, result.data, 200, result.meta);
   } catch (err) {
@@ -59,7 +69,11 @@ const getByYear = async (req, res, next) => {
       }
     }
 
-    const courses = await Course.find(filter).sort({ createdAt: -1 }).lean();
+    const courses = await Course.find(filter)
+      .populate("faculty", "code name")
+      .populate("program", "code name")
+      .sort({ createdAt: -1 })
+      .lean();
 
     return success(res, courses);
   } catch (err) {
@@ -69,7 +83,10 @@ const getByYear = async (req, res, next) => {
 
 const getById = async (req, res, next) => {
   try {
-    const course = await Course.findById(req.params.id).lean();
+    const course = await Course.findById(req.params.id)
+      .populate("faculty", "code name")
+      .populate("program", "code name")
+      .lean();
     if (!course) return notFound(res, "Course not found");
     return success(res, course);
   } catch (err) {

@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { RequireAuth, RoleRedirect, PageLoader } from "./guards";
+import { RequireAuth, RequireGuest, RoleRedirect, PageLoader } from "./guards";
 
 const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
@@ -28,21 +28,43 @@ const CoursePlayer = lazy(
 const StudentDashboard = lazy(
   () => import("../features/student/pages/StudentDashboard"),
 );
-const StudentProfile = lazy(
-  () => import("../features/student/pages/StudentProfile"),
-);
 const AdminDashboard = lazy(
   () => import("../features/admin/pages/AdminDashboard"),
 );
 const MentorDashboard = lazy(
   () => import("../features/mentor/pages/MentorDashboard"),
 );
+// Shared Profile component (works for all roles)
+const ProfilePage = lazy(
+  () => import("../features/student/pages/StudentProfile"),
+);
 
 const router = createBrowserRouter([
   { path: "/", element: <RoleRedirect /> },
-  { path: "/login", element: <Login /> },
-  { path: "/register", element: <Register /> },
-  { path: "/forgotpassword", element: <ForgotPassword /> },
+  {
+    path: "/login",
+    element: (
+      <RequireGuest>
+        <Login />
+      </RequireGuest>
+    ),
+  },
+  {
+    path: "/register",
+    element: (
+      <RequireGuest>
+        <Register />
+      </RequireGuest>
+    ),
+  },
+  {
+    path: "/forgotpassword",
+    element: (
+      <RequireGuest>
+        <ForgotPassword />
+      </RequireGuest>
+    ),
+  },
   { path: "/verify-email", element: <EmailVerification /> },
   { path: "/auth/action", element: <FirebaseActionHandler /> },
   { path: "/home", element: <Home /> },
@@ -92,7 +114,23 @@ const router = createBrowserRouter([
     path: "/profile",
     element: (
       <RequireAuth requireVerified>
-        <StudentProfile />
+        <ProfilePage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/admin/profile",
+    element: (
+      <RequireAuth roles={["admin"]} requireVerified>
+        <ProfilePage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/mentor/profile",
+    element: (
+      <RequireAuth roles={["mentor"]} requireVerified>
+        <ProfilePage />
       </RequireAuth>
     ),
   },

@@ -4,6 +4,8 @@ import { logsApi } from "../../../lib/api/logs.api";
 import { usePagination } from "../../../hooks/usePagination";
 import DataTable from "./DataTable";
 import Badge from "../../../components/ui/Badges";
+import Button from "../../../components/ui/Button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { timeAgo } from "../../../lib/utils";
 
 const ACTION_COLORS = {
@@ -37,7 +39,7 @@ const ACTIONS = [
 ];
 const ENTITIES = [
   "All",
-  "College",
+  "Faculty",
   "Course",
   "Material",
   "User",
@@ -216,7 +218,6 @@ export default function LogsPage() {
         data={logs}
         columns={COLUMNS}
         loading={isLoading}
-        meta={meta}
         page={page}
         onPage={setPage}
         onSearch={handleSearch}
@@ -226,6 +227,36 @@ export default function LogsPage() {
         emptyTitle="No log entries found"
         emptyDescription="Try adjusting your filters."
       />
+
+      {/* Custom Pagination with count */}
+      {meta && meta.pages > 1 && (
+        <div className="surface p-4 flex items-center justify-between">
+          <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+            Showing {(page - 1) * 50 + 1}-{Math.min(page * 50, meta.total)} of {meta.total} entries
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-[var(--text-sm)] text-[var(--color-text)]">
+              {page} / {meta.pages}
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setPage(p => Math.min(meta.pages, p + 1))}
+              disabled={page >= meta.pages}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

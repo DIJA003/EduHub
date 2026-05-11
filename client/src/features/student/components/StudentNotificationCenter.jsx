@@ -22,7 +22,7 @@ export default function StudentNotificationCenter() {
   const { data: raw, isLoading } = useQuery({
     queryKey: ["notifications", "center"],
     queryFn: () => notificationsApi.getAll({ limit: 80 }).then((r) => r.data),
-    refetchInterval: 30_000,
+    refetchInterval: 600_000, // 10 minutes
   });
 
   const notifications = useMemo(

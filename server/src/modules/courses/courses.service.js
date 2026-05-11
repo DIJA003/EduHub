@@ -64,7 +64,8 @@ const coursesService = {
     const course = await Course.create({
       code: data.code.toUpperCase().trim(),
       title: data.title.trim(),
-      college: (data.college || "").trim(),
+      faculty: data.faculty || null,
+      program: data.program || null,
       instructor: (data.instructor || "").trim(),
       instructorRef: data.instructorId || null,
       creditHours: Number(data.creditHours) || 3,
@@ -107,7 +108,8 @@ const coursesService = {
     Object.assign(course, {
       ...(data.title && { title: data.title.trim() }),
       ...(data.code && { code: data.code.toUpperCase().trim() }),
-      ...(data.college !== undefined && { college: data.college.trim() }),
+      ...(data.faculty !== undefined && { faculty: data.faculty }),
+      ...(data.program !== undefined && { program: data.program }),
       ...(data.instructor !== undefined && {
         instructor: data.instructor.trim(),
       }),

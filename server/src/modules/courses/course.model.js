@@ -20,14 +20,28 @@ const courseSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    college: {
-      type: String,
-      trim: true,
-      default: "",
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Faculty",
+      default: null,
+      index: true,
+    },
+    program: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Program",
+      default: null,
+      index: true,
     },
     yearId: {
       type: Number,
-      enum: [1, 2, 3, 4],
+      min: 1,
+      max: 7,
+      index: true,
+    },
+    semester: {
+      type: Number,
+      min: 1,
+      max: 3,
       index: true,
     },
     academicYearRef: {
@@ -83,6 +97,6 @@ const courseSchema = new mongoose.Schema(
 
 courseSchema.index({ status: 1, isDeleted: 1 });
 courseSchema.index({ instructorRef: 1, isDeleted: 1 });
-courseSchema.index({ yearId: 1, status: 1, isDeleted: 1 });
+courseSchema.index({ faculty: 1, yearId: 1, semester: 1, status: 1, isDeleted: 1 });
 
 module.exports = mongoose.model("Course", courseSchema);

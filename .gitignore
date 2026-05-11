@@ -35,3 +35,6 @@ coverage/
 
 server\config\serviceAccountKey.json
 server/config/serviceAccountKey.json
+
+# Local Netlify folder
+.netlify

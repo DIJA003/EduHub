@@ -15,11 +15,14 @@ const ACTIONS = [
   "APPROVE",
   "REJECT",
   "UPLOAD",
+  "AVATAR_UPLOAD",
+  "UPDATE_SETTING",
   "ERROR",
 ];
 
 const ENTITIES = [
-  "College",
+  "Faculty",
+  "Program",
   "Course",
   "Material",
   "User",
@@ -27,6 +30,8 @@ const ENTITIES = [
   "Session",
   "Notification",
   "AcademicYear",
+  "Request",
+  "Settings",
   "System",
 ];
 

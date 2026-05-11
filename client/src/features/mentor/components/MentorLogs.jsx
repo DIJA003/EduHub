@@ -27,7 +27,7 @@ export default function MentorLogs() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["logs", "mentor"],
-    queryFn: () => logsApi.getAll({ limit: 120 }).then((r) => r.data),
+    queryFn: () => logsApi.getMentorLogs({ limit: 120 }).then((r) => r.data),
     staleTime: 30_000,
   });
 

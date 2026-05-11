@@ -15,6 +15,9 @@ export default function ReviewModal({
 
   const isApprove = action === "approve";
 
+  // Stable handler to prevent defocus
+  const handleChange = (e) => onFeedbackChange(e.target.value);
+
   return (
     <Modal
       open={open}
@@ -50,7 +53,7 @@ export default function ReviewModal({
             : "Please revise and re-upload…"
         }
         value={feedback}
-        onChange={(e) => onFeedbackChange(e.target.value)}
+        onChange={handleChange}
       />
     </Modal>
   );

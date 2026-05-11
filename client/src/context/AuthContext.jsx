@@ -1,16 +1,15 @@
-
 import { useEffect } from "react";
 import useAuthStore from "../stores/auth.store";
 
 export function AuthProvider({ children }) {
-  // Auto-refresh auth state every 30 seconds to ensure synchronization
+  // Auto-refresh auth state every 10 minutes to ensure synchronization
   useEffect(() => {
     const interval = setInterval(() => {
       const forceRefresh = useAuthStore.getState().forceRefresh;
       if (forceRefresh) {
         forceRefresh();
       }
-    }, 30000);
+    }, 600000); // 10 minutes
 
     return () => clearInterval(interval);
   }, []);

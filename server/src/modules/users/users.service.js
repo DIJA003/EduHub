@@ -12,7 +12,6 @@ const usersService = {
       filter.$or = [
         { name: { $regex: search.trim(), $options: "i" } },
         { email: { $regex: search.trim(), $options: "i" } },
-        { college: { $regex: search.trim(), $options: "i" } },
       ];
     }
     return paginate(User, filter, {
@@ -60,7 +59,6 @@ const usersService = {
       role: ["student", "mentor", "admin"].includes(data.role)
         ? data.role
         : "student",
-      college: (data.college || "").trim(),
       status: "Active",
     });
 
@@ -79,7 +77,7 @@ const usersService = {
     const user = await User.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!user) throw new AppError("User not found", 404);
 
-    const allowed = ["name", "college", "bio", "photoURL", "role", "status"];
+    const allowed = ["name", "bio", "photoURL", "role", "status"];
     allowed.forEach((key) => {
       if (data[key] !== undefined)
         user[key] =
@@ -99,7 +97,7 @@ const usersService = {
   },
 
   async updateProfile(firebaseUid, data) {
-    const allowed = { name: true, college: true, bio: true, photoURL: true };
+    const allowed = { name: true, bio: true, photoURL: true };
     const user = await User.findOne({ firebaseUid, isDeleted: { $ne: true } });
     if (!user) throw new AppError("User not found", 404);
 

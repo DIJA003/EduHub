@@ -51,7 +51,11 @@ const mentorService = {
       course: { $in: courseIds },
       status: "active",
     })
-      .populate("student", "name email college")
+      .populate({
+        path: "student",
+        select: "name email year semester faculty",
+        populate: { path: "faculty", select: "name code" }
+      })
       .populate("course", "title code")
       .sort({ enrolledAt: -1 })
       .lean();
@@ -60,7 +64,9 @@ const mentorService = {
       _id: e.student?._id,
       name: e.student?.name || "Unknown",
       email: e.student?.email || "",
-      college: e.student?.college || "",
+      year: e.student?.year || null,
+      semester: e.student?.semester || null,
+      faculty: e.student?.faculty || null,
       course: e.course?.title || "",
       courseCode: e.course?.code || "",
       enrolledAt: e.enrolledAt
@@ -109,7 +115,8 @@ const mentorService = {
       isDeleted: { $ne: true },
       status: "Active",
     })
-      .select("name email college")
+      .select("name email year semester faculty")
+      .populate("faculty", "name code")
       .sort({ name: 1 })
       .lean();
   },

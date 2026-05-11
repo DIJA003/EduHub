@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Clock, CheckCircle, XCircle, Users, BookOpen, FileText, Upload } from "lucide-react";
+import { Clock, CheckCircle, XCircle, Users, BookOpen, FileText, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePendingMaterials } from "../../materials/hooks/useMaterials";
 import { useAuth } from "../../../context/AuthContext";
 import { mentorApi } from "../../../lib/api/mentor.api";
@@ -130,7 +130,11 @@ function StudentCard({ student }) {
         </div>
       </div>
       <div className="text-right text-[var(--text-xs)] text-[var(--color-text-3)]">
-        <p>{student.college || "No college"}</p>
+        <p>{student.year ? `Year ${student.year}` : "No year info"}</p>
+        <p>{(() => {
+          const names = { 1: "Fall", 2: "Spring", 3: "Summer" };
+          return student.semester ? (names[student.semester] || `Sem ${student.semester}`) : "";
+        })()}</p>
       </div>
     </div>
   );
@@ -146,11 +150,20 @@ export default function MentorHome() {
   const handleConfirmReview = useCallback(() => review.submitReview(), [review]);
   const handleCloseReview = useCallback(() => review.closeReview(), [review]);
 
-  const { data, isLoading } = usePendingMaterials({ limit: 10 });
+  const { data, isLoading } = usePendingMaterials({ limit: 100 });
   const pending = useMemo(
     () => (Array.isArray(data) ? data : data?.data || []),
     [data],
   );
+
+  // Pagination for pending reviews
+  const [pendingPage, setPendingPage] = useState(1);
+  const PENDING_PER_PAGE = 5;
+  const pendingTotalPages = Math.ceil(pending.length / PENDING_PER_PAGE);
+  const paginatedPending = useMemo(() => {
+    const start = (pendingPage - 1) * PENDING_PER_PAGE;
+    return pending.slice(start, start + PENDING_PER_PAGE);
+  }, [pending, pendingPage]);
 
   const { data: coursesData, isLoading: coursesLoading } = useQuery({
     queryKey: ["mentor-my-courses"],
@@ -164,6 +177,15 @@ export default function MentorHome() {
     enabled: myCourses.length > 0,
   });
   const myStudents = useMemo(() => studentsData || [], [studentsData]);
+
+  // Pagination for students
+  const [studentsPage, setStudentsPage] = useState(1);
+  const STUDENTS_PER_PAGE = 5;
+  const studentsTotalPages = Math.ceil(myStudents.length / STUDENTS_PER_PAGE);
+  const paginatedStudents = useMemo(() => {
+    const start = (studentsPage - 1) * STUDENTS_PER_PAGE;
+    return myStudents.slice(start, start + STUDENTS_PER_PAGE);
+  }, [myStudents, studentsPage]);
 
   return (
     <div className="space-y-6">
@@ -237,22 +259,54 @@ export default function MentorHome() {
                 description="No pending materials to review."
               />
             ) : (
-              <div className="space-y-3">
-                {pending.slice(0, 5).map((m, i) => (
-                  <motion.div
-                    key={m._id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    <PendingReviewCard
-                      material={m}
-                      onApprove={(material) => review.openReview(material, "approve")}
-                      onReject={(material) => review.openReview(material, "reject")}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+              <>
+                <div className="space-y-3">
+                  {paginatedPending.map((m, i) => (
+                    <motion.div
+                      key={m._id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <PendingReviewCard
+                        material={m}
+                        onApprove={(material) => review.openReview(material, "approve")}
+                        onReject={(material) => review.openReview(material, "reject")}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {pendingTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
+                    <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+                      Showing {(pendingPage - 1) * PENDING_PER_PAGE + 1}-{Math.min(pendingPage * PENDING_PER_PAGE, pending.length)} of {pending.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setPendingPage(p => Math.max(1, p - 1))}
+                        disabled={pendingPage <= 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-[var(--text-sm)] text-[var(--color-text)]">
+                        {pendingPage} / {pendingTotalPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setPendingPage(p => Math.min(pendingTotalPages, p + 1))}
+                        disabled={pendingPage >= pendingTotalPages}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -285,7 +339,7 @@ export default function MentorHome() {
           {/* Students Preview */}
           <div className="surface p-5">
             <h2 className="text-[var(--text-sm)] font-bold text-[var(--color-text)] uppercase tracking-wider mb-4">
-              Recent Students ({myStudents.length})
+              My Students ({myStudents.length})
             </h2>
             {studentsLoading ? (
               <SkeletonList items={2} />
@@ -297,11 +351,43 @@ export default function MentorHome() {
                 className="py-6"
               />
             ) : (
-              <div className="space-y-2">
-                {myStudents.slice(0, 4).map((student) => (
-                  <StudentCard key={student._id} student={student} />
-                ))}
-              </div>
+              <>
+                <div className="space-y-2">
+                  {paginatedStudents.map((student) => (
+                    <StudentCard key={student._id} student={student} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {studentsTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
+                    <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+                      Showing {(studentsPage - 1) * STUDENTS_PER_PAGE + 1}-{Math.min(studentsPage * STUDENTS_PER_PAGE, myStudents.length)} of {myStudents.length}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setStudentsPage(p => Math.max(1, p - 1))}
+                        disabled={studentsPage <= 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-[var(--text-sm)] text-[var(--color-text)]">
+                        {studentsPage} / {studentsTotalPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setStudentsPage(p => Math.min(studentsTotalPages, p + 1))}
+                        disabled={studentsPage >= studentsTotalPages}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

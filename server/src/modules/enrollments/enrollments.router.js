@@ -2,14 +2,13 @@ const express = require("express");
 const router = express.Router();
 const c = require("./enrollments.controller"); // was: ./enrollment.controller
 const { verifyToken } = require("../../middleware/auth.middleware");
-const { adminOnly } = require("../../middleware/role.middleware");
+const { adminOnly, mentorOrAdmin } = require("../../middleware/role.middleware");
 const {
   validate,
   validators,
 } = require("../../middleware/validate.middleware");
 
 // Admin routes
-
 router.get("/", verifyToken, adminOnly, c.getAllEnrollments);
 router.post(
   "/admin",
@@ -25,6 +24,24 @@ router.delete(
   "/admin/:studentId/:courseId",
   verifyToken,
   adminOnly,
+  c.adminUnenroll,
+);
+
+// Mentor routes - can enroll/unenroll students from their courses
+router.post(
+  "/mentor",
+  verifyToken,
+  mentorOrAdmin,
+  validate({
+    studentId: [validators.required],
+    courseId: [validators.required],
+  }),
+  c.adminEnroll,
+);
+router.delete(
+  "/mentor/:studentId/:courseId",
+  verifyToken,
+  mentorOrAdmin,
   c.adminUnenroll,
 );
 

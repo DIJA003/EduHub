@@ -95,7 +95,7 @@ export default function NotificationBell() {
     queryKey: ["notifications"],
     // r.data is { success, data: [...], meta: { unreadCount, ... } }
     queryFn: () => notificationsApi.getAll({ limit: 20 }).then((r) => r.data),
-    refetchInterval: 30_000,
+    refetchInterval: 600_000, // 10 minutes
   });
 
   // Normalise — the server wraps in { success, data, meta }

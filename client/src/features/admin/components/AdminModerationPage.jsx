@@ -24,6 +24,8 @@ export default function AdminModerationPage() {
 
   const closeReview = useCallback(() => review.closeReview(), [review]);
 
+  const handleConfirmReview = useCallback(() => review.submitReview(), [review]);
+
   const columns = [
     {
       key: "title",
@@ -112,7 +114,7 @@ export default function AdminModerationPage() {
         action={review.reviewAction}
         feedback={review.feedback}
         onFeedbackChange={review.setFeedback}
-        onConfirm={() => review.submitReview()}
+        onConfirm={handleConfirmReview}
         onCancel={closeReview}
         loading={review.isLoading}
       />

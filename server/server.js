@@ -1,4 +1,8 @@
-require("dotenv").config();
+// Suppress all Node.js warnings
+process.env.NODE_NO_WARNINGS = '1';
+process.env.DOTENVX_SILENT = '1';
+
+require("dotenv").config({ silent: true, debug: false });
 
 const fs = require("fs");
 const path = require("path");
@@ -16,13 +20,18 @@ dirs.forEach((dir) => {
 
 require("./src/config/firebase");
 
-connectDB().then(() => {
+connectDB().then(async () => {
   const app = require("./src/app");
+  const { initializeSettings } = require("./src/modules/settings/settings.controller");
+
+  // Initialize default settings
+  await initializeSettings();
+  console.log("✅ Settings initialized");
+
   const PORT = process.env.PORT || 8000;
 
   const server = app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   });
 
   process.on("SIGTERM", () => {

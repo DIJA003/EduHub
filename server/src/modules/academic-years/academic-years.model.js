@@ -10,9 +10,9 @@ const academicYearSchema = new mongoose.Schema(
     },
     name: { type: String, trim: true, default: "" },
     description: { type: String, trim: true, default: "" },
-    collegeRef: {
+    facultyRef: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "College",
+      ref: "Faculty",
       default: null,
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

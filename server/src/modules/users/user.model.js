@@ -27,7 +27,23 @@ const userSchema = new mongoose.Schema(
       default: "student",
       index: true,
     },
-    college: {
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Faculty",
+      default: null,
+    },
+    year: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 7,
+    },
+    program: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Program",
+      default: null,
+    },
+    university: {
       type: String,
       trim: true,
       default: "",

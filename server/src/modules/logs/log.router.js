@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { getLogs, getLogById } = require("./log.controller");
+const { getLogs, getLogById, getMentorLogs } = require("./log.controller");
 const { verifyToken } = require("../../middleware/auth.middleware");
-const { adminOnly } = require("../../middleware/role.middleware");
+const { adminOnly, mentorOrAdmin } = require("../../middleware/role.middleware");
 
-router.use(verifyToken, adminOnly);
+// Mentor logs - accessible by mentors and admins
+router.get("/mentor", verifyToken, mentorOrAdmin, getMentorLogs);
 
-router.get("/", getLogs);
-router.get("/:id", getLogById);
+// Admin logs - accessible by admins only
+router.get("/", verifyToken, adminOnly, getLogs);
+router.get("/:id", verifyToken, adminOnly, getLogById);
 
 module.exports = router;

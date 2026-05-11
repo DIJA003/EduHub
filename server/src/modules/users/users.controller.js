@@ -35,6 +35,10 @@ const getAll = async (req, res, next) => {
       limit,
       sort: { createdAt: -1 },
       select: "-firebaseUid",
+      populate: [
+        { path: "faculty", select: "name code" },
+        { path: "program", select: "code name" },
+      ],
     });
 
     return success(res, result.data, 200, result.meta);
@@ -47,6 +51,8 @@ const getById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id)
       .select("-firebaseUid")
+      .populate("faculty", "name code")
+      .populate("program", "code name")
       .lean();
     if (!user) return notFound(res, "User not found");
     return success(res, user);
@@ -57,7 +63,7 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const { name, email, role, college, password } = req.body;
+    const { name, email, role, faculty, password } = req.body;
 
     if (!password || password.length < 8) {
       return badRequest(res, "Password must be at least 8 characters");
@@ -77,7 +83,7 @@ const create = async (req, res, next) => {
       name,
       email: email.toLowerCase(),
       role: role?.toLowerCase() || "student",
-      college: college || "",
+      faculty: faculty || null,
       firebaseUid: firebaseUser.uid,
       status: "Active",
     });
@@ -102,7 +108,7 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const allowed = {};
-    const fields = ["name", "college", "status", "role", "bio"];
+    const fields = ["name", "faculty", "status", "role", "bio", "year", "semester"];
     fields.forEach((f) => {
       if (req.body[f] !== undefined) allowed[f] = req.body[f];
     });
@@ -178,16 +184,30 @@ const restore = async (req, res, next) => {
   }
 };
 
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select("-firebaseUid")
+      .populate("faculty", "name code")
+      .populate("program", "code name")
+      .lean();
+    if (!user) return notFound(res, "User not found");
+    return success(res, user);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const updateProfile = async (req, res, next) => {
   try {
     const allowed = {};
-    ["name", "bio", "college"].forEach((f) => {
+    ["name", "bio", "photoURL"].forEach((f) => {
       if (req.body[f] !== undefined) allowed[f] = req.body[f];
     });
 
     const user = await User.findByIdAndUpdate(req.user.id, allowed, {
       new: true,
-    });
+    }).populate("faculty", "name code").populate("program", "code name");
     if (!user) return notFound(res, "User not found");
 
     return success(res, user);
@@ -203,5 +223,8 @@ module.exports = {
   update,
   remove,
   restore,
+  getProfile,
   updateProfile,
 };
+// router.get("/profile", verifyToken, c.getProfile);
+// router.put("/profile", verifyToken, c.updateProfile);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
@@ -6,9 +6,14 @@ import {
 } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
 import { authApi } from "../../../lib/api/auth.api";
+import { facultiesApi } from "../../../lib/api/faculties.api";
+import { programsApi } from "../../../lib/api/programs.api";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { Select } from "../../../components/ui/Dropdown";
 import { EduHubLogo } from "../../../components/ui/Logo";
+import RequestModal from "../../../components/common/RequestModal";
+import { useToast } from "../../../hooks/useToasts";
 
 const ROLES = [
   { value: "student", label: "Student", emoji: "🎓", desc: "Learn & grow" },
@@ -21,15 +26,64 @@ export default function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    college: "",
     password: "",
     confirmPassword: "",
+    faculty: "",
+    year: "",
+    program: "",
+    university: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [faculties, setFaculties] = useState([]);
+  const [facultiesLoading, setFacultiesLoading] = useState(true);
+  const [programs, setPrograms] = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const { addToast } = useToast();
+
+  // Request modal state
+  const [requestModal, setRequestModal] = useState({
+    isOpen: false,
+    type: null,
+  });
+
+  // Fetch faculties on mount
+  useEffect(() => {
+    facultiesApi.getPublic()
+      .then(data => {
+        setFaculties(data?.data || data || []);
+      })
+      .catch(() => setFaculties([]))
+      .finally(() => setFacultiesLoading(false));
+  }, []);
+
+  const selectedFaculty = faculties.find(f => f._id === form.faculty);
+  const availableYears = selectedFaculty?.years?.filter(y => y.active) || [];
+
+  // Fetch programs when faculty changes
+  useEffect(() => {
+    if (form.faculty) {
+      setProgramsLoading(true);
+      programsApi.getByFaculty(form.faculty)
+        .then(data => {
+          setPrograms(data?.data || data || []);
+        })
+        .catch(() => setPrograms([]))
+        .finally(() => setProgramsLoading(false));
+    } else {
+      setPrograms([]);
+    }
+  }, [form.faculty]);
 
   const handleChange = (e) => {
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((p) => {
+      // Reset dependent fields when faculty or year changes
+      if (name === "faculty") {
+        return { ...p, [name]: value, year: "", program: "" };
+      }
+      return { ...p, [name]: value };
+    });
     setError("");
   };
 
@@ -54,11 +108,24 @@ export default function Register() {
       const continueUrl = `${window.location.origin}/auth/action`;
       await sendEmailVerification(cred.user, { url: continueUrl });
       try {
-        await authApi.register({
+        const registerData = {
           name: form.name.trim(),
           role,
-          college: form.college.trim(),
-        });
+        };
+        // Include faculty for all roles
+        if (form.faculty) {
+          registerData.faculty = form.faculty;
+        }
+        // Include year/program for students
+        if (role === "student") {
+          if (form.year) registerData.year = parseInt(form.year);
+          if (form.program) registerData.program = form.program;
+        }
+        // Include university for mentors
+        if (role === "mentor" && form.university) {
+          registerData.university = form.university.trim();
+        }
+        await authApi.register(registerData);
       } catch (backendErr) {
         console.error("Backend registration error:", backendErr.message);
       }
@@ -157,13 +224,92 @@ export default function Register() {
               onChange={handleChange}
               required
             />
-            <Input
-              label="College / Faculty"
-              name="college"
-              placeholder="Faculty of Science"
-              value={form.college}
-              onChange={handleChange}
-            />
+            {/* Faculty selection for all roles */}
+            <div>
+              <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
+                Faculty
+              </label>
+              <Select
+                value={form.faculty}
+                onChange={(val) => handleChange({ target: { name: "faculty", value: val } })}
+                options={[
+                  ...faculties.map(f => ({ value: f._id, label: `${f.code} - ${f.name}` })),
+                  { value: "__request_new__", label: "+ Request New Faculty" },
+                ]}
+                placeholder={facultiesLoading ? "Loading..." : "Select faculty..."}
+                disabled={facultiesLoading}
+              />
+              {form.faculty === "__request_new__" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm(p => ({ ...p, faculty: "" }));
+                    setRequestModal({ isOpen: true, type: "add_faculty" });
+                  }}
+                  className="mt-2 text-sm text-[var(--color-accent)] hover:underline"
+                >
+                  Click here to request a new faculty
+                </button>
+              )}
+            </div>
+
+            {role === "student" && form.faculty && form.faculty !== "__request_new__" && (
+              <>
+                {availableYears.length > 0 && (
+                  <div>
+                    <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
+                      Year
+                    </label>
+                    <Select
+                      value={form.year}
+                      onChange={(val) => handleChange({ target: { name: "year", value: val } })}
+                      options={availableYears.map(y => ({ value: String(y.year), label: y.name }))}
+                      placeholder="Select year..."
+                    />
+                  </div>
+                )}
+
+                {form.faculty && (
+                  <div>
+                    <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
+                      Program
+                    </label>
+                    <Select
+                      value={form.program}
+                      onChange={(val) => handleChange({ target: { name: "program", value: val } })}
+                      options={[
+                        ...programs.map(p => ({ value: p._id, label: `${p.code} - ${p.name}` })),
+                        { value: "__request_new__", label: "+ Request New Program" },
+                      ]}
+                      placeholder={programsLoading ? "Loading..." : "Select program..."}
+                      disabled={programsLoading || !form.faculty}
+                    />
+                    {form.program === "__request_new__" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(p => ({ ...p, program: "" }));
+                          setRequestModal({ isOpen: true, type: "add_program" });
+                        }}
+                        className="mt-2 text-sm text-[var(--color-accent)] hover:underline"
+                      >
+                        Click here to request a new program
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {role === "mentor" && (
+              <Input
+                label="University / Institution"
+                name="university"
+                placeholder="Cairo University"
+                value={form.university}
+                onChange={handleChange}
+              />
+            )}
             <Input
               label="Password"
               name="password"
@@ -205,6 +351,15 @@ export default function Register() {
           </p>
         </div>
       </div>
+
+      <RequestModal
+        isOpen={requestModal.isOpen}
+        onClose={() => setRequestModal({ isOpen: false, type: null })}
+        type={requestModal.type}
+        facultyId={form.faculty}
+        isPublic={true}
+        guestInfo={{ name: form.name, email: form.email }}
+      />
     </div>
   );
 }

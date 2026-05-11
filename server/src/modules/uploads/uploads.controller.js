@@ -77,7 +77,7 @@ const upload = multer({
 const avatarUpload = multer({
   storage: avatarStorage,
   fileFilter: avatarFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max for avatars
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max for avatars
 });
 
 const detectFileType = (mimeType) => {
@@ -178,31 +178,56 @@ const uploadsController = {
 
   async handleAvatarUpload(req, res, next) {
     try {
-      if (!req.file) return badRequest(res, "No avatar file uploaded.");
+      console.log("[Avatar Upload] Request received", req.user?.id);
+      
+      if (!req.file) {
+        console.log("[Avatar Upload] No file in request");
+        return badRequest(res, "No avatar file uploaded.");
+      }
+
+      console.log("[Avatar Upload] File received:", req.file.originalname, req.file.mimetype, req.file.size);
+      console.log("[Avatar Upload] File path:", req.file.path);
+
+      // Verify file exists on disk
+      const fileExists = fs.existsSync(req.file.path);
+      console.log("[Avatar Upload] File exists on disk:", fileExists);
 
       const userId = req.user.id;
       const storagePath = `${userId}/${req.file.filename}`;
+      const fullPath = path.join(AVATAR_DIR, storagePath);
 
       const serverOrigin = getServerOrigin();
       const photoURL = `${serverOrigin}/uploads/avatars/${storagePath}`;
 
-      await logAction({
-        action: "AVATAR_UPLOAD",
-        entity: "User",
-        entityId: userId,
-        entityName: req.user?.name || "User",
-        performedBy: req.user,
-        req,
-        details: {
-          fileSize: formatBytes(req.file.size),
-          mimeType: req.file.mimetype,
-          storagePath,
-          photoURL,
-        },
-      });
+      console.log("[Avatar Upload] Storage path:", storagePath);
+      console.log("[Avatar Upload] Full path:", fullPath);
+      console.log("[Avatar Upload] Photo URL:", photoURL);
+      console.log("[Avatar Upload] AVATAR_DIR:", AVATAR_DIR);
 
+      // Log action but don't fail if logging fails
+      try {
+        await logAction({
+          action: "AVATAR_UPLOAD",
+          entity: "User",
+          entityId: userId,
+          entityName: req.user?.name || "User",
+          performedBy: req.user,
+          req,
+          details: {
+            fileSize: formatBytes(req.file.size),
+            mimeType: req.file.mimetype,
+            storagePath,
+            photoURL,
+          },
+        });
+      } catch (logErr) {
+        console.log("[Avatar Upload] Log failed but continuing:", logErr.message);
+      }
+
+      console.log("[Avatar Upload] Success - returning photoURL");
       return success(res, { photoURL, storagePath });
     } catch (err) {
+      console.error("[Avatar Upload] Error:", err);
       next(err);
     }
   },

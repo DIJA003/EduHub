@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
 
+// Suppress deprecation warnings
+process.env.MONGOOSE_SUPPRESS_DEPRECATION_WARNINGS = 'true';
+mongoose.set('strictQuery', true);
+
 let isConnected = false;
 
 const connectDB = async () => {

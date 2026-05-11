@@ -21,6 +21,12 @@ export default function EnrollmentsPage() {
   const [dropTarget, setDropTarget] = useState(null);
   const qc = useQueryClient();
 
+  // Stable callback to prevent modal defocusing on input
+  const handleCloseModal = useCallback(() => {
+    setModal(false);
+    setForm({ studentId: "", courseId: "" });
+  }, []);
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-enrollments", { page, search }],
     queryFn: () => enrollmentsApi.getAll({ page, search }).then((r) => r.data),
@@ -186,19 +192,13 @@ export default function EnrollmentsPage() {
 
       <Modal
         open={modal}
-        onClose={() => {
-          setModal(false);
-          setForm({ studentId: "", courseId: "" });
-        }}
+        onClose={handleCloseModal}
         title="Enroll Student"
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => {
-                setModal(false);
-                setForm({ studentId: "", courseId: "" });
-              }}
+              onClick={handleCloseModal}
             >
               Cancel
             </Button>

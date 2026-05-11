@@ -75,7 +75,7 @@ export default function StudentReviewFeedback() {
                     </Badge>
                   </div>
                   <p className="text-sm text-[var(--color-text-2)] mt-3">
-                    {item.feedback || item.reviewNote || "No mentor note provided yet."}
+                    {item.mentorFeedback || item.feedback || item.reviewNote || "No mentor note provided yet."}
                   </p>
                 </article>
               ))}

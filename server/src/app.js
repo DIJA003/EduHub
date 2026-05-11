@@ -20,7 +20,10 @@ const uploadsRouter = require("./modules/uploads/uploads.router");
 const notificationsRouter = require("./modules/notifications/notifications.router");
 const logsRouter = require("./modules/logs/log.router");
 const academicYearsRouter = require("./modules/academic-years/academic-years.router");
-const collegesRouter = require("./modules/college/college.router");
+const facultiesRouter = require("./modules/faculties/faculties.router");
+const programsRouter = require("./modules/programs/programs.router");
+const requestsRouter = require("./modules/requests/requests.router");
+const settingsRouter = require("./modules/settings/settings.router");
 const dashboardRouter = require("./modules/dashboard/dashboard.router");
 const mentorRouter = require("./modules/mentor/mentor.router");
 const adminDashboardRouter = require("./modules/admin/dashboard.router");
@@ -193,10 +196,13 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/academic-years", academicYearsRouter);
-app.use("/api/colleges", collegesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/mentor", mentorRouter);
 app.use("/api/admin", adminDashboardRouter);
+app.use("/api/faculties", facultiesRouter);
+app.use("/api/programs", programsRouter);
+app.use("/api/settings", settingsRouter);
+app.use("/api/requests", requestsRouter);
 
 // ── Error handlers ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);

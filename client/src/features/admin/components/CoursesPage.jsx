@@ -16,13 +16,17 @@ import Input from "../../../components/ui/Input";
 import SearchableDropdown from "../../../components/ui/SearchableDropdown";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { usersApi } from "../../../lib/api/users.api";
-import { collegesApi } from "../../../lib/api/college.api";
+import { facultiesApi } from "../../../lib/api/faculties.api";
+import { programsApi } from "../../../lib/api/programs.api";
+
 const EMPTY_FORM = {
   code: "",
   title: "",
   description: "",
-  college: "",
+  faculty: "",
+  program: "",
   yearId: "",
+  semester: "",
   creditHours: 3,
   status: "Draft",
   instructor: "",
@@ -32,6 +36,7 @@ export default function CoursesPage() {
   const { page, setPage } = usePagination();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [facultyFilter, setFacultyFilter] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [modal, setModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -42,6 +47,7 @@ export default function CoursesPage() {
     page,
     search,
     status: statusFilter !== "all" ? statusFilter : "",
+    faculty: facultyFilter,
     showDeleted,
   });
   const courses = Array.isArray(data) ? data : data?.data || [];
@@ -54,22 +60,37 @@ export default function CoursesPage() {
     enabled: modal,
   });
   const mentors = useMemo(() => {
-    // API returns { success: true, data: [...], meta: {...} }
     const data = mentorsData?.data?.data || mentorsData?.data || mentorsData;
     return Array.isArray(data) ? data : [];
   }, [mentorsData]);
 
-  // Fetch colleges for faculty dropdown
-  const { data: collegesData } = useQuery({
-    queryKey: ["colleges"],
-    queryFn: () => collegesApi.getAll({ limit: 1000 }),
+  // Fetch faculties for dropdown
+  const { data: facultiesData } = useQuery({
+    queryKey: ["faculties"],
+    queryFn: () => facultiesApi.getAll({ limit: 100 }),
     enabled: modal,
   });
-  const colleges = useMemo(() => {
-    // API returns { success: true, data: [...], meta: {...} }
-    const data = collegesData?.data?.data || collegesData?.data || collegesData;
+  const faculties = useMemo(() => {
+    const data = facultiesData?.data || facultiesData?.data?.data || [];
     return Array.isArray(data) ? data : [];
-  }, [collegesData]);
+  }, [facultiesData]);
+
+  // Fetch programs for dropdown (filter by selected faculty)
+  const { data: programsData } = useQuery({
+    queryKey: ["programs", form.faculty],
+    queryFn: () => programsApi.getByFaculty(form.faculty),
+    enabled: modal && !!form.faculty,
+  });
+  const programs = useMemo(() => {
+    const data = programsData?.data || programsData?.data?.data || [];
+    return Array.isArray(data) ? data : [];
+  }, [programsData]);
+
+  const selectedFaculty = faculties.find(f => f._id === form.faculty);
+  const availableYears = selectedFaculty?.years?.filter(y => y.active) || [];
+  const selectedYear = availableYears.find(y => y.year === parseInt(form.yearId));
+  const availableSemesters = selectedYear?.semesters?.filter(s => s.active) || [];
+
 
   const createMutation = useCreateCourse();
   const updateMutation = useUpdateCourse();
@@ -87,8 +108,10 @@ export default function CoursesPage() {
       code: c.code || "",
       title: c.title || "",
       description: c.description || "",
-      college: c.college || "",
+      faculty: c.faculty?._id || c.faculty || "",
+      program: c.program?._id || c.program || "",
       yearId: c.yearId || "",
+      semester: c.semester || "",
       creditHours: c.creditHours || 3,
       status: c.status || "Draft",
       instructor: c.instructorRef || "",
@@ -102,8 +125,8 @@ export default function CoursesPage() {
     const payload = {
       ...form,
       yearId: form.yearId ? parseInt(form.yearId, 10) : undefined,
+      semester: form.semester ? parseInt(form.semester, 10) : undefined,
       creditHours: parseInt(form.creditHours, 10),
-      // Send both ID (for reference) and name (for display)
       instructorId: form.instructor || undefined,
       instructor: selectedMentor?.name || form.instructor || "",
     };
@@ -153,19 +176,31 @@ export default function CoursesPage() {
       ),
     },
     {
-      key: "college",
-      label: "College",
+      key: "faculty",
+      label: "Faculty / Program",
       render: (c) => (
-        <span className="text-[var(--color-text-3)] text-[var(--text-xs)]">
-          {c.college || "—"}
-        </span>
+        <div className="text-[var(--text-xs)]">
+          <span className="text-[var(--color-text-2)] font-medium">
+            {c.faculty?.code || c.faculty?.name || "—"}
+          </span>
+          {c.program && (
+            <span className="text-[var(--color-text-3)] ml-1">
+              • {c.program?.code || c.program?.name}
+            </span>
+          )}
+        </div>
       ),
     },
     {
       key: "yearId",
-      label: "Year",
+      label: "Year/Sem",
       render: (c) =>
-        c.yearId ? <Badge variant="default">Year {c.yearId}</Badge> : "—",
+        c.yearId ? (
+          <span className="text-[var(--text-xs)]">
+            Y{c.yearId}
+            {c.semester && `/S${c.semester}`}
+          </span>
+        ) : "—",
     },
     {
       key: "creditHours",
@@ -245,6 +280,19 @@ export default function CoursesPage() {
               {s}
             </button>
           ))}
+          <select
+            value={facultyFilter}
+            onChange={(e) => {
+              setFacultyFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold bg-[var(--color-surface-2)] border border-[var(--color-border-2)] text-[var(--color-text)]"
+          >
+            <option value="">All Faculties</option>
+            {faculties.map(f => (
+              <option key={f._id} value={f._id}>{f.code}</option>
+            ))}
+          </select>
           <button
             onClick={() => setShowDeleted((v) => !v)}
             className={`px-3 py-1.5 rounded-[var(--radius-md)] text-[var(--text-xs)] font-semibold ml-auto border transition-colors ${
@@ -324,10 +372,62 @@ export default function CoursesPage() {
             onChange={set("title")}
             placeholder="Introduction to Computer Science"
           />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Faculty
+              </label>
+              <select
+                value={form.faculty}
+                onChange={(e) => {
+                  setForm((p) => ({ ...p, faculty: e.target.value, program: "" }));
+                }}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="">Select Faculty...</option>
+                {faculties.map(f => (
+                  <option key={f._id} value={f._id}>{f.code} - {f.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Program
+              </label>
+              <select
+                value={form.program}
+                onChange={set("program")}
+                disabled={!form.faculty}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">{form.faculty ? "Select Program..." : "Select Faculty First"}</option>
+                {programs.map(p => (
+                  <option key={p._id} value={p._id}>{p.code} - {p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Instructor
+              </label>
+              <SearchableDropdown
+                value={form.instructor}
+                onChange={(val) => setForm((p) => ({ ...p, instructor: val }))}
+                placeholder="Select an instructor..."
+                options={mentors}
+                getOptionKey={(m) => m._id || m.name}
+                getOptionLabel={(m) => m.name}
+                getOptionSubtitle={(m) => m.email}
+                emptyMessage="No instructors found"
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
-                Academic Year
+                Year
               </label>
               <select
                 value={form.yearId}
@@ -335,9 +435,26 @@ export default function CoursesPage() {
                 className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               >
                 <option value="">None</option>
-                {[1, 2, 3, 4].map((y) => (
-                  <option key={y} value={y}>
-                    Year {y}
+                {availableYears.map((y) => (
+                  <option key={y.year} value={y.year}>
+                    {y.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                Semester
+              </label>
+              <select
+                value={form.semester}
+                onChange={set("semester")}
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <option value="">None</option>
+                {availableSemesters.map((s) => (
+                  <option key={s.number} value={s.number}>
+                    {s.name}
                   </option>
                 ))}
               </select>
@@ -350,28 +467,7 @@ export default function CoursesPage() {
               min={1}
               max={6}
             />
-            <SearchableDropdown
-              label="Instructor"
-              value={form.instructor}
-              onChange={(val) => setForm((p) => ({ ...p, instructor: val }))}
-              placeholder="Select an instructor..."
-              options={mentors}
-              getOptionKey={(m) => m._id || m.name}
-              getOptionLabel={(m) => m.name}
-              getOptionSubtitle={(m) => m.email}
-              emptyMessage="No instructors found"
-            />
           </div>
-          <SearchableDropdown
-            label="College / Faculty"
-            value={form.college}
-            onChange={(val) => setForm((p) => ({ ...p, college: val }))}
-            placeholder="Select a college..."
-            options={colleges}
-            getOptionKey={(c) => c.name} // Use name as key since DB stores name
-            getOptionLabel={(c) => c.name}
-            emptyMessage="No colleges found"
-          />
           <Input
             label="Description"
             value={form.description}

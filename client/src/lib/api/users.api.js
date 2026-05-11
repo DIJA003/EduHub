@@ -13,4 +13,14 @@ export const usersApi = {
   restore: (id) => api.patch(`/users/${id}/restore`),
 
   updateProfile: (data) => api.put("/users/profile", data),
+
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return api.post("/uploads/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };

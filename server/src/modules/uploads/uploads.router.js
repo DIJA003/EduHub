@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const fs = require("fs");
+const multer = require("multer");
 const Material = require("../materials/material.model");
 const { verifyToken } = require("../../middleware/auth.middleware");
 const uploadsController = require("./uploads.controller");
@@ -99,7 +100,29 @@ router.delete("/file", uploadsController.deleteFile);
 
 router.post(
   "/avatar",
-  uploadsController.avatarUploadMiddleware,
+  (req, res, next) => {
+    uploadsController.avatarUploadMiddleware(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === "LIMIT_FILE_SIZE") {
+            return res.status(400).json({
+              success: false,
+              message: "File too large. Maximum size is 2MB.",
+            });
+          }
+          return res.status(400).json({
+            success: false,
+            message: `Upload error: ${err.message}`,
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          message: err.message || "File upload failed",
+        });
+      }
+      next();
+    });
+  },
   uploadsController.handleAvatarUpload,
 );
 

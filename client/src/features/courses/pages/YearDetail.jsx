@@ -100,9 +100,6 @@ export default function YearDetail() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => {
               const isEnrolled = enrolledIds.has(String(course._id));
-              const enrollment = enrollments.find(
-                (e) => String(e.courseId) === String(course._id),
-              );
 
               return (
                 <div
@@ -122,23 +119,6 @@ export default function YearDetail() {
                     </div>
                   </div>
 
-                  {isEnrolled && enrollment && (
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-slate-500">Progress</span>
-                        <span className="font-mono text-slate-700">
-                          {enrollment.progress}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full"
-                          style={{ width: `${enrollment.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex gap-2 mt-auto pt-3">
                     {isEnrolled ? (
                       <>
@@ -151,7 +131,7 @@ export default function YearDetail() {
                             )
                           }
                         >
-                          {enrollment?.progress > 0 ? "Continue" : "Start"}
+                          Open Course
                         </Button>
                         <Button
                           size="sm"

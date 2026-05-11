@@ -1,18 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { BookOpen, Play, CheckCircle, ExternalLink, LogOut } from "lucide-react";
+import { BookOpen, ExternalLink, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUnenroll } from "../../enrollment/hooks/useEnrollments";
 import { SkeletonCard } from "../../../components/ui/Skeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import { ConfirmDialog } from "../../../components/ui/Modal";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
-import { cn } from "../../../lib/utils";
+
+const ITEMS_PER_PAGE = 6;
 
 function CourseCard({ enrollment, onUnenroll }) {
   const navigate = useNavigate();
-  const isComplete = enrollment.progress >= 100;
 
   return (
     <motion.div
@@ -20,32 +20,10 @@ function CourseCard({ enrollment, onUnenroll }) {
       animate={{ opacity: 1, y: 0 }}
       className="group relative card hover overflow-hidden"
     >
-      {/* Progress indicator bar at top */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--color-surface-3)]">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${enrollment.progress}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className={cn(
-            "h-full rounded-full",
-            isComplete ? "bg-[var(--color-success)]" : "bg-[var(--color-accent)]"
-          )}
-        />
-      </div>
-
-      <div className="p-5 pt-6">
+      <div className="p-5">
         <div className="flex items-start gap-4">
-          <div className={cn(
-            "w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center shrink-0",
-            isComplete
-              ? "bg-emerald-500/15 text-emerald-400"
-              : "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-          )}>
-            {isComplete ? (
-              <CheckCircle className="w-6 h-6" strokeWidth={1.75} />
-            ) : (
-              <BookOpen className="w-6 h-6" strokeWidth={1.75} />
-            )}
+          <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-[var(--color-accent-soft)] text-[var(--color-accent)] flex items-center justify-center shrink-0">
+            <BookOpen className="w-6 h-6" strokeWidth={1.75} />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -59,42 +37,6 @@ function CourseCard({ enrollment, onUnenroll }) {
               <Badge variant="blue">{enrollment.code}</Badge>
             </div>
 
-            <div className="flex items-center gap-3 text-[var(--text-xs)] text-[var(--color-text-3)] mb-3">
-              <span className="flex items-center gap-1">
-                {isComplete ? (
-                  <>
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2} />
-                    <span className="text-emerald-400 font-medium">Completed</span>
-                  </>
-                ) : enrollment.nextItem ? (
-                  <>
-                    <Play className="w-3.5 h-3.5" strokeWidth={2} />
-                    <span className="truncate max-w-[150px]">{enrollment.nextItem}</span>
-                  </>
-                ) : (
-                  "Not started"
-                )}
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 rounded-full bg-[var(--color-surface-3)] overflow-hidden">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    isComplete ? "bg-emerald-400" : "bg-[var(--color-accent)]"
-                  )}
-                  style={{ width: `${enrollment.progress}%` }}
-                />
-              </div>
-              <span className={cn(
-                "text-[var(--text-xs)] font-mono font-semibold tabular-nums",
-                isComplete ? "text-emerald-400" : "text-[var(--color-text-3)]"
-              )}>
-                {enrollment.progress}%
-              </span>
-            </div>
           </div>
         </div>
 
@@ -115,7 +57,7 @@ function CourseCard({ enrollment, onUnenroll }) {
             onClick={() => navigate(`/academic-year/${enrollment.yearId}/course/${enrollment.courseId}`)}
             rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
           >
-            {isComplete ? "Review" : "Continue"}
+            Open Course
           </Button>
         </div>
       </div>
@@ -126,7 +68,14 @@ function CourseCard({ enrollment, onUnenroll }) {
 export default function EnrolledCourses({ enrollments, loading }) {
   const navigate = useNavigate();
   const [unenrollTarget, setUnenrollTarget] = useState(null);
+  const [page, setPage] = useState(1);
   const unenrollMutation = useUnenroll();
+
+  const totalPages = Math.ceil(enrollments.length / ITEMS_PER_PAGE);
+  const paginatedEnrollments = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return enrollments.slice(start, start + ITEMS_PER_PAGE);
+  }, [enrollments, page]);
 
   if (loading) {
     return (
@@ -175,21 +124,53 @@ export default function EnrolledCourses({ enrollments, loading }) {
             actionLabel="Browse Courses"
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {enrollments.map((enrollment, i) => (
-              <motion.div
-                key={enrollment.enrollmentId || enrollment.courseId}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <CourseCard
-                  enrollment={enrollment}
-                  onUnenroll={setUnenrollTarget}
-                />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paginatedEnrollments.map((enrollment, i) => (
+                <motion.div
+                  key={enrollment.enrollmentId || enrollment.courseId}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <CourseCard
+                    enrollment={enrollment}
+                    onUnenroll={setUnenrollTarget}
+                  />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--color-border)]">
+                <p className="text-[var(--text-xs)] text-[var(--color-text-3)]">
+                  Showing {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, enrollments.length)} of {enrollments.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-[var(--text-sm)] text-[var(--color-text)]">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

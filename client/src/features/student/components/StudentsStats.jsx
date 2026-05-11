@@ -1,7 +1,10 @@
-import { BookOpen, PlayCircle, GraduationCap, FileUp } from "lucide-react";
+import { BookOpen, FileUp, School, Layers } from "lucide-react";
 import StatsCard, { StatsGrid, StatsCardSkeleton } from "../../../components/ui/StatsCard";
+import useAuthStore from "../../../stores/auth.store";
 
 export default function StudentStats({ enrollments, materials, loading }) {
+  const dbUser = useAuthStore((s) => s.dbUser);
+
   if (loading) {
     return (
       <StatsGrid>
@@ -12,10 +15,7 @@ export default function StudentStats({ enrollments, materials, loading }) {
     );
   }
 
-  const inProgress = enrollments.filter(
-    (e) => e.progress > 0 && e.progress < 100,
-  ).length;
-  const completed = enrollments.filter((e) => e.progress >= 100).length;
+  const pendingReview = materials.filter((m) => m.status === "pending").length;
 
   const stats = [
     {
@@ -25,22 +25,25 @@ export default function StudentStats({ enrollments, materials, loading }) {
       color: "blue",
     },
     {
-      label: "In Progress",
-      value: inProgress,
-      icon: PlayCircle,
-      color: "amber",
-    },
-    {
-      label: "Completed",
-      value: completed,
-      icon: GraduationCap,
-      color: "green",
-    },
-    {
       label: "Materials Uploaded",
       value: materials.length,
       icon: FileUp,
       color: "purple",
+    },
+    {
+      label: "Pending Review",
+      value: pendingReview,
+      icon: Layers,
+      color: "amber",
+    },
+    {
+      label: dbUser?.year ? `Year ${dbUser.year}` : "Academic Year",
+      value: dbUser?.semester ? (() => {
+        const names = { 1: "Fall", 2: "Spring", 3: "Summer" };
+        return names[dbUser.semester] || `Sem ${dbUser.semester}`;
+      })() : "-",
+      icon: School,
+      color: "green",
     },
   ];
 

@@ -34,4 +34,15 @@ export function RoleRedirect() {
   return <Navigate to={ROLE_HOME[role] || "/student"} replace />;
 }
 
+export function RequireGuest({ children }) {
+  const { firebaseUser, dbUser, loading } = useAuthStore();
+  const role = dbUser?.role || null;
+
+  if (loading || firebaseUser === undefined) return <PageLoader />;
+  if (firebaseUser && dbUser) {
+    return <Navigate to={ROLE_HOME[role] || "/student"} replace />;
+  }
+  return children;
+}
+
 export { PageLoader };

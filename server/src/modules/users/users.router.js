@@ -8,6 +8,7 @@ const {
   validators,
 } = require("../../middleware/validate.middleware");
 
+router.get("/profile", verifyToken, c.getProfile);
 router.put("/profile", verifyToken, c.updateProfile);
 
 router.get("/", verifyToken, adminOnly, c.getAll);

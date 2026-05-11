@@ -6,22 +6,45 @@ const register = async (req, res, next) => {
   try {
     const { uid, email } = req.user;
     const name = req.body?.name?.trim();
-    const college = req.body?.college?.trim() || "";
     const role = ["student", "mentor"].includes(req.body?.role)
       ? req.body.role
       : "student";
+    
+    // Faculty for all roles
+    const faculty = req.body?.faculty || null;
+    // Year/program for students
+    const year = req.body?.year || null;
+    const program = req.body?.program || null;
+    // University for mentors
+    const university = req.body?.university?.trim() || "";
+    
     let user = await User.findOne({ firebaseUid: uid });
     if (user) {
       return success(res, user);
     }
 
-    user = await User.create({
+    const userData = {
       firebaseUid: uid,
       email: email?.toLowerCase() || "",
       name: name || email?.split("@")[0] || "User",
       role,
-      college,
-    });
+    };
+    
+    // Add faculty for all roles if provided
+    if (faculty) userData.faculty = faculty;
+    
+    // Add year/program for students
+    if (role === "student") {
+      if (year) userData.year = year;
+      if (program) userData.program = program;
+    }
+    
+    // Add university for mentors
+    if (role === "mentor" && university) {
+      userData.university = university;
+    }
+    
+    user = await User.create(userData);
 
     // await logAction({
     //   action: "REGISTER",
@@ -35,7 +58,7 @@ const register = async (req, res, next) => {
     //     role: user.role,
     //   },
     //   req,
-    //   details: { role, college },
+    //   details: { role, faculty, university },
     // });
 
     return success(res, user, 201);
@@ -49,23 +72,11 @@ const register = async (req, res, next) => {
 
 const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).lean();
+    const user = await User.findById(req.user.id)
+      .populate("faculty", "name code")
+      .populate("program", "code name")
+      .lean();
     if (!user) return res.status(404).json({ message: "User not found" });
-
-    // await logAction({
-    //   action: "LOGIN",
-    //   entity: "Session",
-    //   entityId: user._id,
-    //   entityName: user.name,
-    //   performedBy: {
-    //     id: user._id,
-    //     name: user.name,
-    //     email: user.email,
-    //     role: user.role,
-    //   },
-    //   req,
-    //   details: { role: user.role },
-    // });
 
     return success(res, user);
   } catch (err) {

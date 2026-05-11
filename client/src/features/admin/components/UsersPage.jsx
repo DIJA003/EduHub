@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { usersApi } from "../../../lib/api/users.api";
+import { facultiesApi } from "../../../lib/api/faculties.api";
 import { usePagination } from "../../../hooks/usePagination";
 import { toast } from "../../../hooks/useToasts";
 import DataTable from "./DataTable";
@@ -16,7 +17,9 @@ const EMPTY_FORM = {
   email: "",
   password: "",
   role: "student",
-  college: "",
+  faculty: "",
+  year: "",
+  semester: "",
   status: "Active",
 };
 
@@ -44,6 +47,16 @@ export default function UsersPage() {
   });
   const users = Array.isArray(data) ? data : data?.data || [];
   const meta = data?.meta;
+
+  // Fetch faculties for assignment
+  const { data: facultiesData } = useQuery({
+    queryKey: ["faculties"],
+    queryFn: () => facultiesApi.getAll({ limit: 100 }),
+  });
+  const faculties = useMemo(() => {
+    const data = facultiesData?.data || facultiesData?.data?.data || [];
+    return Array.isArray(data) ? data : [];
+  }, [facultiesData]);
 
   const createMutation = useMutation({
     mutationFn: usersApi.create,
@@ -91,7 +104,9 @@ export default function UsersPage() {
       name: u.name || "",
       email: u.email || "",
       role: u.role || "student",
-      college: u.college || "",
+      faculty: u.faculty?._id || u.faculty || "",
+      year: u.year || "",
+      semester: u.semester || "",
       status: u.status || "Active",
       password: "",
     });
@@ -109,7 +124,9 @@ export default function UsersPage() {
         data: {
           name: form.name,
           role: form.role,
-          college: form.college,
+          faculty: form.faculty,
+          year: form.year ? parseInt(form.year) : null,
+          semester: form.semester ? parseInt(form.semester) : null,
           status: form.status,
         },
       });
@@ -172,13 +189,23 @@ export default function UsersPage() {
       ),
     },
     {
-      key: "college",
-      label: "College",
-      render: (u) => (
-        <span className="text-[var(--color-text-3)] text-[var(--text-xs)]">
-          {u.college || "—"}
-        </span>
-      ),
+      key: "faculty",
+      label: "Academic Info",
+      render: (u) => {
+        const semNames = { 1: "Fall", 2: "Spring", 3: "Summer" };
+        const facultyName = u.faculty?.name || (typeof u.faculty === "object" ? u.faculty?.code : null) || "—";
+        return (
+          <div className="text-[var(--color-text-3)] text-[var(--text-xs)]">
+            <span className="font-medium text-[var(--color-text-2)]">{facultyName}</span>
+            {u.year && (
+              <span className="ml-1">
+                • Year {u.year}
+                {u.semester ? ` / ${semNames[u.semester] || "Sem " + u.semester}` : ""}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "status",
@@ -341,13 +368,64 @@ export default function UsersPage() {
               placeholder="Min 8 characters"
             />
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="College / Faculty"
-              value={form.college}
-              onChange={set("college")}
-              placeholder="Faculty of Science"
-            />
+          <div>
+            <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+              Faculty
+            </label>
+            <select
+              value={form.faculty}
+              onChange={set("faculty")}
+              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            >
+              <option value="">Select Faculty...</option>
+              {faculties.map(f => (
+                <option key={f._id} value={f._id}>{f.code} - {f.name}</option>
+              ))}
+            </select>
+          </div>
+          {form.role === "student" && (
+            <div className="grid grid-cols-3 gap-3">
+              <Input
+                label="Year"
+                type="number"
+                value={form.year}
+                onChange={set("year")}
+                placeholder="1"
+                min={1}
+                max={7}
+              />
+              <div>
+                <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                  Semester
+                </label>
+                <select
+                  value={form.semester}
+                  onChange={set("semester")}
+                  className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-2)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-[var(--text-sm)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                >
+                  <option value="">Select...</option>
+                  <option value="1">Fall</option>
+                  <option value="2">Spring</option>
+                  <option value="3">Summer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
+                  Status
+                </label>
+                <select
+                  value={form.status}
+                  onChange={set("status")}
+                  className={selectClass}
+                >
+                  <option>Active</option>
+                  <option>Pending</option>
+                  <option>Suspended</option>
+                </select>
+              </div>
+            </div>
+          )}
+          {form.role !== "student" && (
             <div>
               <label className="block text-[var(--text-sm)] font-medium text-[var(--color-text-2)] mb-1.5">
                 Status
@@ -362,7 +440,7 @@ export default function UsersPage() {
                 <option>Suspended</option>
               </select>
             </div>
-          </div>
+          )}
         </div>
       </Modal>
 
