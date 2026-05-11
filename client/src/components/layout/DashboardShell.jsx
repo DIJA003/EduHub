@@ -1,20 +1,12 @@
 import React, { useState, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Menu,
-  Moon,
-  Sun,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, Menu, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import useAuthStore from "../../stores/auth.store";
 import NotificationBell from "../common/NotificationBell";
 import { initials } from "../../lib/utils";
-import { useTheme } from "../../context/ThemeContext";
+import { ThemeTogglePill } from "../common/ThemeToggle";
 import { NAV_BY_ROLE } from "../../constants/navigation";
 import { EduHubLogo } from "../ui/Logo";
 
@@ -102,38 +94,6 @@ function NavItem({ to, icon: Icon, label, end, collapsed }) {
   );
 }
 
-/* ── Theme Toggle ────────────────────── */
-function ThemeToggle({ darkMode, onToggle }) {
-  return (
-    <button
-      onClick={onToggle}
-      className={cn(
-        "relative w-14 h-7 rounded-full p-1",
-        "bg-[var(--color-surface-2)] border border-[var(--color-border)]",
-        "transition-colors duration-[var(--duration-normal)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]",
-      )}
-      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      <motion.div
-        className={cn(
-          "absolute top-1 w-5 h-5 rounded-full flex items-center justify-center",
-          "bg-[var(--color-accent)] text-white shadow-[var(--shadow-sm)]",
-        )}
-        animate={{ left: darkMode ? "calc(100% - 24px)" : "4px" }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      >
-        {darkMode ? (
-          <Moon className="w-3 h-3" strokeWidth={2} />
-        ) : (
-          <Sun className="w-3 h-3" strokeWidth={2} />
-        )}
-      </motion.div>
-    </button>
-  );
-}
-
 /* ── Main Shell ──────────────────────── */
 export default function DashboardShell({ title, navItems, children }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -141,7 +101,6 @@ export default function DashboardShell({ title, navItems, children }) {
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const logout = useAuthStore((s) => s.logout);
-  const { darkMode, toggleDarkMode } = useTheme();
   const role = dbUser?.role;
   const nav = navItems ?? NAV_BY_ROLE[role] ?? NAV_BY_ROLE.student;
 
@@ -149,14 +108,6 @@ export default function DashboardShell({ title, navItems, children }) {
     await logout();
     navigate("/login", { replace: true });
   }, [logout, navigate]);
-
-  const handleThemeToggle = useCallback(() => {
-    document.documentElement.classList.add("theme-transitioning");
-    toggleDarkMode();
-    setTimeout(() => {
-      document.documentElement.classList.remove("theme-transitioning");
-    }, 300);
-  }, [toggleDarkMode]);
 
   const portalTitle =
     {
@@ -315,7 +266,7 @@ export default function DashboardShell({ title, navItems, children }) {
             )}
           </div>
           <div className="flex items-center gap-3 ml-auto">
-            <ThemeToggle darkMode={darkMode} onToggle={handleThemeToggle} />
+            <ThemeTogglePill />
             <NotificationBell />
             <div className="hidden sm:block">
               <Avatar

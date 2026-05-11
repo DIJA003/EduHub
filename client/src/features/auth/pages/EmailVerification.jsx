@@ -4,6 +4,7 @@ import { sendEmailVerification, reload, signOut } from "firebase/auth";
 import { auth } from "../../../lib/firebase";
 import Button from "../../../components/ui/Button";
 import { EduHubLogo } from "../../../components/ui/Logo";
+import { ThemeToggleFixedCorner } from "../../../components/common/ThemeToggle";
 
 export default function EmailVerification() {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ export default function EmailVerification() {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 relative overflow-hidden">
+      <ThemeToggleFixedCorner />
       <div className="aurora-bg" aria-hidden="true">
         <div className="aurora-bg__blob-1" />
         <div className="aurora-bg__blob-2" />
@@ -81,12 +83,12 @@ export default function EmailVerification() {
             <EduHubLogo className="w-16 h-16 rounded-xl shadow-[var(--shadow-accent)]" />
           </div>
 
-          <h1 className="text-xl font-black text-center text-slate-900">
+          <h1 className="text-xl font-black text-center text-[var(--color-text)]">
             Verify your email
           </h1>
-          <p className="mt-2 text-sm text-center text-slate-500">
+          <p className="mt-2 text-sm text-center text-[var(--color-text-3)]">
             We sent a verification link to{" "}
-            <strong className="text-slate-700">{user?.email}</strong>
+            <strong className="text-[var(--color-text)]">{user?.email}</strong>
           </p>
 
           <ol className="mt-6 space-y-2">
@@ -97,9 +99,9 @@ export default function EmailVerification() {
             ].map((step, i) => (
               <li
                 key={i}
-                className="flex items-start gap-3 text-sm text-slate-600"
+                className="flex items-start gap-3 text-sm text-[var(--color-text-2)]"
               >
-                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {i + 1}
                 </span>
                 {step}
@@ -108,12 +110,12 @@ export default function EmailVerification() {
           </ol>
 
           {status === "sent" && (
-            <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+            <div className="mt-4 rounded-lg bg-[var(--color-success-soft)] border border-[var(--color-success)] border-opacity-30 px-4 py-3 text-sm text-[var(--color-success)]">
               ✓ Verification email sent! Check your inbox.
             </div>
           )}
           {status === "error" && (
-            <div className="mt-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mt-4 rounded-lg bg-[var(--color-danger-soft)] border border-[var(--color-danger)] border-opacity-30 px-4 py-3 text-sm text-[var(--color-danger)]">
               Failed to send email. Please wait and try again.
             </div>
           )}
@@ -147,7 +149,7 @@ export default function EmailVerification() {
                 await signOut(auth);
                 navigate("/login");
               }}
-              className="w-full text-xs text-center text-slate-400 hover:text-slate-600 py-2"
+              className="w-full text-xs text-center text-[var(--color-text-3)] hover:text-[var(--color-text-2)] py-2"
             >
               Wrong email? Sign out and use a different account
             </button>

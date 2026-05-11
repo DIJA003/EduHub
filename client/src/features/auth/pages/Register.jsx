@@ -14,6 +14,7 @@ import { Select } from "../../../components/ui/Dropdown";
 import { EduHubLogo } from "../../../components/ui/Logo";
 import RequestModal from "../../../components/common/RequestModal";
 import { useToast } from "../../../hooks/useToasts";
+import { ThemeToggleFixedCorner } from "../../../components/common/ThemeToggle";
 
 const ROLES = [
   { value: "student", label: "Student", emoji: "🎓", desc: "Learn & grow" },
@@ -161,6 +162,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <ThemeToggleFixedCorner />
       {/* Aurora blobs */}
       <div className="aurora-bg" aria-hidden="true">
         <div className="aurora-bg__blob-1" />

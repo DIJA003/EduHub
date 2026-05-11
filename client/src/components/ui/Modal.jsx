@@ -54,7 +54,16 @@ export default function Modal({
     };
 
     document.addEventListener("keydown", handleKey);
-    setTimeout(() => panelRef.current?.focus(), 50);
+    setTimeout(() => {
+      const focusable = panelRef.current?.querySelector(
+        'textarea, input, select, [autofocus]'
+      );
+      if (focusable) {
+        focusable.focus();
+      } else {
+        panelRef.current?.focus();
+      }
+    }, 50);
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = prev;

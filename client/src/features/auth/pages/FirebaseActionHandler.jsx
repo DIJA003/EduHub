@@ -8,6 +8,7 @@ import {
 import { auth } from "../../../lib/firebase";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import { ThemeToggleFixedCorner } from "../../../components/common/ThemeToggle";
 
 export default function FirebaseActionHandler() {
   const [params] = useSearchParams();
@@ -51,15 +52,18 @@ export default function FirebaseActionHandler() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
-        {status === "loading" && <p className="text-slate-500">Processing…</p>}
+    <div className="relative min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12">
+      <ThemeToggleFixedCorner />
+      <div className="w-full max-w-md glass-strong rounded-[var(--radius-2xl)] border border-[var(--color-border)] p-8 text-center shadow-[var(--shadow-xl)]">
+        {status === "loading" && (
+          <p className="text-[var(--color-text-3)]">Processing…</p>
+        )}
 
         {status === "verified" && (
           <>
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-8 h-8 text-emerald-600"
+                className="w-8 h-8 text-[var(--color-success)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -72,10 +76,10 @@ export default function FirebaseActionHandler() {
                 />
               </svg>
             </div>
-            <h1 className="text-xl font-black text-slate-900">
+            <h1 className="text-xl font-black text-[var(--color-text)]">
               Email Confirmed!
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-[var(--color-text-3)]">
               Your email has been verified successfully.
             </p>
             <Link to="/home">
@@ -88,10 +92,12 @@ export default function FirebaseActionHandler() {
 
         {status === "resetReady" && (
           <>
-            <h1 className="text-xl font-black text-slate-900 mb-4">
+            <h1 className="text-xl font-black text-[var(--color-text)] mb-4">
               Set New Password
             </h1>
-            {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+            {error && (
+              <p className="text-sm text-[var(--color-danger)] mb-3">{error}</p>
+            )}
             <form onSubmit={handleReset} className="text-left space-y-4">
               <Input
                 label="New password"
@@ -113,10 +119,10 @@ export default function FirebaseActionHandler() {
 
         {status === "resetDone" && (
           <>
-            <h1 className="text-xl font-black text-slate-900">
+            <h1 className="text-xl font-black text-[var(--color-text)]">
               Password Changed!
             </h1>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-[var(--color-text-3)]">
               Your password has been reset successfully.
             </p>
             <Link to="/login">
@@ -129,10 +135,10 @@ export default function FirebaseActionHandler() {
 
         {status === "error" && (
           <>
-            <h1 className="text-xl font-black text-slate-900">
+            <h1 className="text-xl font-black text-[var(--color-text)]">
               Something went wrong
             </h1>
-            <p className="mt-2 text-sm text-slate-500">{error}</p>
+            <p className="mt-2 text-sm text-[var(--color-text-3)]">{error}</p>
             <Link to="/login">
               <Button variant="secondary" className="mt-6 w-full" size="lg">
                 Back to Login

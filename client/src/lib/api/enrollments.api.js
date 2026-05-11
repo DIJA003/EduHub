@@ -2,6 +2,8 @@ import api from "./client";
 
 export const enrollmentsApi = {
   getMyEnrollments: () => api.get("/enrollments/my").then((r) => r.data),
+  /** @deprecated use getMyEnrollments — kept for older call sites */
+  getMy: () => api.get("/enrollments/my").then((r) => r.data),
 
   enroll: (courseId) => api.post(`/enrollments/${courseId}`).then((r) => r.data),
 

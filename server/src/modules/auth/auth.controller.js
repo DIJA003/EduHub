@@ -74,7 +74,7 @@ const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id)
       .populate("faculty", "name code")
-      .populate("program", "code name")
+      .populate("program", "code name durationYears")
       .lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 

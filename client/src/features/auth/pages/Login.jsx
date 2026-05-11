@@ -7,6 +7,7 @@ import { useAuth } from "../../../context/AuthContext";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { EduHubLogo } from "../../../components/ui/Logo";
+import { ThemeToggleFixedCorner } from "../../../components/common/ThemeToggle";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -73,6 +74,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      <ThemeToggleFixedCorner />
       {/* Aurora blobs */}
       <div className="aurora-bg" aria-hidden="true">
         <div className="aurora-bg__blob-1" />

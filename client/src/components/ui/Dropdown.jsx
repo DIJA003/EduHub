@@ -137,7 +137,9 @@ export function Select({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-  const selectedOption = options.find((o) => o.value === value);
+  const selectedOption = options.find(
+    (o) => !o.header && o.value === value,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -196,28 +198,49 @@ export function Select({
               "absolute z-[var(--z-dropdown)] mt-2 w-full",
               "glass-strong border border-[var(--color-border-2)]",
               "rounded-[var(--radius-lg)] shadow-[var(--shadow-elevated)]",
-              "overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar",
+              "overflow-hidden py-1 max-h-[min(24rem,70vh)] overflow-y-auto custom-scrollbar",
             )}
           >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleSelect(option.value)}
-                className={cn(
-                  "w-full flex items-center justify-between gap-2 px-3 py-2.5",
-                  "text-[var(--text-sm)] text-left",
-                  "transition-colors duration-[var(--duration-fast)]",
-                  option.value === value
-                    ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                    : "text-[var(--color-text-2)] hover:bg-[var(--color-surface-2)]",
-                )}
-              >
-                <span>{selectDisplayText(option.label)}</span>
-                {option.value === value && (
-                  <Check className="w-4 h-4" strokeWidth={2} />
-                )}
-              </button>
-            ))}
+            {options.map((option, idx) =>
+              option.header ? (
+                <div
+                  key={option.key ?? `hdr-${idx}`}
+                  role="presentation"
+                  className={cn(
+                    "px-3 py-2 text-[var(--text-xs)] font-semibold uppercase tracking-wider",
+                    "text-[var(--color-text-3)]",
+                    idx > 0 && "border-t border-[var(--color-border)] mt-1 pt-2",
+                  )}
+                >
+                  {selectDisplayText(option.label)}
+                </div>
+              ) : (
+                <button
+                  key={
+                    option.value !== undefined && option.value !== null
+                      ? String(option.value)
+                      : `opt-${idx}`
+                  }
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  disabled={option.disabled}
+                  className={cn(
+                    "w-full flex items-center justify-between gap-2 px-3 py-2.5",
+                    "text-[var(--text-sm)] text-left",
+                    "transition-colors duration-[var(--duration-fast)]",
+                    option.disabled && "opacity-50 cursor-not-allowed",
+                    option.value === value
+                      ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+                      : "text-[var(--color-text-2)] hover:bg-[var(--color-surface-2)]",
+                  )}
+                >
+                  <span>{selectDisplayText(option.label)}</span>
+                  {option.value === value && (
+                    <Check className="w-4 h-4" strokeWidth={2} />
+                  )}
+                </button>
+              ),
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -5,6 +5,7 @@ import { auth } from "../../../lib/firebase";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import { EduHubLogo } from "../../../components/ui/Logo";
+import { ThemeToggleFixedCorner } from "../../../components/common/ThemeToggle";
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -36,6 +37,7 @@ export function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] flex items-center justify-center px-4 relative overflow-hidden">
+      <ThemeToggleFixedCorner />
       <div className="aurora-bg" aria-hidden="true">
         <div className="aurora-bg__blob-1" />
         <div className="aurora-bg__blob-2" />

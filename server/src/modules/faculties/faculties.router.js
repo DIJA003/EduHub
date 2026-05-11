@@ -9,6 +9,7 @@ router.get("/public", c.getAll);
 
 // Protected routes
 router.get("/", verifyToken, c.getAllAdmin);
+router.get("/:id/academic-years", verifyToken, c.getStudentAcademicYears);
 router.get("/:id", verifyToken, c.getById);
 router.post("/", verifyToken, adminOnly, c.create);
 router.put("/:id", verifyToken, adminOnly, c.update);

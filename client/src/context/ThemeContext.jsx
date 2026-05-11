@@ -1,8 +1,15 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
+  const skipTransitionOnce = useRef(true);
   const [darkMode, setDarkMode] = useState(() => {
     try {
       const stored = localStorage.getItem("eduhub-theme");
@@ -12,15 +19,16 @@ export function ThemeProvider({ children }) {
     } catch { return true; }
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     try {
       localStorage.setItem("eduhub-theme", darkMode ? "dark" : "light");
     } catch {}
 
-    // Apply theme to document with smooth transition
     const root = window.document.documentElement;
-    root.classList.add("theme-transitioning");
-    
+    const animate = !skipTransitionOnce.current;
+    skipTransitionOnce.current = false;
+    if (animate) root.classList.add("theme-transitioning");
+
     if (darkMode) {
       root.removeAttribute("data-theme");
       root.classList.remove("light");
@@ -29,11 +37,10 @@ export function ThemeProvider({ children }) {
       root.classList.add("light");
     }
 
-    // Remove transition class after animation completes
+    if (!animate) return undefined;
     const timer = setTimeout(() => {
       root.classList.remove("theme-transitioning");
     }, 300);
-
     return () => clearTimeout(timer);
   }, [darkMode]);
 

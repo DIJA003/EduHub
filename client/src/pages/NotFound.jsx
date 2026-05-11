@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import { EduHubLogoText } from "../components/ui/Logo";
+import { ThemeToggleFixedCorner } from "../components/common/ThemeToggle";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--color-ink)] px-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--color-ink)] px-4">
+      <ThemeToggleFixedCorner />
       <div className="text-center">
         <div className="mb-6 flex justify-center">
           <EduHubLogoText />

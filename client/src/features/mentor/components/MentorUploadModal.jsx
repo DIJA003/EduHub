@@ -7,6 +7,10 @@ import Modal from "../../../components/ui/Modal";
 import { useFirebaseUpload } from "../../materials/hooks/useMaterials";
 import { toast } from "../../../hooks/useToasts";
 import { cn } from "../../../lib/utils";
+import {
+  MAX_LECTURE_FOLDERS,
+  MAX_SECTION_FOLDERS,
+} from "../../../constants/uploadFolders";
 
 export default function MentorUploadModal({ open, onClose, courses = [] }) {
   const [file, setFile] = useState(null);
@@ -67,24 +71,6 @@ export default function MentorUploadModal({ open, onClose, courses = [] }) {
     value: c._id,
     label: c.title,
   }));
-
-  const sectionOptions = [
-    { value: "", label: "General" },
-    { value: "Lecture 1", label: "Lecture 1" },
-    { value: "Lecture 2", label: "Lecture 2" },
-    { value: "Lecture 3", label: "Lecture 3" },
-    { value: "Lecture 4", label: "Lecture 4" },
-    { value: "Lecture 5", label: "Lecture 5" },
-    { value: "Lecture 6", label: "Lecture 6" },
-    { value: "Lecture 7", label: "Lecture 7" },
-    { value: "Lecture 8", label: "Lecture 8" },
-    { value: "Section A", label: "Section A" },
-    { value: "Section B", label: "Section B" },
-    { value: "Labs", label: "Labs" },
-    { value: "Assignments", label: "Assignments" },
-    { value: "Exams", label: "Exams" },
-    { value: "Resources", label: "Resources" },
-  ];
 
   return (
     <Modal
@@ -214,11 +200,34 @@ export default function MentorUploadModal({ open, onClose, courses = [] }) {
                     value={sectionLabel}
                     onChange={(e) => setSectionLabel(e.target.value)}
                   >
-                    {sectionOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
+                    <option value="">General</option>
+                    <optgroup label="Lectures">
+                      {Array.from({ length: MAX_LECTURE_FOLDERS }, (_, i) => {
+                        const n = i + 1;
+                        const v = `Lecture ${n}`;
+                        return (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                    <optgroup label="Sections">
+                      {Array.from({ length: MAX_SECTION_FOLDERS }, (_, i) => {
+                        const n = i + 1;
+                        const v = `Section ${n}`;
+                        return (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                    <optgroup label="Assignments, exams & resources">
+                      <option value="Assignments">Assignments</option>
+                      <option value="Exams">Exams</option>
+                      <option value="Resources">Resources</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>

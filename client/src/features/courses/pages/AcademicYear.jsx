@@ -2,51 +2,32 @@ import { useNavigate } from "react-router-dom";
 import { useMyEnrollments } from "../../enrollment/hooks/useEnrollments";
 import useAuthStore from "../../../stores/auth.store";
 import Header from "../../../components/common/Header";
-import Button from "../../../components/ui/Button";
 import { useQuery } from "@tanstack/react-query";
 import { CardSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
-
-// API for faculties
-const facultiesApi = {
-  getById: (id) => fetch(`/api/faculties/${id}`).then(r => r.json()),
-};
+import { facultiesApi } from "../../../lib/api/faculties.api";
 
 export default function AcademicYear() {
   const navigate = useNavigate();
   const dbUser = useAuthStore((s) => s.dbUser);
   const firstName = dbUser?.name?.split(" ")[0] || "there";
-  const facultyId = dbUser?.faculty;
+  const facultyId = dbUser?.faculty?._id || dbUser?.faculty;
 
   const { data: enrollmentsData } = useMyEnrollments();
   const enrollments = Array.isArray(enrollmentsData)
     ? enrollmentsData
     : enrollmentsData?.data || [];
 
-  // Fetch faculty data
-  const { data: facultyData, isLoading: facultyLoading } = useQuery({
-    queryKey: ["faculty", facultyId],
-    queryFn: () => facultiesApi.getById(facultyId),
+  const { data: academicPayload, isLoading: academicLoading } = useQuery({
+    queryKey: ["faculty", facultyId, "student-academic-years"],
+    queryFn: () => facultiesApi.getStudentAcademicYears(facultyId),
     enabled: !!facultyId,
   });
 
-  const faculty = facultyData?.data;
-  const userProgramId = dbUser?.program?._id || dbUser?.program;
-  const userProgramStr = userProgramId != null ? String(userProgramId) : "";
+  const academic = academicPayload?.data ?? academicPayload;
+  const facultySummary = academic?.faculty;
+  const years = academic?.years ?? [];
 
-  // Treat missing `active` as true (legacy faculty documents).
-  let years = faculty?.years?.filter((y) => y.active !== false) || [];
-  if (userProgramStr && years.length > 0) {
-    years = years.filter((y) => {
-      const yp = y.program;
-      if (yp == null || yp === "") return true;
-      const ypStr =
-        typeof yp === "object" && yp?._id != null ? String(yp._id) : String(yp);
-      return ypStr === userProgramStr;
-    });
-  }
-
-  // Count enrollments per year
   const enrollmentsByYear = enrollments.reduce((acc, e) => {
     const yearId = e.yearId || 1;
     acc[yearId] = (acc[yearId] || 0) + 1;
@@ -65,25 +46,13 @@ export default function AcademicYear() {
               Welcome back, {firstName}!
             </p>
             <h1 className="text-2xl font-black text-[var(--color-text)]">
-              {faculty ? faculty.name : "Your Academic Path"}
+              {facultySummary?.name || "Your Academic Path"}
             </h1>
             <p className="mt-2 text-[var(--color-text-3)]">
-              {faculty 
-                ? `Select a year to view courses in ${faculty.code}.`
+              {facultySummary
+                ? `All years for your program in ${facultySummary.code} — open any year to browse semesters and courses.`
                 : "Select a year to view courses and track your progress."}
             </p>
-            <div className="flex gap-3 mt-4">
-              <Button onClick={() => navigate("/student")} size="sm">
-                Dashboard
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => navigate("/student/courses")}
-                size="sm"
-              >
-                My Courses
-              </Button>
-            </div>
           </div>
           <div className="shrink-0">
             <div className="w-32 h-32 rounded-full bg-[var(--color-accent-soft)] flex items-center justify-center text-5xl">
@@ -95,10 +64,12 @@ export default function AcademicYear() {
         {/* Year Cards */}
         <section>
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--color-text-3)] mb-4">
-            {faculty ? `${faculty.code} - Academic Years` : "Academic Years"}
+            {facultySummary
+              ? `${facultySummary.code} — Academic years (your program)`
+              : "Academic Years"}
           </h2>
-          
-          {facultyLoading ? (
+
+          {academicLoading ? (
             <div className="grid gap-4 md:grid-cols-2">
               {[1, 2, 3, 4].map((i) => (
                 <CardSkeleton key={i} />
@@ -107,10 +78,10 @@ export default function AcademicYear() {
           ) : years.length === 0 ? (
             <EmptyState
               icon="🏛️"
-              title={facultyId ? "No years configured" : "No faculty assigned"}
+              title={facultyId ? "No years available" : "No faculty assigned"}
               description={
-                facultyId 
-                  ? "Your faculty has no active years configured."
+                facultyId
+                  ? "We could not build an academic path for your account. Check that your program is set and your faculty is active."
                   : "Please contact an administrator to assign you to a faculty."
               }
             />
@@ -126,15 +97,12 @@ export default function AcademicYear() {
                     onClick={() => navigate(`/academic-year/${year.year}`)}
                     className="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left shadow-[var(--shadow-card)] hover:border-[var(--color-accent)] hover:shadow-[var(--shadow-card-hover)] transition-all group"
                   >
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[var(--color-accent)] text-white font-black text-sm flex items-center justify-center group-hover:scale-105 transition-transform">
                         {year.year}
                       </div>
                       <h3 className="font-bold text-[var(--color-text)]">{year.name}</h3>
                     </div>
-                    <p className="text-sm text-[var(--color-text-2)] flex-1">
-                      {year.semesters?.length || 0} semester{year.semesters?.length !== 1 ? "s" : ""} available
-                    </p>
                     {enrolled > 0 && (
                       <p className="mt-3 text-xs font-semibold text-[var(--color-accent)]">
                         {enrolled} course{enrolled !== 1 ? "s" : ""} enrolled

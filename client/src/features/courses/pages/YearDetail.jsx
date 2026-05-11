@@ -9,29 +9,11 @@ import {
 } from "../../enrollment/hooks/useEnrollments";
 import useAuthStore from "../../../stores/auth.store";
 import { facultiesApi } from "../../../lib/api/faculties.api";
+import Header from "../../../components/common/Header";
 import { CardSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badges";
-
-const YEAR_COPY = {
-  1: {
-    title: "Year One: Freshman Year",
-    desc: "Foundational concepts: computing, mathematics, and logic.",
-  },
-  2: {
-    title: "Year Two: Sophomore Year",
-    desc: "Core engineering principles and advanced programming foundations.",
-  },
-  3: {
-    title: "Year Three: Junior Year",
-    desc: "Advanced applications: software engineering, cloud, and AI.",
-  },
-  4: {
-    title: "Year Four: Senior Year",
-    desc: "Capstone, research, and industry placement.",
-  },
-};
 
 export default function YearDetail() {
   const navigate = useNavigate();
@@ -40,13 +22,13 @@ export default function YearDetail() {
   const dbUser = useAuthStore((s) => s.dbUser);
   const facultyId = dbUser?.faculty?._id || dbUser?.faculty;
 
-  const { data: facultyData } = useQuery({
-    queryKey: ["faculty", facultyId],
-    queryFn: () => facultiesApi.getById(facultyId),
+  const { data: academicPayload } = useQuery({
+    queryKey: ["faculty", facultyId, "student-academic-years"],
+    queryFn: () => facultiesApi.getStudentAcademicYears(facultyId),
     enabled: !!facultyId && !Number.isNaN(yearNum),
   });
-  const faculty = facultyData?.data;
-  const yearConfig = faculty?.years?.find((y) => y.year === yearNum);
+  const academic = academicPayload?.data ?? academicPayload;
+  const yearConfig = academic?.years?.find((y) => y.year === yearNum);
   const semesterLabel = (n) => {
     const s = yearConfig?.semesters?.find((sem) => sem.number === n);
     if (s?.name && s.active !== false) return s.name;
@@ -72,23 +54,35 @@ export default function YearDetail() {
   const enrollments = Array.isArray(enrollmentsData)
     ? enrollmentsData
     : enrollmentsData?.data || [];
-  const enrolledIds = new Set(enrollments.map((e) => String(e.courseId)));
+  const enrolledIds = useMemo(() => {
+    const set = new Set();
+    for (const e of enrollments) {
+      if (e?.courseId != null) set.add(String(e.courseId));
+      if (e?.id != null) set.add(String(e.id));
+    }
+    return set;
+  }, [enrollments]);
 
   const enrollMutation = useEnroll();
   const unenrollMutation = useUnenroll();
 
-  const copy = YEAR_COPY[yearNum] || { title: `Year ${yearNum}`, desc: "" };
+  const title =
+    (yearConfig?.name && String(yearConfig.name).trim()) ||
+    (Number.isNaN(yearNum) ? "Courses" : `Year ${yearNum}`);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
+    <div className="min-h-screen bg-[var(--color-ink)]">
+      <Header />
+
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6">
           <button
+            type="button"
             onClick={() => navigate("/academic-year")}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors"
+            className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-2)] hover:text-[var(--color-accent)] transition-colors"
           >
             <svg
-              className="w-4 h-4"
+              className="w-4 h-4 shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -100,21 +94,12 @@ export default function YearDetail() {
                 d="M15 19l-7-7 7-7"
               />
             </svg>
-            Academic Years
+            Academic years
           </button>
-          <Button size="sm" onClick={() => navigate("/student")}>
-            Dashboard
-          </Button>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
-            Year {yearId}
-          </p>
-          <h1 className="text-2xl font-black text-slate-900">{copy.title}</h1>
-          <p className="mt-2 text-slate-500">{copy.desc}</p>
+          <h1 className="text-2xl font-black text-[var(--color-text)]">{title}</h1>
         </div>
 
         {isLoading ? (
@@ -129,7 +114,7 @@ export default function YearDetail() {
           <div className="space-y-10">
             {coursesBySemester.map(([semKey, semCourses]) => (
               <section key={semKey}>
-                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4 border-b border-slate-200 pb-2">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--color-text-3)] mb-4 border-b border-[var(--color-border)] pb-2">
                   {semesterLabel(semKey)}
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -139,15 +124,15 @@ export default function YearDetail() {
                     return (
                       <div
                         key={course._id}
-                        className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col hover:border-blue-200 hover:shadow-sm transition-all"
+                        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 flex flex-col shadow-[var(--shadow-card)] hover:border-[var(--color-accent)] hover:shadow-[var(--shadow-card-hover)] transition-all"
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <Badge variant="blue">{course.code}</Badge>
-                            <h3 className="mt-2 font-bold text-slate-900">
+                            <h3 className="mt-2 font-bold text-[var(--color-text)]">
                               {course.title}
                             </h3>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-[var(--color-text-3)] mt-0.5">
                               {course.creditHours || 3} credits •{" "}
                               {course.instructor || "TBA"}
                             </p>
@@ -178,13 +163,17 @@ export default function YearDetail() {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => enrollMutation.mutate(course._id)}
-                              loading={enrollMutation.isPending}
-                            >
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={() => enrollMutation.mutate(course._id)}
+                                loading={
+                                  enrollMutation.isPending &&
+                                  String(enrollMutation.variables) ===
+                                    String(course._id)
+                                }
+                              >
                               Enroll
                             </Button>
                           )}

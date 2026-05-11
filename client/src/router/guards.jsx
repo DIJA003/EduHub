@@ -1,10 +1,12 @@
 import { Navigate } from "react-router-dom";
 import useAuthStore from "../stores/auth.store";
 import { ROLE_HOME } from "../constants/navigation";
+import { ThemeToggleFixedCorner } from "../components/common/ThemeToggle";
 
 const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-[var(--color-ink)] transition-colors duration-300">
-    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  <div className="relative flex min-h-screen items-center justify-center bg-[var(--color-ink)] transition-colors duration-300">
+    <ThemeToggleFixedCorner />
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent" />
   </div>
 );
 

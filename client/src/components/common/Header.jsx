@@ -4,6 +4,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../ui/Button";
 import { EduHubLogo } from "../ui/Logo";
+import { ThemeToggleIconButton } from "./ThemeToggle";
 
 export default function Header() {
   const { user, isAuthenticated, logout, loading } = useAuth();
@@ -89,7 +90,8 @@ export default function Header() {
         </nav>
 
         {/* User Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggleIconButton className="hidden sm:inline-flex" />
           {loading ? (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-[var(--color-surface-2)] animate-pulse" />
@@ -136,6 +138,8 @@ export default function Header() {
             </div>
           )}
 
+          <ThemeToggleIconButton className="sm:hidden" />
+
           {/* Mobile Menu Toggle */}
           <button
             className="md:hidden p-2 rounded-lg hover:bg-[var(--color-surface-2)] transition-colors"
@@ -156,6 +160,13 @@ export default function Header() {
           <div className="container mx-auto px-4 py-4 space-y-2">
             {isAuthenticated ? (
               <>
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-[var(--text-sm)] text-[var(--color-text-3)]">
+                    Appearance
+                  </span>
+                  <ThemeToggleIconButton />
+                </div>
+                <hr className="border-[var(--color-border)] my-1" />
                 <button
                   onClick={() => handleNavigation(getDashboardPath())}
                   className="block w-full text-left px-4 py-3 text-[var(--text-sm)] text-[var(--color-text-2)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)] rounded-lg transition-all duration-200 font-medium"
@@ -191,6 +202,13 @@ export default function Header() {
               </>
             ) : (
               <>
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-[var(--text-sm)] text-[var(--color-text-3)]">
+                    Appearance
+                  </span>
+                  <ThemeToggleIconButton />
+                </div>
+                <hr className="border-[var(--color-border)] my-1" />
                 <button
                   onClick={() => handleNavigation("/login")}
                   className="block w-full text-left text-[var(--text-sm)] text-[var(--color-text-2)] hover:text-[var(--color-text)] py-2"
