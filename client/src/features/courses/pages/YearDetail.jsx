@@ -1,10 +1,14 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCoursesByYear } from "../hooks/useCourses";
 import {
   useMyEnrollments,
   useEnroll,
   useUnenroll,
 } from "../../enrollment/hooks/useEnrollments";
+import useAuthStore from "../../../stores/auth.store";
+import { facultiesApi } from "../../../lib/api/faculties.api";
 import { CardSkeleton } from "../../../components/common/LoadingSkeleton";
 import EmptyState from "../../../components/common/EmptyStat";
 import Button from "../../../components/ui/Button";
@@ -33,11 +37,36 @@ export default function YearDetail() {
   const navigate = useNavigate();
   const { yearId } = useParams();
   const yearNum = parseInt(yearId, 10);
+  const dbUser = useAuthStore((s) => s.dbUser);
+  const facultyId = dbUser?.faculty?._id || dbUser?.faculty;
+
+  const { data: facultyData } = useQuery({
+    queryKey: ["faculty", facultyId],
+    queryFn: () => facultiesApi.getById(facultyId),
+    enabled: !!facultyId && !Number.isNaN(yearNum),
+  });
+  const faculty = facultyData?.data;
+  const yearConfig = faculty?.years?.find((y) => y.year === yearNum);
+  const semesterLabel = (n) => {
+    const s = yearConfig?.semesters?.find((sem) => sem.number === n);
+    if (s?.name && s.active !== false) return s.name;
+    return n ? `Semester ${n}` : "General";
+  };
 
   const { data: coursesData, isLoading } = useCoursesByYear(yearNum);
   const courses = Array.isArray(coursesData)
     ? coursesData
     : coursesData?.data || [];
+
+  const coursesBySemester = useMemo(() => {
+    const map = new Map();
+    for (const c of courses) {
+      const key = c.semester != null && c.semester !== "" ? Number(c.semester) : 0;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(c);
+    }
+    return [...map.entries()].sort((a, b) => a[0] - b[0]);
+  }, [courses]);
 
   const { data: enrollmentsData } = useMyEnrollments();
   const enrollments = Array.isArray(enrollmentsData)
@@ -94,69 +123,78 @@ export default function YearDetail() {
           <EmptyState
             icon="📚"
             title="No published courses yet"
-            description="Courses for this year will appear here once published by the admin."
+            description="Courses for this year will appear here once published for your faculty and program."
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => {
-              const isEnrolled = enrolledIds.has(String(course._id));
+          <div className="space-y-10">
+            {coursesBySemester.map(([semKey, semCourses]) => (
+              <section key={semKey}>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4 border-b border-slate-200 pb-2">
+                  {semesterLabel(semKey)}
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {semCourses.map((course) => {
+                    const isEnrolled = enrolledIds.has(String(course._id));
 
-              return (
-                <div
-                  key={course._id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col hover:border-blue-200 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <Badge variant="blue">{course.code}</Badge>
-                      <h3 className="mt-2 font-bold text-slate-900">
-                        {course.title}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {course.creditHours || 3} credits •{" "}
-                        {course.instructor || "TBA"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-auto pt-3">
-                    {isEnrolled ? (
-                      <>
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() =>
-                            navigate(
-                              `/academic-year/${yearId}/course/${course._id}`,
-                            )
-                          }
-                        >
-                          Open Course
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => unenrollMutation.mutate(course._id)}
-                          loading={unenrollMutation.isPending}
-                        >
-                          Unenroll
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="flex-1"
-                        onClick={() => enrollMutation.mutate(course._id)}
-                        loading={enrollMutation.isPending}
+                    return (
+                      <div
+                        key={course._id}
+                        className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col hover:border-blue-200 hover:shadow-sm transition-all"
                       >
-                        Enroll
-                      </Button>
-                    )}
-                  </div>
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <Badge variant="blue">{course.code}</Badge>
+                            <h3 className="mt-2 font-bold text-slate-900">
+                              {course.title}
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {course.creditHours || 3} credits •{" "}
+                              {course.instructor || "TBA"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-auto pt-3">
+                          {isEnrolled ? (
+                            <>
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={() =>
+                                  navigate(
+                                    `/academic-year/${yearId}/course/${course._id}`,
+                                  )
+                                }
+                              >
+                                Open Course
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => unenrollMutation.mutate(course._id)}
+                                loading={unenrollMutation.isPending}
+                              >
+                                Unenroll
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="flex-1"
+                              onClick={() => enrollMutation.mutate(course._id)}
+                              loading={enrollMutation.isPending}
+                            >
+                              Enroll
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </section>
+            ))}
           </div>
         )}
       </main>

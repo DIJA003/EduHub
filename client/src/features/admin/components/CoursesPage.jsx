@@ -87,7 +87,8 @@ export default function CoursesPage() {
   }, [programsData]);
 
   const selectedFaculty = faculties.find(f => f._id === form.faculty);
-  const availableYears = selectedFaculty?.years?.filter(y => y.active) || [];
+  const availableYears =
+    selectedFaculty?.years?.filter((y) => y.active !== false) || [];
   const selectedYear = availableYears.find(y => y.year === parseInt(form.yearId));
   const availableSemesters = selectedYear?.semesters?.filter(s => s.active) || [];
 

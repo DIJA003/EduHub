@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  isValidElement,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -98,6 +104,16 @@ export function DropdownDivider() {
   return <div className="my-1 h-px bg-[var(--color-border)]" />;
 }
 
+function selectDisplayText(value) {
+  if (value == null || value === false) return "";
+  if (isValidElement(value)) return value;
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+  if (typeof value === "boolean") return "";
+  return String(value);
+}
+
 export function DropdownLabel({ children, className }) {
   return (
     <p
@@ -156,7 +172,9 @@ export function Select({
         )}
       >
         <span className={cn(!selectedOption && "text-[var(--color-text-3)]")}>
-          {selectedOption?.label ?? placeholder}
+          {selectedOption
+            ? selectDisplayText(selectedOption.label)
+            : selectDisplayText(placeholder)}
         </span>
         <ChevronDown
           className={cn(
@@ -194,7 +212,7 @@ export function Select({
                     : "text-[var(--color-text-2)] hover:bg-[var(--color-surface-2)]",
                 )}
               >
-                <span>{option.label}</span>
+                <span>{selectDisplayText(option.label)}</span>
                 {option.value === value && (
                   <Check className="w-4 h-4" strokeWidth={2} />
                 )}

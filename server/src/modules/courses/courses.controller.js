@@ -69,6 +69,20 @@ const getByYear = async (req, res, next) => {
       }
     }
 
+    // Students only see published courses for their faculty, scoped by program.
+    if (req.user?.role === "student") {
+      if (!req.user.faculty) {
+        return success(res, []);
+      }
+      filter.faculty = req.user.faculty;
+      const prog = req.user.program;
+      if (prog) {
+        filter.$or = [{ program: null }, { program: prog }];
+      } else {
+        filter.program = null;
+      }
+    }
+
     const courses = await Course.find(filter)
       .populate("faculty", "code name")
       .populate("program", "code name")

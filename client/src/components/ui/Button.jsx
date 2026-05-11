@@ -127,11 +127,13 @@ const Button = forwardRef(function Button(
     >
       {loading ? (
         <Spinner />
-      ) : leftIcon ? (
-        <span className="shrink-0">{leftIcon}</span>
-      ) : null}
-      {children && <span>{children}</span>}
-      {!loading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+      ) : (
+        <>
+          {leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
+          {children}
+          {rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+        </>
+      )}
     </button>
   );
 });

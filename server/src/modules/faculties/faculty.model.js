@@ -11,6 +11,12 @@ const yearSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   semesters: [semesterSchema],
   active: { type: Boolean, default: true },
+  /** When set, only students in this program see this year on the academic path. */
+  program: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Program",
+    default: null,
+  },
 });
 
 const facultySchema = new mongoose.Schema(

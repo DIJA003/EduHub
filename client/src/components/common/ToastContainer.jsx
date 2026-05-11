@@ -3,6 +3,21 @@ import { useToasts } from "../../hooks/useToasts";
 import { cn } from "../../lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
+function formatToastMessage(message) {
+  if (message == null || message === false) return "";
+  if (typeof message === "string" || typeof message === "number") {
+    return String(message);
+  }
+  if (message instanceof Error) {
+    return message.message || "Something went wrong";
+  }
+  try {
+    return JSON.stringify(message);
+  } catch {
+    return "Something went wrong";
+  }
+}
+
 const typeConfig = {
   success: {
     bar: "bg-[var(--color-success)]",
@@ -66,7 +81,7 @@ export default function ToastContainer() {
                 config.text,
               )}
             >
-              {t.message}
+              {formatToastMessage(t.message)}
             </p>
             <button
               onClick={() => dismiss(t.id)}

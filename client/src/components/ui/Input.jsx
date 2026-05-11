@@ -11,6 +11,7 @@ const Input = forwardRef(function Input(
     required,
     className,
     containerClassName,
+    children: _inputChildren,
     ...props
   },
   ref,
@@ -106,6 +107,7 @@ export const Textarea = forwardRef(function Textarea(
     className,
     containerClassName,
     rows = 4,
+    children: _textareaChildren,
     ...props
   },
   ref,

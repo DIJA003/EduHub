@@ -58,7 +58,21 @@ export default function Register() {
   }, []);
 
   const selectedFaculty = faculties.find(f => f._id === form.faculty);
-  const availableYears = selectedFaculty?.years?.filter(y => y.active) || [];
+  const availableYearsRaw =
+    selectedFaculty?.years?.filter((y) => y.active !== false) || [];
+  const programStr =
+    form.program && form.program !== "__request_new__"
+      ? String(form.program)
+      : "";
+  const availableYears = programStr
+    ? availableYearsRaw.filter((y) => {
+        const yp = y.program;
+        if (yp == null || yp === "") return true;
+        const ypStr =
+          typeof yp === "object" && yp?._id != null ? String(yp._id) : String(yp);
+        return ypStr === programStr;
+      })
+    : availableYearsRaw;
 
   // Fetch programs when faculty changes
   useEffect(() => {
@@ -81,6 +95,9 @@ export default function Register() {
       // Reset dependent fields when faculty or year changes
       if (name === "faculty") {
         return { ...p, [name]: value, year: "", program: "" };
+      }
+      if (name === "program") {
+        return { ...p, [name]: value, year: "" };
       }
       return { ...p, [name]: value };
     });
@@ -255,6 +272,34 @@ export default function Register() {
 
             {role === "student" && form.faculty && form.faculty !== "__request_new__" && (
               <>
+                <div>
+                  <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
+                    Program
+                  </label>
+                  <Select
+                    value={form.program}
+                    onChange={(val) => handleChange({ target: { name: "program", value: val } })}
+                    options={[
+                      ...programs.map(p => ({ value: p._id, label: `${p.code} - ${p.name}` })),
+                      { value: "__request_new__", label: "+ Request New Program" },
+                    ]}
+                    placeholder={programsLoading ? "Loading..." : "Select program..."}
+                    disabled={programsLoading || !form.faculty}
+                  />
+                  {form.program === "__request_new__" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm(p => ({ ...p, program: "" }));
+                        setRequestModal({ isOpen: true, type: "add_program" });
+                      }}
+                      className="mt-2 text-sm text-[var(--color-accent)] hover:underline"
+                    >
+                      Click here to request a new program
+                    </button>
+                  )}
+                </div>
+
                 {availableYears.length > 0 && (
                   <div>
                     <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
@@ -264,38 +309,11 @@ export default function Register() {
                       value={form.year}
                       onChange={(val) => handleChange({ target: { name: "year", value: val } })}
                       options={availableYears.map(y => ({ value: String(y.year), label: y.name }))}
-                      placeholder="Select year..."
+                      placeholder={
+                        programStr ? "Select year..." : "Select program first to see your years"
+                      }
+                      disabled={!programStr}
                     />
-                  </div>
-                )}
-
-                {form.faculty && (
-                  <div>
-                    <label className="block text-[var(--text-xs)] font-semibold text-[var(--color-text-2)] mb-2 uppercase tracking-wider">
-                      Program
-                    </label>
-                    <Select
-                      value={form.program}
-                      onChange={(val) => handleChange({ target: { name: "program", value: val } })}
-                      options={[
-                        ...programs.map(p => ({ value: p._id, label: `${p.code} - ${p.name}` })),
-                        { value: "__request_new__", label: "+ Request New Program" },
-                      ]}
-                      placeholder={programsLoading ? "Loading..." : "Select program..."}
-                      disabled={programsLoading || !form.faculty}
-                    />
-                    {form.program === "__request_new__" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm(p => ({ ...p, program: "" }));
-                          setRequestModal({ isOpen: true, type: "add_program" });
-                        }}
-                        className="mt-2 text-sm text-[var(--color-accent)] hover:underline"
-                      >
-                        Click here to request a new program
-                      </button>
-                    )}
                   </div>
                 )}
               </>

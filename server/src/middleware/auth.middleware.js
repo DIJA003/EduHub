@@ -30,7 +30,7 @@ const verifyToken = async (req, res, next) => {
     }
 
     const dbUser = await User.findOne({ firebaseUid: decoded.uid })
-      .select("role status _id name email isDeleted faculty")
+      .select("role status _id name email isDeleted faculty program")
       .lean();
 
     if (!dbUser) {
@@ -52,6 +52,7 @@ const verifyToken = async (req, res, next) => {
       id: dbUser._id.toString(),
       name: dbUser.name,
       faculty: dbUser.faculty,
+      program: dbUser.program || null,
     };
 
     next();

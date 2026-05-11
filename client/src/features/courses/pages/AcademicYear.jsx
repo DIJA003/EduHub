@@ -32,12 +32,18 @@ export default function AcademicYear() {
 
   const faculty = facultyData?.data;
   const userProgramId = dbUser?.program?._id || dbUser?.program;
-  
-  // Filter years by student's program if available
-  let years = faculty?.years?.filter(y => y.active) || [];
-  if (userProgramId && years.length > 0) {
-    years = years.filter(y => !y.program || y.program === userProgramId || 
-      (typeof y.program === 'object' && y.program?._id === userProgramId));
+  const userProgramStr = userProgramId != null ? String(userProgramId) : "";
+
+  // Treat missing `active` as true (legacy faculty documents).
+  let years = faculty?.years?.filter((y) => y.active !== false) || [];
+  if (userProgramStr && years.length > 0) {
+    years = years.filter((y) => {
+      const yp = y.program;
+      if (yp == null || yp === "") return true;
+      const ypStr =
+        typeof yp === "object" && yp?._id != null ? String(yp._id) : String(yp);
+      return ypStr === userProgramStr;
+    });
   }
 
   // Count enrollments per year
