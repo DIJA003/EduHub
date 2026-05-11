@@ -27,7 +27,7 @@ export const ROLE_HOME = {
 
 export const NAV_BY_ROLE = {
   student: [
-    { to: "/", label: "Home", icon: Home, end: true },
+    // { to: "/", label: "Home", icon: Home, end: true },
     { to: "/student", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/student/courses", label: "My Courses", icon: BookOpen },
     { to: "/student/upload", label: "Upload Center", icon: Upload },
@@ -37,7 +37,7 @@ export const NAV_BY_ROLE = {
     { to: "/profile", label: "Profile", icon: User },
   ],
   mentor: [
-    { to: "/", label: "Home", icon: Home, end: true },
+    // { to: "/", label: "Home", icon: Home, end: true },
     { to: "/mentor", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/mentor/courses", label: "Assigned Courses", icon: BookOpen },
     { to: "/mentor/enrollments", label: "Enrollments", icon: Users },
@@ -48,7 +48,7 @@ export const NAV_BY_ROLE = {
     { to: "/mentor/profile", label: "Profile", icon: User },
   ],
   admin: [
-    { to: "/", label: "Home", icon: Home, end: true },
+    // { to: "/", label: "Home", icon: Home, end: true },
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
     { to: "/admin/users", label: "User Management", icon: Users },
     { to: "/admin/moderation", label: "Moderation", icon: Shield },
