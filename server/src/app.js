@@ -54,6 +54,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use(
@@ -108,7 +109,11 @@ app.get(/^\/uploads\/materials\/.+/, async (req, res, next) => {
     }
 
     // Try the direct path first
-    const directPath = path.join(__dirname, "../../uploads/materials", requestedPath);
+    const directPath = path.join(
+      __dirname,
+      "../../uploads/materials",
+      requestedPath,
+    );
     if (fs.existsSync(directPath)) {
       res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
       return res.sendFile(directPath);
@@ -123,11 +128,17 @@ app.get(/^\/uploads\/materials\/.+/, async (req, res, next) => {
         { storagePath: { $regex: filename + "$" } },
         { fileUrl: { $regex: filename + "$" } },
       ],
-    }).select("storagePath fileUrl").lean();
+    })
+      .select("storagePath fileUrl")
+      .lean();
 
     // Try storagePath first
     if (material?.storagePath) {
-      const storageFullPath = path.join(__dirname, "../../uploads/materials", material.storagePath);
+      const storageFullPath = path.join(
+        __dirname,
+        "../../uploads/materials",
+        material.storagePath,
+      );
       if (fs.existsSync(storageFullPath)) {
         res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
         return res.sendFile(storageFullPath);
@@ -136,9 +147,16 @@ app.get(/^\/uploads\/materials\/.+/, async (req, res, next) => {
 
     // Try extracting from fileUrl
     if (material?.fileUrl) {
-      const urlPath = material.fileUrl.replace(/^.*?\/uploads\/materials\//, "");
+      const urlPath = material.fileUrl.replace(
+        /^.*?\/uploads\/materials\//,
+        "",
+      );
       if (urlPath && urlPath !== material.fileUrl) {
-        const urlFullPath = path.join(__dirname, "../../uploads/materials", urlPath);
+        const urlFullPath = path.join(
+          __dirname,
+          "../../uploads/materials",
+          urlPath,
+        );
         if (fs.existsSync(urlFullPath)) {
           res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
           return res.sendFile(urlFullPath);
@@ -149,15 +167,15 @@ app.get(/^\/uploads\/materials\/.+/, async (req, res, next) => {
     // Last resort: search all subdirectories for the filename
     const uploadsDir = path.join(__dirname, "../../uploads/materials");
     if (fs.existsSync(uploadsDir)) {
-      const dirs = fs.readdirSync(uploadsDir).filter(f =>
-        fs.statSync(path.join(uploadsDir, f)).isDirectory()
-      );
+      const dirs = fs
+        .readdirSync(uploadsDir)
+        .filter((f) => fs.statSync(path.join(uploadsDir, f)).isDirectory());
 
       for (const dir of dirs) {
         const dirPath = path.join(uploadsDir, dir);
-        const subDirs = fs.readdirSync(dirPath).filter(f =>
-          fs.statSync(path.join(dirPath, f)).isDirectory()
-        );
+        const subDirs = fs
+          .readdirSync(dirPath)
+          .filter((f) => fs.statSync(path.join(dirPath, f)).isDirectory());
 
         for (const subDir of subDirs) {
           const possiblePath = path.join(dirPath, subDir, filename);
