@@ -5,6 +5,7 @@ const fs = require("fs");
 const multer = require("multer");
 const Material = require("../materials/material.model");
 const { verifyToken } = require("../../middleware/auth.middleware");
+const { optionalGoogleDriveCheck } = require("../../middleware/googleDrive.middleware");
 const uploadsController = require("./uploads.controller");
 
 // Download file with original filename (PUBLIC - serves with original filename header)
@@ -92,6 +93,7 @@ router.use(verifyToken);
 
 router.post(
   "/upload",
+  optionalGoogleDriveCheck,
   uploadsController.uploadMiddleware,
   uploadsController.handleUpload,
 );

@@ -36,5 +36,9 @@ coverage/
 server\config\serviceAccountKey.json
 server/config/serviceAccountKey.json
 
+# Google Drive credentials
+server/credentials/
+credentials/
+
 # Local Netlify folder
 .netlify

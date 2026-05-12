@@ -6,6 +6,8 @@ const { confirmUpload } = require("../materials/materials.service");
 const uploadsService = require("./uploads.service");
 const { logAction } = require("../../shared/logger");
 const { success, badRequest, created } = require("../../shared/response");
+const { optionalGoogleDriveCheck } = require("../../middleware/googleDrive.middleware");
+const googleDriveService = require("../../../services/googleDriveService");
 
 const UPLOAD_DIR = path.join(__dirname, "../../../../uploads/materials");
 const AVATAR_DIR = path.join(__dirname, "../../../../uploads/avatars");
@@ -112,11 +114,34 @@ const uploadsController = {
 
       const courseId = req.body?.courseId || null;
       const userId = req.user.id;
+      const useGoogleDrive = req.body?.useGoogleDrive === 'true' && req.googleDriveAvailable;
 
-      const storagePath = `${courseId || "general"}/${userId}/${req.file.filename}`;
+      let storagePath, fileUrl, fileSize;
 
-      const serverOrigin = getServerOrigin();
-      const fileUrl = `${serverOrigin}/uploads/materials/${storagePath}`;
+      if (useGoogleDrive) {
+        // Upload to Google Drive
+        const driveResult = await googleDriveService.uploadFile({
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          buffer: fs.readFileSync(req.file.path)
+        }, {
+          userId,
+          courseId
+        });
+
+        storagePath = `googledrive://${driveResult.fileId}`;
+        fileUrl = driveResult.webContentLink;
+        fileSize = driveResult.size;
+
+        // Clean up temporary file
+        fs.unlinkSync(req.file.path);
+      } else {
+        // Use local storage (existing logic)
+        storagePath = `${courseId || "general"}/${userId}/${req.file.filename}`;
+        const serverOrigin = getServerOrigin();
+        fileUrl = `${serverOrigin}/uploads/materials/${storagePath}`;
+        fileSize = req.file.size;
+      }
 
       const fileType = detectFileType(req.file.mimetype);
       const title =
@@ -129,7 +154,7 @@ const uploadsController = {
           storagePath,
           fileName: req.file.originalname,
           mimeType: req.file.mimetype,
-          fileSize: req.file.size,
+          fileSize,
           courseId: courseId || undefined,
           sectionId: req.body?.sectionId || undefined,
           sectionLabel: req.body?.sectionLabel || undefined,
@@ -137,6 +162,7 @@ const uploadsController = {
           title,
           fileUrl, // ← fully qualified URL
           fileType,
+          storageProvider: useGoogleDrive ? 'googledrive' : 'local',
         },
       });
 
@@ -148,11 +174,12 @@ const uploadsController = {
         performedBy: req.user,
         req,
         details: {
-          fileSize: formatBytes(req.file.size),
+          fileSize: formatBytes(fileSize),
           mimeType: req.file.mimetype,
           storagePath,
           fileUrl,
           courseId,
+          storageProvider: useGoogleDrive ? 'Google Drive' : 'Local',
           status: material.status,
         },
       });

@@ -27,6 +27,7 @@ const settingsRouter = require("./modules/settings/settings.router");
 const dashboardRouter = require("./modules/dashboard/dashboard.router");
 const mentorRouter = require("./modules/mentor/mentor.router");
 const adminDashboardRouter = require("./modules/admin/dashboard.router");
+const googleDriveRouter = require("./modules/googleDrive/googleDrive.router");
 
 const app = express();
 
@@ -223,6 +224,7 @@ app.use("/api/faculties", facultiesRouter);
 app.use("/api/programs", programsRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/requests", requestsRouter);
+app.use("/api/google-drive", googleDriveRouter);
 
 // ── Error handlers ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);
