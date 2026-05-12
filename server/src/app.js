@@ -39,9 +39,10 @@ app.use(
 );
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.CLIENT_URLS || "http://localhost:3000";
 const allowedOrigins = (process.env.CLIENT_URLS || "http://localhost:3000")
   .split(",")
-  .map((s) => s.trim())
+  .map((s) => s.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
 const corsOptions = {
@@ -51,10 +52,11 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use(
