@@ -39,7 +39,7 @@ app.use(
 );
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = process.env.CLIENT_URLS || "http://localhost:3000";
+
 const allowedOrigins = (process.env.CLIENT_URLS || "http://localhost:3000")
   .split(",")
   .map((s) => s.trim().replace(/\/$/, ""))
