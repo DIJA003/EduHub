@@ -131,7 +131,7 @@ export default function DashboardShell({ title, navItems, children }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/45 backdrop-blur-[2px] z-[var(--z-overlay)] lg:hidden"
+            className="fixed inset-0 bg-black/45 backdrop-blur-[2px] z-40 lg:hidden"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu overlay"
           />
@@ -140,13 +140,14 @@ export default function DashboardShell({ title, navItems, children }) {
 
       <motion.aside
         className={cn(
-          "fixed inset-y-0 left-0 lg:relative flex flex-col flex-shrink-0 z-[var(--z-overlay)] lg:z-[var(--z-raised)]",
+          "fixed inset-y-0 left-0 lg:relative flex flex-col flex-shrink-0 z-50 lg:z-auto",
           "glass-strong border-r border-[var(--color-border)]",
           "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
           collapsed ? "w-[68px]" : "w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
-        animate={{ x: mobileOpen ? 0 : undefined }}
+        animate={{ x: mobileOpen ? 0 : -264 }}
+        transition={{ type: "tween", duration: 0.3 }}
       >
         {/* Brand */}
         <div
@@ -191,19 +192,13 @@ export default function DashboardShell({ title, navItems, children }) {
           </button>
           {/* Mobile close button */}
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Mobile close button clicked');
-              setMobileOpen(false);
-            }}
+            onClick={() => setMobileOpen(false)}
             aria-label="Close sidebar"
             className={cn(
               "shrink-0 p-1.5 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
               "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
               "transition-colors duration-[var(--duration-fast)]",
               "lg:hidden flex items-center justify-center",
-              "z-20 relative", // Higher z-index to ensure it's above overlay
             )}
           >
             <X className="w-4 h-4" strokeWidth={2} />
