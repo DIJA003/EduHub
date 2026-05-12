@@ -172,6 +172,7 @@ export default function DashboardShell({ title, navItems, children }) {
               </p>
             </div>
           )}
+          {/* Desktop collapse button */}
           <button
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -187,6 +188,19 @@ export default function DashboardShell({ title, navItems, children }) {
             ) : (
               <ChevronLeft className="w-4 h-4" strokeWidth={2} />
             )}
+          </button>
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close sidebar"
+            className={cn(
+              "shrink-0 p-1.5 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
+              "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
+              "transition-colors duration-[var(--duration-fast)]",
+              "lg:hidden flex items-center justify-center",
+            )}
+          >
+            <X className="w-4 h-4" strokeWidth={2} />
           </button>
         </div>
 
