@@ -191,13 +191,19 @@ export default function DashboardShell({ title, navItems, children }) {
           </button>
           {/* Mobile close button */}
           <button
-            onClick={() => setMobileOpen(false)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Mobile close button clicked');
+              setMobileOpen(false);
+            }}
             aria-label="Close sidebar"
             className={cn(
               "shrink-0 p-1.5 rounded-[var(--radius-md)] text-[var(--color-text-3)]",
               "hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
               "transition-colors duration-[var(--duration-fast)]",
               "lg:hidden flex items-center justify-center",
+              "z-20 relative", // Higher z-index to ensure it's above overlay
             )}
           >
             <X className="w-4 h-4" strokeWidth={2} />
