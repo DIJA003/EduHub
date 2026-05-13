@@ -42,7 +42,7 @@ export default function CoursePlayer({ course, yearId, onBack }) {
   useEffect(() => {
     if (!mongoId) { setSectionsLoading(false); return; }
     setSectionsLoading(true); setSectionsError("");
-    api.get(`/sections/course/${mongoId}`)
+    api.get(`/materials?courseRef=${mongoId}`)
       .then((res) => {
         const raw = safeArray(res?.data ?? res);
         setSections(raw.map((sec) => ({

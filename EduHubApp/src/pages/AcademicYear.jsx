@@ -87,7 +87,7 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
     if (!mongoId) { setSectionsLoading(false); return; }
     setSectionsLoading(true);
     setSectionsError("");
-    api.get(`/sections/course/${mongoId}`)
+    api.get(`/courses/${mongoId}`)
       .then((r) => {
         // Backend returns { success, data: [...] }  OR  plain array
         const raw = safeArray(r?.data ?? r);
@@ -127,7 +127,7 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
     const done        = nextDone >= n;
     const nextLabel   = done ? "Course complete" : sections[nextDone]?.title ?? "Next section";
     try {
-      await api.patch(`/users/enrollments/${mongoId}/progress`, {
+      await api.patch(`/enrollments/${mongoId}/progress`, {
         progress: newProgress, nextItem: nextLabel, sectionsCompleted: nextDone,
       });
     } catch {}
@@ -143,7 +143,7 @@ function CoursePlayer({ course, yearId, onBack, onProgressUpdate }) {
 
   const handleUnenroll = async () => {
     try {
-      await api.delete(`/users/enrollments/${mongoId}`);
+      await api.delete(`/enrollments/${mongoId}`);
       onBack({ refresh: true, unenrolled: course.courseId || course.id });
     } catch (e) { Alert.alert("Failed", e.message); }
   };
@@ -278,7 +278,7 @@ export default function AcademicYear() {
     try {
       const [yrRes, enrRes, c1, c2, c3, c4] = await Promise.all([
         api.get("/academic-years"),
-        api.get("/users/enrollments"),
+        api.get("/enrollments/my"),
         api.get("/courses/year/1"), api.get("/courses/year/2"),
         api.get("/courses/year/3"), api.get("/courses/year/4"),
       ]);
@@ -301,8 +301,8 @@ export default function AcademicYear() {
 
   const handleEnroll = async (course, yearId) => {
     try {
-      await api.post(`/users/enrollments/${course.mongoId || course._id || course.id}`);
-      const enrs = safeArray(await api.get("/users/enrollments"));
+      await api.post(`/enrollments/${course.mongoId || course._id || course.id}`);
+      const enrs = safeArray(await api.get("/enrollments/my"));
       setEnrollments(enrs);
       setYears(buildYearsState(dbYears, coursesPerYear, enrs));
       Alert.alert("Enrolled!", `You joined ${course.name || course.title}`);
@@ -312,8 +312,8 @@ export default function AcademicYear() {
   const handleUnenroll = async () => {
     if (!confirmUnenroll) return;
     try {
-      await api.delete(`/users/enrollments/${confirmUnenroll.mongoId || confirmUnenroll.courseId}`);
-      const enrs = safeArray(await api.get("/users/enrollments"));
+      await api.delete(`/enrollments/${confirmUnenroll.mongoId || confirmUnenroll.courseId}`);
+      const enrs = safeArray(await api.get("/enrollments/my"));
       setEnrollments(enrs);
       setYears(buildYearsState(dbYears, coursesPerYear, enrs));
       setConfirmUnenroll(null);

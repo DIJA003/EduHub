@@ -90,8 +90,8 @@ export default function StudentDashboard() {
     try {
       const [yrRes, enrRes, matRes, c1, c2, c3, c4] = await Promise.all([
         api.get("/academic-years"),
-        api.get("/users/enrollments"),
-        api.get("/users/materials"),
+        api.get("/enrollments/my"),
+        api.get("/materials/my"),
         api.get("/courses/year/1"), api.get("/courses/year/2"),
         api.get("/courses/year/3"), api.get("/courses/year/4"),
       ]);
@@ -150,12 +150,12 @@ export default function StudentDashboard() {
   }, [myMaterials]);
 
   const handleEnroll = async (course) => {
-    try { await api.post(`/users/enrollments/${course.mongoId || course._id || course.id}`); await loadAll(); }
+    try { await api.post(`/enrollments/${course.mongoId || course._id || course.id}`); await loadAll(); }
     catch (e) { Alert.alert("Failed", e.message); }
   };
   const handleUnenroll = async () => {
     if (!confirmUnenroll) return;
-    try { await api.delete(`/users/enrollments/${confirmUnenroll.mongoId || confirmUnenroll.courseId}`); setConfirmUnenroll(null); await loadAll(); }
+    try { await api.delete(`/enrollments/${confirmUnenroll.mongoId || confirmUnenroll.courseId}`); setConfirmUnenroll(null); await loadAll(); }
     catch (e) { Alert.alert("Failed", e.message); }
   };
 
